@@ -31,7 +31,7 @@ def main() -> None:
     ec = ec_path.read_text(encoding="utf-8")
     gen = gen_path.read_text(encoding="utf-8")
 
-    require(re.search(r"(?m)^REGS\s+equ\s+BSS\s*\+\s*0x0E400\b", asm) is not None,
+                if re.search(r"\bREGS\b", line)
             "curve register bank base changed")
     require(re.search(r"(?m)^R_D\s+equ\s+REGS\s*\+\s*14\s*\*\s*32\b", asm) is not None,
             "private scalar register is no longer register 14")
