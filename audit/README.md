@@ -83,9 +83,11 @@ user namespaces.
   over the TLS listener, exercising the decrypted HTTPS request parser.
 - `test_ip_arp_validation.py`: sends synthetic IPv4 SYNs with valid/invalid
   header checksums and ARP requests with malformed hardware/protocol fields over TAP.
-- `test_arp_short_frame.py`: primes RX buffers with full synthetic ARP requests,
-  drains their normal replies, then checks whether a 24-byte ARP request discloses stale bytes. See
-  `arp-short-frame-impact.md` for the exact eight-byte disclosure and threat-model limits.
+- `test_arp_short_frame.py`: discovers the guest MAC, primes RX buffers with
+  2,048 valid unicast ARP requests from a synthetic victim, then sends a 24-byte
+  request from a different sender. The regression requires the frozen bounty
+  to expose the stale eight-byte suffix and both upstream images to reject it.
+  See `arp-short-frame-impact.md` for the exact data flow and limits.
 - `test_tcp_ack_mss.py`: sends a data-bearing segment with an out-of-window ACK,
   tests peer-MSS boundaries, delays a first SYN-cookie ACK, then replays the same
   cookie after FIN/FIN teardown. The replay probe waits 65 seconds after teardown
@@ -152,7 +154,7 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | Three-way TAP comparison: IPv4/ARP/TCP behavior on current main | [45401501930](https://github.com/miSultanato/k15/actions/runs/45401501930) |
 | Three-way parser fuzz: bounty, first fix and current main | [45401525691](https://github.com/miSultanato/k15/actions/runs/45401525691) |
 | TAP IPv4 checksum and ARP field matrix on bounty and upstream | [45396434723](https://github.com/miSultanato/k15/actions/runs/45396434723) |
-| Short ARP stale-buffer differential: bounty discloses synthetic marker; upstream does not | [45397011333](https://github.com/miSultanato/k15/actions/runs/45397011333) |
+| Cross-sender unicast short-ARP differential: bounty discloses victim MAC/IP suffix; upstream rejects | [45466831548](https://github.com/miSultanato/k15/actions/runs/45466831548) |
 | TCP ACK-window and peer-MSS differential | [45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
 | Focused IPv4/ARP/TCP boundary workflow (checksums, short ARP, ACK, MSS) | [45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
 | Cleartext port-80 method control (not the audited HTTPS parser) | [45400915976](https://github.com/miSultanato/k15/actions/runs/45400915976) |
