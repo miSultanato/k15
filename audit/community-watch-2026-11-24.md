@@ -990,3 +990,21 @@ The upstream main/dev comparison also shows that the newer branch removed
 `tools/public-proof.py`, `tools/proof-public.json`). Those files remain
 available on the frozen bounty branch used for this audit. This is repository
 cleanup/history, not evidence that the bounty was paid or closed.
+
+
+## Expanded native runner RDRAND sample (confirmed)
+
+The latest bounded audit run
+https://github.com/miSultanato/k15/actions/runs/45387323167
+increased the direct native-instruction probe from one million to ten million
+64-bit RDRAND samples on the GitHub runner CPU.
+
+Observed:
+- Adjacent equal qwords: 0 / 10,000,000.
+- Equal qwords at distance four: 0 / 9,999,996.
+- Repeated four-qword nonce tuples: 0 / 2,500,000.
+
+The same run repeated the 10,240 + 1,024 QEMU nonce checks and cross-boot
+fingerprint comparison (zero overlap), rebuilt the frozen image, and passed
+the ClientHello framing regression. This remains a measurement of the runner's
+exposed RDRAND implementation, not the production host CPU.
