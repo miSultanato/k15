@@ -146,8 +146,16 @@ def main() -> None:
     print(f"INFO: deterministic ec.inc source SHA-256 {hashlib.sha256(ec_image).hexdigest()}")
     if ec_inc_path is not None:
         actual_ec_image = ec_inc_path.read_bytes()
-        require(actual_ec_image == ec_image,
-                f"generated {ec_inc_path} differs from exact source reconstruction")
+        if actual_ec_image != ec_image:
+            mismatch = next((i for i, pair in enumerate(zip(actual_ec_image, ec_image))
+                             if pair[0] != pair[1]), min(len(actual_ec_image), len(ec_image)))
+            start = max(0, mismatch - 32)
+            end = mismatch + 64
+            print(f"DEBUG: actual bytes={len(actual_ec_image)}, reconstructed bytes={len(ec_image)}")
+            print(f"DEBUG: first mismatch at byte {mismatch}")
+            print(f"DEBUG: actual[{start}:{end}]={actual_ec_image[start:end]!r}")
+            print(f"DEBUG: expected[{start}:{end}]={ec_image[start:end]!r}")
+            raise SystemExit(f"FAIL: generated {ec_inc_path} differs from exact source reconstruction")
         print(f"PASS: generated {ec_inc_path} matches source reconstruction byte-for-byte")
 
     print("PASS: only the compile-time SIGN program reads D, once, as X * D")
