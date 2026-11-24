@@ -1292,3 +1292,22 @@ path: `start.asm` clears BSS on boot, `HKS` is allocated inside BSS, and
 `setup.asm` repopulates it with RDRAND. The QEMU `system_reset` differential
 workflow is committed in the audit fork, but its runtime result remains
 unverified; no pass is claimed. See `syn-cookie-reboot-review.md`.
+
+
+## Final delta — 2026-11-24, late review
+
+The upstream branch state changed slightly after the earlier note above:
+
+- Upstream `main` remains pinned at `cb9f76a5a100c418bfcaeddcd4f137d30ab489d2`.
+- Upstream `dev` advanced to `261a3e8361feb51eef8d7fb497c958c61698dba2` with one commit: EFI boot support (a 2,048-byte EFI application and disk-image/boot changes).
+- The compare from current upstream main to dev lists changes in boot, disk tooling, documentation and build scripts; it does not change `src/tls.asm`, `src/request.asm`, `src/tcp.asm` or `src/conn.asm`. The security observations in this audit therefore remain applicable to the pinned source modules.
+- The upstream issue #1 remains closed, last updated 2026-11-22, with two comments. The open pull-request list is empty.
+
+New local runtime evidence completed after the earlier sections were written:
+
+- SYN-cookie reboot/key rotation passed across frozen bounty, first upstream fix and current upstream in [run 45486557359](https://github.com/miSultanato/k15/actions/runs/45486557359): each reset generated a different cookie, the old ACK was rejected, and the fresh ACK processed HTTP. This resolves the earlier “runtime unverified” note; see `syn-cookie-reboot-review.md`.
+- The live W^X PTE differential passed in [run 45484886594](https://github.com/miSultanato/k15/actions/runs/45484886594): frozen SITE page present/read-only/NX=0; both upstream SITE pages present/read-only/NX=1.
+- Client Finished omission was reproduced on all three revisions in [run 45482705312](https://github.com/miSultanato/k15/actions/runs/45482705312): valid AEAD application data is processed without the client Finished. This remains a shared handshake-confirmation weakness, not proof of injection without the application traffic key.
+- Exact/off-by-one TCP RST handling passed across all three revisions in [run 45484598190](https://github.com/miSultanato/k15/actions/runs/45484598190): exact observed ACK sequence resets the slot; offsets -1/+1 do not.
+
+The fork's `bounty` ref remains frozen at `ab93479ebc7c85274c722b16897148286d1cfca3`. No upstream changes were merged into it; all runtime work remains local and synthetic.
