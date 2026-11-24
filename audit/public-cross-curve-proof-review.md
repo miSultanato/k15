@@ -97,10 +97,12 @@ hash-based Fiat-Shamir/Borromean construction.
 The public proof verifier already passed in bounded-audit run
 https://github.com/miSultanato/k15/actions/runs/45460761523.
 
-The synthetic generator regression has been added to the bounded-audit
-workflow and awaits its first run. Until that passes, the source-level review
-and existing offline verifier are evidence, but the new regression is not
-yet validated in CI.
+The synthetic generator regression passed in the complete bounded-audit run:
+https://github.com/miSultanato/k15/actions/runs/45471871754
+
+The log confirms both flip paths, same-scalar binding across the two groups,
+corrupted-proof rejection and mismatched-certificate-key rejection. The test
+used synthetic scalars only and wrote no private key or proof artifact.
 
 **Assessment:** no direct private-scalar disclosure is apparent in the public
 proof format or generator. The only intentional scalar predicate is the
