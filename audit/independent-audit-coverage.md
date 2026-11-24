@@ -34,7 +34,7 @@ https://github.com/FileSherlock/k15/issues/1#issuecomment-7081448356
 | 12 | Missing Host / absolute-form HTTP handling | Reported as not security-relevant by owner in earlier note; no fix recorded | Not tested in current bounded suite | Treat as HTTP conformance only; decide whether worth byte budget |
 | 13 | TCP segment may exceed peer MSS below 216 | Fixed in both `a2d8893` and current upstream main | [TAP matrix 45414487001](https://github.com/miSultanato/k15/actions/runs/45414487001): bounty accepts MSS 0, 1, 100, 179, 180, 181, 215 and 216 and sends 180-byte payloads; fixed/current send no SYN-ACK for 0..215 and accept 216. The frozen payload exceeds the peer MSS whenever it is below 180 | No remaining MSS-boundary gap in this matrix; a packet-level audit can separately confirm IP/TCP header accounting |
 | 14 | ISN/cookies lack clock component | No fix recorded in cited notes | [Three-way 65s post-teardown replay run 45443936657](https://github.com/miSultanato/k15/actions/runs/45443936657): after a complete FIN/FIN close and 65-second wait, replaying the original SYN-cookie ACK and sending a different-length request produces a response whose ACK equals the new request end sequence on all three images. The first ACK was also independently accepted after 65s in [run 45410737525](https://github.com/miSultanato/k15/actions/runs/45410737525) | Replay after teardown is confirmed for at least 65 seconds on all three tested revisions. This is common behavior, not a bounty-only regression; impact and threat model remain separate questions |
-| 15 | IPv4 checksum / ARP length and field checks | Short-ARP stale-buffer leak fixed in tested upstream image; IPv4 checksum and malformed ARP fields remain accepted | TAP differential: 24-byte ARP request elicited a reply containing a synthetic marker from the previous RX buffer on bounty; no marker reply on either `a2d8893` or current main. Invalid IPv4 checksum SYN and malformed ARP hrd/pro/hlen/plen still receive replies on all three | Keep IPv4 checksum and non-short ARP field acceptance classified as protocol-validation issues; assess short-frame leak's same-link impact separately |
+| 15 | IPv4 checksum / ARP length and field checks | Cross-sender unicast short-ARP stale-buffer disclosure fixed in tested upstream images; IPv4 checksum and malformed full-length ARP fields remain accepted | Three-way TAP run 45466831548: 2,048 valid unicast ARP requests from a synthetic victim, then a 24-byte request from a distinct sender. Frozen bounty reply contains victim MAC suffix/IP; first fix and current main reject it. Invalid IPv4 checksum SYN and malformed ARP hrd/pro/hlen/plen still receive replies on all three | Keep the eight-byte same-link metadata disclosure separate from protocol-validation issues; do not describe it as key or arbitrary-memory disclosure |
 | 16 | ECDSA nonce not reduced/rejected modulo n | No fix recorded in cited notes | Frozen assembly signer: n+1 produces the same valid signature as 1; n-1 verifies; n (zero residue) does not verify. Existing self-test also covers 2^256-1 and 2^256-2 | Characterize the distribution impact of raw 256-bit RDRAND values; this boundary test does not establish practical key recovery |
 | 17 | apcount alignment | Fixed in `a2d8893` and current main | [Emitted-image run 45411656961](https://github.com/miSultanato/k15/actions/runs/45411656961) confirms `(apcount - tramp) mod 4 = 3` in bounty and `0` in both upstream images | Only AP startup/runtime validation remains optional; emitted-image alignment is asserted |
 | 18 | GDT Accessed bits | Fixed in `a2d8893` and current main | [Emitted-image run 45411656961](https://github.com/miSultanato/k15/actions/runs/45411656961) confirms frozen descriptor access bytes `0x9A/0x92` vs upstream `0x9B/0x93` | No remaining binary-byte gap; runtime descriptor mutation is not tested |
@@ -63,17 +63,16 @@ https://github.com/FileSherlock/k15/issues/1#issuecomment-7081448356
 1. If stronger W^X evidence is needed, add a QEMU live page-table read for the
    short-site mapping. The emitted-image CODEPG calculation and synthetic-RET
    runtime differential already agree; neither reads the live PTE directly.
-2. Inspect the valid-ARP priming regression in `test_arp_short_frame.py`.
-   Run 45463654039 confirmed the stale marker on the frozen bounty and no
-   marker on the first upstream fix; the current-upstream leg lost packets
-   during the old 512-frame burst. A paced rerun using 512 batches of 64
-   requests is running as 45464009546.
+2. The cross-sender unicast ARP regression is complete in run
+   45466831548. Both upstream variants reject the stale suffix and the
+   frozen bounty reproduces it. Keep the impact limited to eight metadata
+   bytes and single-processor local-buffer conditions.
 3. Expand the one-byte inner/outer ClientHello truncation vectors only if
    additional offsets materially clarify the parser boundary. Both current
    vectors already complete TLS 1.3 on bounty and are rejected upstream.
-4. Keep the short-ARP impact bounded to same-link synthetic traffic. The
-   existing analysis does not establish multi-queue reliability, Internet
-   reachability or disclosure of anything beyond eight metadata bytes.
+4. Consider multi-processor queue selection only if it can be tested safely
+   and deterministically. The current unicast reproduction uses SMP=1 and
+   does not establish production multi-queue reliability or Internet reachability.
 
 The 65-second post-FIN/FIN SYN-cookie ACK replay is already confirmed on all
 three revisions in run 45443936657; it is common behavior, not a bounty-only
