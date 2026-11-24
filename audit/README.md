@@ -59,8 +59,8 @@ user namespaces.
   record-length mismatches against a local QEMU image.
 - `test_tls_record_rejection.py`: corrupts a client Finished and an AEAD tag,
   then checks whether the local QEMU guest still processes valid app data.
-- `test_dummy_ccs.py`: checks the record immediately after ServerHello when
-  ClientHello carries a non-empty legacy session ID.
+- `test_dummy_ccs.py`: compares the normal ServerHello record sequence and
+  elicits HelloRetryRequest; the final post-HRR flight remains open.
 - `test_ip_arp_validation.py`: sends synthetic IPv4 SYNs with valid/invalid
   header checksums and ARP requests with malformed hardware/protocol fields over TAP.
 - `test_arp_short_frame.py`: primes RX buffers with a synthetic marker, then
