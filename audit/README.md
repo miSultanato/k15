@@ -83,6 +83,7 @@ user namespaces.
 - `check_boot_hardening.py`: compares four source-level boot/build hardening changes between the frozen bounty, first upstream fix and pinned current main.
 - `check_boot_binary.py`: checks the emitted `os.bin` and NASM listing for AP counter alignment and GDT descriptor Accessed bytes. It does not boot the image or exercise AP startup.
 - `test_e820_signature.py`: executes the unchanged 16-bit E820 loop in Unicorn with synthetic valid and wrong-signature BIOS responses; compares the frozen boot sector with both upstream fixes. This isolates the signature gate and is not a real-BIOS compatibility test.
+- `check_wx_layout.py`: derives the NX threshold from the emitted short-site image, NASM listing, DELTA and CODEPG source formula, then checks the final synthetic site byte's page. The three-way QEMU RET probe independently confirms runtime behavior; this check does not read live guest page-table memory.
 - `run_qemu_abuse.sh`: runs the upstream hostile-client regression suite against
   the first upstream fix and current main, not against the frozen bounty image.
 - `tools/racetest.sh`: exercises the project's deliberately synchronized
@@ -109,6 +110,7 @@ proofs of all hardware behavior or every possible SMP schedule. See
 
 | Evidence | Run |
 | --- | --- |
+| Short-site W^X: emitted SITE page is executable only on frozen bounty; upstream maps it NX, confirmed by QEMU RET probe | [45439460997](https://github.com/miSultanato/k15/actions/runs/45439460997) |
 | Synthetic BIOS E820: valid SMAP accepted by all; wrong-signature success counted only by frozen bounty | [45437038597](https://github.com/miSultanato/k15/actions/runs/45437038597) |
 | HRR second ClientHello: two ClientHellos/two ServerHellos; frozen sends 0 CCS, both upstream images send 1 | [45436733972](https://github.com/miSultanato/k15/actions/runs/45436733972) |
 | Oversized legacy_session_id 33 and 255 bytes: frozen accepts both; upstream images send fatal alerts | [45436733972](https://github.com/miSultanato/k15/actions/runs/45436733972) |
