@@ -32,3 +32,21 @@ That response alone is **not conclusive**: the port-80 handler serves one fixed 
 Run only local images under QEMU/TAP. Compare the frozen image with the two pinned upstream revisions. Do not send stale ACKs to `15kb.org`, spoof third-party addresses, or use production infrastructure.
 
 Do not send stale ACKs to `15kb.org`, do not spoof third-party addresses, and do not use production infrastructure.
+
+
+## Updated three-way tuple-binding control (2026-11-24)
+
+The expanded harness now replays the captured cookie ACK under a changed
+source port before the same-tuple replay. All three pinned images reject the
+changed-port attempt, then accept the original tuple after FIN/FIN teardown
+and a 65-second delay. The completed run is
+[45469926754](https://github.com/miSultanato/k15/actions/runs/45469926754).
+
+This confirms that the replay property is bound to the original tuple; it is
+not a generic ACK that can be moved to another source port. The upstream
+maintainer already tracks the no-clock cookie behavior as finding 14 in
+[issue #1](https://github.com/FileSherlock/k15/issues/1), proposing a 64-second
+time component with current/previous bucket acceptance. The pinned current
+source still has no time component. For the consolidated threat-model
+classification and limits, see
+[`syn-cookie-replay-observation.md`](syn-cookie-replay-observation.md).
