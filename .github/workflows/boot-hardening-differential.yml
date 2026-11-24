@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - audit/check_boot_hardening.py
+      - audit/check_boot_binary.py
       - .github/workflows/boot-hardening-differential.yml
 
 permissions:
@@ -79,7 +80,25 @@ jobs:
           print("PASS: both upstream Makefiles clear the accidental hostname before certificate generation")
           PY
 
-      - name: Keep the check static and artifact-free
+      - name: Install NASM build dependency
         run: |
-          echo "No image is booted and no synthetic key material is generated."
-          echo "No artifacts are uploaded."
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends nasm
+          python3 -m pip install --disable-pip-version-check cryptography
+
+      - name: Build the three pinned images locally
+        run: |
+          make -C bounty all
+          make -C fixed all
+          make -C current all
+
+      - name: Assert emitted-image AP counter alignment and GDT bytes
+        run: |
+          python3 audit/check_boot_binary.py bounty frozen
+          python3 audit/check_boot_binary.py fixed fixed
+          python3 audit/check_boot_binary.py current fixed
+
+      - name: Keep generated images and synthetic keys ephemeral
+        run: |
+          echo "Images, generated certificates and key material remain in the ephemeral runner."
+          echo "No artifacts are uploaded and no image is booted in this check."
