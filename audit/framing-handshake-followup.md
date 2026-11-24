@@ -86,8 +86,12 @@ The implementation now covers both framing variants independently:
    payload prefix that the server processes.
 
 The outer-short case deliberately uses a non-conforming client that mirrors
-the server's truncated transcript. It does not claim that an ordinary,
-standards-compliant TLS client will complete the handshake.
+the server's truncated transcript. Its excluded final byte is `0x17`, reused
+as the content-type byte of the following client Finished record; the client
+sends the remainder of that record without duplicating the byte. This keeps
+the TCP stream well-formed while the ClientHello record remains one byte short.
+It does not claim that an ordinary, standards-compliant TLS client will
+complete the handshake.
 
 ## Assertions implemented; pending differential execution
 
