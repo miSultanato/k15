@@ -10,4 +10,4 @@ cd "$target"
 export B=build IMG=build/os.bin PORT=8443 HPORT=9443 KVM=0 SMP=4 MEM=256
 source tools/vm.sh
 boot
-go run "$repo_root/hrr_second_clienthello.go"
+timeout 30s go run "$repo_root/hrr_second_clienthello.go"
