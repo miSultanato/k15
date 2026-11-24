@@ -139,9 +139,9 @@ property, not evidence that Intel/AMD RDRAND emits such a stream.
    especially whether the production virtual CPU exposes hardware RDRAND,
    how migration/snapshot semantics apply, and whether any documented
    failure can produce a non-constant repeating sequence.
-5. Analyze whether a remote client can reliably steer repeated handshakes to
-   one processor using only the documented connection-affinity hash. Do this
-   offline against source or a local VM; do not load-test the live service.
+5. Completed the static processor-affinity trace in
+   `processor-affinity-review.md`: a fixed tuple maps to one stable but unknown
+   processor; no CPU-selection oracle or target-CPU steering is established.
 6. Keep parser, memory-layout and proof analysis as separate workstreams.
    Community audits have already covered much of the obvious key-disclosure
    surface; focus on reproducible gaps, not speculative exploit chains.
@@ -1311,3 +1311,47 @@ New local runtime evidence completed after the earlier sections were written:
 - Exact/off-by-one TCP RST handling passed across all three revisions in [run 45484598190](https://github.com/miSultanato/k15/actions/runs/45484598190): exact observed ACK sequence resets the slot; offsets -1/+1 do not.
 
 The fork's `bounty` ref remains frozen at `ab93479ebc7c85274c722b16897148286d1cfca3`. No upstream changes were merged into it; all runtime work remains local and synthetic.
+
+
+## ECDSA nonce range conversion (2026-11-24)
+
+The frozen signer does not reject a raw 256-bit RDRAND candidate when it is
+outside the P-256 subgroup range. Its curve multiplication and inversion
+operate modulo the subgroup order, so the effective scalar is the candidate
+modulo n. The existing assembly boundary test confirms that n+1 aliases 1.
+
+For R = 2^256 and Δ = R - n, effective values in [0, Δ-1] have two raw
+preimages; all other residues have one. Since Δ is just under 2^224, the
+low interval has top 32 bits zero and receives approximately twice its ideal
+probability. The excess mass is about 2^-32. This is a confirmed distribution
+deviation, not evidence of a practical private-key recovery attack.
+
+The 4,096-sample community nonce report would have only about a 1.9e-6
+probability of containing even one nonce in that interval, so its reported
+absence of bias does not test this rare effect. The new
+`audit/ecdsa-nonce-range-review.md` records the exact arithmetic, standards
+context and impact limits; coverage matrix finding 16 now points to it.
+
+Sources:
+- NIST FIPS 186-5, Appendix A.3:
+  https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf
+- RFC 6979, §3.2:
+  https://datatracker.ietf.org/doc/rfc6979/
+
+Classification: low-severity cryptographic distribution/conformance gap.
+No bounty exploit or production impact demonstrated.
+
+## Processor-affinity source review (2026-11-24)
+
+The new `audit/processor-affinity-review.md` traces boot-time HKS creation,
+the AES-based `prf`, the dword-3 processor selection in `drain`, and the
+per-processor rings. A fixed four-tuple maps to the same processor throughout
+one boot, so a client can concentrate sequential connections on one unknown
+processor by reusing the tuple. The boot-time HKS key prevents offline
+prediction of which processor a chosen tuple selects, and no CPU identity
+oracle has been established.
+
+This resolves the static-source portion of the affinity question. It does not
+show that a remote client can select a particular CPU, identify the selected
+CPU, or induce an RNG anomaly. No production traffic or load testing was
+performed.
