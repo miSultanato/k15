@@ -91,7 +91,7 @@ user namespaces.
   See `arp-short-frame-impact.md` for the exact data flow and limits.
 - `ipv4-arp-validation-review.md`: explains why invalid IPv4 header checksums and malformed full-length ARP metadata still receive replies on all three revisions, and separates that behavior from the short-frame disclosure.
 - `public-cross-curve-proof-review.md` and `test_public_proof.py`: review the public DLEQ proof’s serialized fields and intentional `flip` bit, then test both synthetic proof paths, tamper rejection and key-binding checks.
-- `cookie-time-component-review.md` and `syn-cookie-replay-observation.md`: document the source-level no-clock cookie construction, 65-second delayed/replay tests, changed-port rejection, upstream issue #1 finding 14, and conservative threat-model limits. `syn-cookie-reboot-review.md` documents the boot-time HKS/RDRAND path and the new QEMU reset/replay differential; runtime result is pending.
+- `cookie-time-component-review.md` and `syn-cookie-replay-observation.md`: document the source-level no-clock cookie construction, 26-bit keyed-check width, 65-second delayed/replay tests, changed-port rejection, upstream issue #1 finding 14, and conservative threat-model limits. `syn-cookie-reboot-review.md` documents the boot-time HKS/RDRAND path and the new QEMU reset/replay differential; runtime result is pending.
 - `test_syn_cookie_reboot.py` and `run_tap_syn_cookie_reboot.sh`: capture a synthetic SYN cookie, issue QEMU monitor `system_reset` while keeping the TAP interface and tuple, then replay the old ACK and verify a fresh post-reset cookie still works. This is a local reboot/key-rotation regression probe; it uploads no artifacts.
 - `test_tcp_ack_mss.py`: asserts bounty acceptance versus upstream rejection of
   out-of-window ACKs, checks peer-MSS safety boundaries, delays a first SYN-cookie
@@ -161,7 +161,7 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | Three-way parser fuzz: bounty, first fix and current main | [45401525691](https://github.com/miSultanato/k15/actions/runs/45401525691) |
 | TAP IPv4 checksum and ARP field matrix on bounty and upstream | [45396434723](https://github.com/miSultanato/k15/actions/runs/45396434723) |
 | Cross-sender unicast short-ARP differential: bounty discloses victim MAC/IP suffix; upstream rejects | [45466831548](https://github.com/miSultanato/k15/actions/runs/45466831548) |
-| TCP ACK-window, forced-wrap and peer-MSS regression assertions | [45468109924](https://github.com/miSultanato/k15/actions/runs/45397630737) |
+| TCP ACK-window, forced-wrap and peer-MSS regression assertions | [45468109924](https://github.com/miSultanato/k15/actions/runs/45468109924) |
 | Focused IPv4/ARP/TCP boundary workflow (checksums, unicast short ARP, ACK, MSS) | [45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
 | Cleartext port-80 method control (not the audited HTTPS parser) | [45400915976](https://github.com/miSultanato/k15/actions/runs/45400915976) |
 | 60,000 ClientHello cases plus TAP raw-frame fuzz and deterministic IP/ARP probes | [45396434783](https://github.com/miSultanato/k15/actions/runs/45396434783) |
