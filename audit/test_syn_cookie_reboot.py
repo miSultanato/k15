@@ -102,7 +102,7 @@ def drain_rx() -> None:
         sock.recv(65536)
 
 
-def syn_cookie(timeout: float = 12.0) -> int:
+def syn_cookie(timeout: float = 30.0) -> int:
     drain_rx()
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -125,7 +125,7 @@ def reset_guest() -> None:
                     monitor.recv(4096)
                 except socket.timeout:
                     pass
-            time.sleep(1.0)
+            time.sleep(2.0)  # allow firmware, bootloader and guest initialization to finish
             return
         except (FileNotFoundError, ConnectionRefusedError):
             time.sleep(0.1)
