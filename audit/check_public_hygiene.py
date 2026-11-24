@@ -52,12 +52,12 @@ def history_objects() -> list[tuple[str, str, bytes]]:
     if not entries:
         return []
 
-    request = b"".join(sha.encode("ascii") + b"\\n" for sha, _ in entries)
+    request = b"".join(sha.encode("ascii") + b"\n" for sha, _ in entries)
     output = subprocess.check_output(["git", "cat-file", "--batch"], input=request)
     offset = 0
     blobs: list[tuple[str, str, bytes]] = []
     for sha, path in entries:
-        line_end = output.find(b"\\n", offset)
+        line_end = output.find(b"\n", offset)
         if line_end < 0:
             raise RuntimeError("truncated git cat-file --batch header")
         header = output[offset:line_end].split()
@@ -70,7 +70,7 @@ def history_objects() -> list[tuple[str, str, bytes]]:
         if len(data) != size:
             raise RuntimeError(f"truncated git object {sha}")
         offset += size
-        if offset >= len(output) or output[offset : offset + 1] != b"\\n":
+        if offset >= len(output) or output[offset : offset + 1] != b"\n":
             raise RuntimeError(f"missing git cat-file separator for {sha}")
         offset += 1
         if object_type == b"blob":
