@@ -918,3 +918,24 @@ served a normal TLS page. All six 20,000-case batches passed.
 This broadens the earlier single-seed run. It is still a bounded parser
 robustness test, not proof that every possible input is safe or that the
 server has no key-disclosure path.
+
+
+## Raw Ethernet/IP/TCP fuzz plus repeated ClientHello fuzz (confirmed)
+
+The extended comparison completed successfully:
+https://github.com/miSultanato/k15/actions/runs/45385140473
+
+On each source revision the runner:
+- sent 60,000 ClientHello mutations across seeds `20261124`, `20261125`
+  and `20261126`;
+- then sent 3,191 deterministic/mutated raw Ethernet, IPv4 and TCP frames;
+- checked that the QEMU guest remained alive, port-80 output stayed bounded,
+  and a normal TLS page was still served.
+
+Both the frozen bounty image and the upstream-fixed image passed. The fixed
+revision's raw-frame harness additionally reports that a short ARP frame gets
+no answer; the bounty revision's harness predates that extra assertion.
+
+This is bounded robustness and memory-safety smoke testing. It did not find a
+crash or service loss under these inputs, but does not prove safety for every
+packet, parser state, timing or hardware configuration.
