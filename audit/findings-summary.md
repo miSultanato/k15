@@ -29,7 +29,7 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 | TCP ACK-window | ACK offsets +1, +63, +64, +65535 and +65536 beyond `SND.NXT` all still get HTTP responses; same when `SND.NXT=0xFFFFFFC2` and +65536 wraps to `0x0000FFC2` | No HTTP payload for all offsets, including forced wrap | Same as first fix | [assertive three-way TAP and forced-wrap matrix](https://github.com/miSultanato/k15/actions/runs/45468109924), [forced-wrap matrix](https://github.com/miSultanato/k15/actions/runs/45413051340) |
 | Peer MSS boundaries | Accepts MSS 0, 1, 100, 179, 180, 181, 215 and 216; sends 180-byte payloads (exceeds every peer MSS below 180) | No SYN-ACK for 0..215; accepts 216 and sends 180 | Same as first fix | [assertive peer-MSS regression matrix](https://github.com/miSultanato/k15/actions/runs/45468109924) |
 | SYN cookie time component | Delayed first ACK after 65s is accepted and following HTTP request processed | Same | Same | [three-way TAP test](https://github.com/miSultanato/k15/actions/runs/45410737525) |
-| SYN cookie replay after teardown | Original cookie ACK reopens a slot after FIN/FIN close; after a further 65s the ACK of a different-length request matches its new end sequence | Same | Same | [three-way 65s replay differential](https://github.com/miSultanato/k15/actions/runs/45443936657) |
+| SYN-cookie ACK replay after FIN/FIN close | Replayed cookie ACK recreates a connection after 65s and a different-length HTTP request is processed | Same observed behavior | Same observed behavior | [three-way 65s replay differential](https://github.com/miSultanato/k15/actions/runs/45443936657); [expanded TAP run](https://github.com/miSultanato/k15/actions/runs/45468109924) |
 | HTTPS methods | Lowercase `get` gets no HTTP response on bounty; `FOO` returns 405 | Lowercase `get` and `FOO` return 405 | Same as first fix | [TLS differential](https://github.com/miSultanato/k15/actions/runs/45402956609) |
 | Missing Host header | GET without Host returns 200 | GET without Host returns 200 | GET without Host returns 400 | [TLS differential](https://github.com/miSultanato/k15/actions/runs/45402956609) |
 | TLSInnerPlaintext without content type | Authenticated all-zero inner plaintext lengths 1, 2, 16, 255 and 300 are accepted; a following valid request is processed | Closes connection for all five lengths before following request | Same as first fix | [expanded three-way test](https://github.com/miSultanato/k15/actions/runs/45414676678) |
@@ -60,6 +60,8 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
   revisions. [#45396434783](https://github.com/miSultanato/k15/actions/runs/45396434783)
 
 ## Interpretation and limits
+
+- The SYN-cookie replay test is an observation, not a confirmed bounty finding: all three revisions accept the same cookie ACK after orderly FIN/FIN teardown. The upstream cookie is keyed to the client tuple and initial sequence with a boot-time secret, but has no visible time bucket or single-use counter. The local test does not demonstrate off-path forgery, cross-tuple replay, application-authentication bypass or production reachability. See `syn-cookie-replay-observation.md`.
 
 - The ARP result is a real, local stale-buffer metadata disclosure using
   synthetic victim/attacker identities and a unicast ARP primer. It is limited
