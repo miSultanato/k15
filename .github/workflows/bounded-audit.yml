@@ -14,6 +14,7 @@ on:
       - audit/test_clienthello_framing.py
       - audit/test_tls_record_rejection.py
       - audit/test_dummy_ccs.py
+      - audit/test_https_request.py
       - audit/qemu_nonce_uniqueness.py
       - audit/run_qemu_nonce.sh
       - audit/run_qemu_framing.sh
