@@ -57,7 +57,7 @@ def leaked_marker(frame: bytes) -> bool:
 def drain_prime_replies(timeout: float) -> int:
     """Drain normal replies until the TAP socket has been quiet briefly."""
     deadline = time.monotonic() + timeout
-    quiet_until = time.monotonic() + 0.1
+    quiet_until = time.monotonic() + 0.25
     count = 0
     while time.monotonic() < deadline and time.monotonic() < quiet_until:
         wait = min(deadline, quiet_until) - time.monotonic()
@@ -66,7 +66,7 @@ def drain_prime_replies(timeout: float) -> int:
             break
         if leaked_marker(sock.recv(65536)):
             count += 1
-        quiet_until = time.monotonic() + 0.1
+        quiet_until = time.monotonic() + 0.25
     return count
 
 
@@ -89,9 +89,9 @@ if __name__ == "__main__":
         for _ in range(1024):
             sock.send(prime)
         time.sleep(0.1)
-        primed = drain_prime_replies(4.0)
-        if primed == 0:
-            raise SystemExit("FAIL: guest did not answer the full ARP priming requests")
+        primed = drain_prime_replies(8.0)
+        if primed != 1024:
+            raise SystemExit(f"FAIL: drained {primed} of 1024 full ARP priming replies")
         print(f"OBSERVED: drained {primed} normal replies to full ARP priming requests")
         found = False
         for _ in range(128):
