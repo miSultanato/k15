@@ -761,3 +761,37 @@ It confirms rejection at the ClientHello parser, not a successful exploit
 against the bounty version. It does not demonstrate private-key recovery,
 memory corruption, or successful application-data exchange using a
 mismatched transcript.
+
+
+## Upstream hostile-client suite on the fixed revision (confirmed)
+
+The differential workflow was extended to run the upstream
+`tools/abuse.py` suite against the locally booted fixed image. Run:
+https://github.com/miSultanato/k15/actions/runs/45382026675
+
+The suite passed all reported checks, including:
+- forged and replayed TLS records followed by successful normal requests;
+- cipher-suite, X25519 share, session-ID and alert behavior;
+- all new ClientHello type, length and compression checks;
+- legacy_version normalization and ChangeCipherSpec behavior;
+- 1,565 truncated or length-mutated ClientHellos, followed by successful
+  normal handshakes;
+- HTTP method handling, authenticated inner plaintext handling, and port 80
+  request framing/pipelining.
+
+This run tests the upstream fixed source only. The frozen bounty image is
+covered by the separate five-case differential probe, not by claiming that
+the full upstream suite passes on the old source.
+
+## Community context (2026-11-24)
+
+The public Reddit thread
+https://www.reddit.com/r/securityCTF/comments/1y1fjej/200_in_bitcoin_if_you_can_get_the_tls_key_out_of/
+contains independent self-reports of extensive local testing: approximately
+10,200 handshakes and 4,096 nonces with no repeats/bias found, constant-time
+timing sweeps, memory scans that did not find the plaintext scalar, and a
+229-case ClientHello fuzz. These are third-party reports, not artifacts
+independently reproduced by this audit. The same discussion identifies the
+short outer-record ClientHello truncation/transcript discrepancy that our
+QEMU tests now reproduce. The thread's participants do not report recovering
+the bounty key.
