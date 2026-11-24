@@ -939,3 +939,21 @@ no answer; the bounty revision's harness predates that extra assertion.
 This is bounded robustness and memory-safety smoke testing. It did not find a
 crash or service loss under these inputs, but does not prove safety for every
 packet, parser state, timing or hardware configuration.
+
+
+## Native runner RDRAND probe (confirmed, non-production hardware)
+
+The bounded audit run
+https://github.com/miSultanato/k15/actions/runs/45386477988
+also executed the `RDRAND` instruction directly on the GitHub runner CPU,
+outside QEMU, for 1,000,000 64-bit samples.
+
+Observed:
+- Adjacent equal qwords: 0.
+- Equal qwords at distance four: 0.
+- Repeated four-qword tuples: 0 / 250,000.
+
+The probe checks the specific adjacent-repeat and period-four patterns relevant
+to the synthetic nonce-cycle hypothesis. This is a measurement of the runner's
+exposed RDRAND implementation only; it is not the production host CPU and
+cannot establish the behavior of Hetzner's hardware.
