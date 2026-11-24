@@ -64,3 +64,13 @@ test does not show that a party lacking those keys can do the same.
 
 All validation remains local to synthetic QEMU images and generated
 credentials. No production service or credential is involved.
+
+## Runtime result and limits
+
+The omission control confirms that the server accepts a valid application
+record before client Finished on all three revisions. This is a protocol
+state/handshake-confirmation weakness shared by the tested versions. The
+application record is still AEAD-authenticated under the client application
+traffic key; the result does not imply an attacker without the shared secret
+can inject data. No client-certificate policy, client identity, or
+authorization boundary was tested.
