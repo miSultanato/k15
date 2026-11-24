@@ -1,0 +1,54 @@
+name: k15 bounded audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k15-bounded-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Synthetic nonce test and bounty-branch crypto tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out audit harness from the selected workflow branch
+        uses: actions/checkout@v4
+
+      - name: Check out the frozen bounty commit
+        uses: actions/checkout@v4
+        with:
+          repository: miSultanato/k15
+          ref: ab93479ebc7c85274c722b16897148286d1cfca3
+          path: target
+          persist-credentials: false
+
+      - name: Record tested source revision
+        run: |
+          echo "Audit harness commit: $GITHUB_SHA"
+          echo "Target commit: $(git -C target rev-parse HEAD)"
+          test "$(git -C target rev-parse HEAD)" = "ab93479ebc7c85274c722b16897148286d1cfca3"
+
+      - name: Run synthetic RDRAND-cycle and ECDSA recovery demonstration
+        run: python3 audit/nonce_cycle_demo.py
+
+      - name: Install minimal native build dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends nasm
+
+      - name: Install Python test dependency
+        run: python3 -m pip install --disable-pip-version-check cryptography
+
+      - name: Run upstream assembly crypto tests on the frozen commit
+        working-directory: target
+        run: make test
+
+      - name: Report generated secret-bearing files are not uploaded
+        run: |
+          echo "No build/, cert/, private key, or generated image is uploaded as an artifact."
+          echo "Runner workspace is ephemeral and is discarded after this job."
