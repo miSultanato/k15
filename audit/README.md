@@ -22,7 +22,7 @@ revision offered by the k15 bounty.
 | Workflow | Purpose |
 | --- | --- |
 | `bounded-audit.yml` | Native runner RDRAND probe, source invariants, assembly crypto tests, exact `ec.inc` reconstruction, Valgrind controls, QEMU framing and runtime nonce checks |
-| `differential-framing.yml` | Compares frozen bounty, first upstream fix and current upstream main for TLS framing, record handling, HTTPS requests and full HRR/second-ClientHello behavior; runs each upstream hostile-client suite |
+| `differential-framing.yml` | Compares frozen bounty, first upstream fix and current upstream main for TLS framing, transcript-faithful inner/outer-short ClientHello handshakes, record handling, HTTPS requests and full HRR/second-ClientHello behavior; runs each upstream hostile-client suite |
 | `crypto-revision-check.yml` | Compares P-256 nonce boundaries, RNG source invariants, scalar-read paths and constant-time checks across all three source revisions |
 | `race-audit.yml` | Project's controlled cross-processor slot handover tests, `RACE=1,2,3` |
 | `parser-fuzz.yml` | Same deterministic 60,000-case ClientHello fuzzer (three seeds) plus raw Ethernet/IP/TCP frame fuzz against bounty, first fix and current main |
@@ -65,6 +65,13 @@ user namespaces.
   33 and 255 bytes, compression method and legacy_version against local QEMU
   images; both oversized session IDs receive ServerHello on frozen bounty and
   fatal alerts on the two fixed upstream images.
+- `test_malformed_clienthello_handshake.py`: constructs transcript-faithful
+  inner-short and outer-short ClientHellos, verifies server CertificateVerify
+  and Finished, sends an encrypted client Finished and HTTP request, and checks
+  HTTP 200 on bounty versus fatal `decode_error` on both upstream revisions.
+  The outer-short vector reuses its out-of-record `0x17` byte as the next
+  record's content-type byte. `run_qemu_malformed_clienthello.sh` also runs a
+  patched Go `crypto/tls` inner-short cross-check with CA and body validation.
 - `test_tls_record_rejection.py`: corrupts a client Finished and an AEAD tag,
   then checks whether the local QEMU guest still processes valid app data.
 - `test_dummy_ccs.py`: compares the normal ServerHello record sequence and
@@ -153,4 +160,4 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | 60,000 ClientHello cases plus 3,191 raw frames on both source revisions | [45385140473](https://github.com/miSultanato/k15/actions/runs/45385140473) |
 | Synthetic scalar guest-RAM snapshot | [45384777117](https://github.com/miSultanato/k15/actions/runs/45384777117) |
 
-Start with `findings-summary.md` for the executive status, then see `community-watch-2026-11-24.md` for exact observations and third-party context. The end-to-end ClientHello/Finished client is implemented in `test_malformed_clienthello_handshake.py`; its design and pending validation are tracked in `framing-handshake-followup.md`. The independent auditor's 20 findings are reconciled against our actual test coverage in `independent-audit-coverage.md`.
+Start with `findings-summary.md` for the executive status, then see `community-watch-2026-11-24.md` for exact observations and third-party context. The end-to-end ClientHello/Finished client in `test_malformed_clienthello_handshake.py` passed the three-way differential in [run 45460246415](https://github.com/miSultanato/k15/actions/runs/45460246415); its vectors and interpretation limits are documented in `framing-handshake-followup.md`. The independent auditor's 20 findings are reconciled against our actual test coverage in `independent-audit-coverage.md`.

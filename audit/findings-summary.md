@@ -18,7 +18,7 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 | Finding | Frozen bounty | First fix `a2d8893` | Current upstream main `cb9f76a` | Evidence |
 | --- | --- | --- | --- | --- |
 | Short-site W^X | Emitted final site byte is executable (`site_page=0x103 < CODEPG=0x104`); synthetic `RET` executes and guest continues serving | Emitted site page is NX (`site_page=0x104 = CODEPG=0x104`); guest faults before service | Same as first fix | [emitted-layout + three-way QEMU test](https://github.com/miSultanato/k15/actions/runs/45439460997) |
-| ClientHello framing | Accepts five malformed cases | Rejects all five with fatal `decode_error` | Same rejection | [initial](https://github.com/miSultanato/k15/actions/runs/45381737629), [current comparison](https://github.com/miSultanato/k15/actions/runs/45401470623) |
+| ClientHello framing | Accepts five parser-level malformed cases; transcript-faithful inner-short and outer-short both complete TLS 1.3 and return HTTP 200 | Rejects both full-handshake vectors with fatal `decode_error` (alert 50), as well as the parser-level cases | Same rejection | [parser differential](https://github.com/miSultanato/k15/actions/runs/45401470623), [full transcript differential](https://github.com/miSultanato/k15/actions/runs/45460246415) |
 | ClientHello fields | Accepts 33-byte and 255-byte session IDs, non-null compression and wrong handshake type; echoes legacy_version 0x0301 | Rejects both oversized session IDs and non-null compression; rejects wrong type; responds with legacy_version 0x0303 | Same as first fix | [three-way framing/HRR run](https://github.com/miSultanato/k15/actions/runs/45436733972) |
 | Client Finished | Corrupted Finished followed by valid application data still gets HTTP | Same behavior | Same behavior | [first fix](https://github.com/miSultanato/k15/actions/runs/45394628025), [current main](https://github.com/miSultanato/k15/actions/runs/45401470623) |
 | AEAD tag failure | Bad tag ignored; original valid same-sequence record processed | Same behavior | Same behavior | [first fix](https://github.com/miSultanato/k15/actions/runs/45394628025), [current main](https://github.com/miSultanato/k15/actions/runs/45401470623) |
@@ -77,11 +77,10 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 ## Next work
 
-1. Run and validate the new end-to-end malformed-ClientHello client. It now
-   covers both inner-length and outer-record-length truncation, hashes the
-   exact payload the server processes, and checks CertificateVerify, Finished
-   and HTTP. The implementation is committed but has not yet passed a new
-   Actions run.
+1. If useful, extend the ClientHello matrix to additional truncation offsets
+   and record-prefix alignments. The one-byte inner-short and outer-short cases
+   are now fully reproduced end-to-end; this remains a framing defect, not a
+   demonstrated key-recovery path.
 2. Continue assessing the short-ARP stale-buffer disclosure only with synthetic
    data. Do not attempt to access production memory.
 

@@ -65,57 +65,60 @@ computing the transcript hash.
 
 ## Implementation status (2026-11-24)
 
-A purpose-built Python client is implemented in `test_malformed_clienthello_handshake.py`.
-It constructs both malformed variants before transcript hashing, derives the
-TLS 1.3 key schedule, verifies the server CertificateVerify and Finished, then
-sends a correctly encrypted client Finished and HTTP request. The differential
-runner invokes it against the frozen bounty and both pinned upstream images.
-A separate patched Go `crypto/tls` client cross-checks the inner-short case and
-validates the generated test CA and exact HTTP response body.
-The code and workflow trigger are committed; the next Actions run must validate
-the crypto/transcript implementation before this finding is considered closed.
+The transcript-faithful differential is now validated in
+[run 45460246415](https://github.com/miSultanato/k15/actions/runs/45460246415).
 
-The implementation now covers both framing variants independently:
+A purpose-built Python client in `test_malformed_clienthello_handshake.py`
+constructs both malformed variants before transcript hashing, derives the
+TLS 1.3 key schedule, verifies the server CertificateVerify and Finished,
+sends a correctly encrypted client Finished and HTTP request, and checks the
+decrypted HTTP 200 response.
 
-1. **Inner-short:** the handshake header declares one byte less than the full
-   body; the outer TLS record carries the complete malformed handshake, and
-   the client hashes that complete malformed message.
-2. **Outer-short:** the handshake header declares the full body, but the TLS
-   record length is one byte short. A final byte in an unknown extension is
-   still sent on TCP outside the record; the client hashes only the record
-   payload prefix that the server processes.
+Results across the three pinned images:
 
-The outer-short case deliberately uses a non-conforming client that mirrors
-the server's truncated transcript. Its excluded final byte is `0x17`, reused
-as the content-type byte of the following client Finished record; the client
-sends the remainder of that record without duplicating the byte. This keeps
-the TCP stream well-formed while the ClientHello record remains one byte short.
-It does not claim that an ordinary, standards-compliant TLS client will
-complete the handshake.
+- **Frozen bounty:** both `inner-short` and `outer-short` complete the
+  handshake and return HTTP 200.
+- **First upstream fix `a2d8893`:** both variants are rejected with fatal
+  `decode_error` (alert level 2, description 50).
+- **Current upstream main:** same rejection for both variants.
 
-## Assertions implemented; pending differential execution
+A separate patched Go `crypto/tls` client cross-checks the `inner-short`
+case. It validates the synthetic CA chain, the TLS Finished through the
+standard TLS implementation, and the exact local HTTP response body.
 
-The local-only test now:
+### What the outer-short vector actually does
 
-1. Build the exact frozen bounty image and the exact fixed upstream image.
-2. Use a purpose-built or instrumented TLS 1.3 client that controls the
-   ClientHello bytes before transcript hashing.
-3. Negotiate the supported X25519 / AES-128-GCM / SHA-256 suite using a
-   synthetic certificate and key generated inside the ephemeral runner.
-4. Verify the server's CertificateVerify signature and, critically, verify
-   the server Finished against the transcript built from the exact transmitted
-   ClientHello bytes.
-5. Send the client Finished and an encrypted HTTP request.
-6. Verify the decrypted HTTP 200 response; the Go cross-check also compares the exact local site body.
-7. Run the same malformed ClientHello against the fixed image and require a
-   fatal `decode_error` before a ServerHello.
-8. Keep all key logs, certificates, private keys, images and packet captures
-   inside the ephemeral runner; upload no artifacts.
+The outer-short ClientHello declares its full handshake-body length, but the
+TLS record length is one byte shorter. The final byte outside that record is
+chosen as `0x17`, the content-type byte of the next TLS record. The client
+hashes only the ClientHello bytes inside the first record, then sends the
+remainder of the client Finished record header/body without duplicating that
+first byte. The TCP stream therefore contains two correctly aligned TLS
+records, while the first record carries a truncated ClientHello.
 
-The same assertions run separately for both inner-short and outer-short.
-The test is committed and wired into the differential runner, but it is not
-closed until a new Actions run passes on the frozen bounty and both pinned
-upstream images.
+This is a deliberately crafted raw client, not evidence that an ordinary
+stock TLS client will generate or accept this sequence. The server's
+CertificateVerify and Finished nevertheless verify against the exact
+truncated-record transcript, and the encrypted HTTP request succeeds.
+
+All tests use local QEMU images and synthetic credentials. No production
+endpoint, key, disk image or infrastructure is touched, and the workflow
+uploads no artifacts.
+
+## Assertions validated
+
+1. The frozen image completes the TLS 1.3 handshake for both malformed
+   variants.
+2. The client verifies the server CertificateVerify signature and Finished
+   against the exact bytes included in the server's transcript.
+3. The client sends its own correctly encrypted Finished and an encrypted
+   HTTP request; the server returns HTTP 200.
+4. The first upstream fix and current upstream reject both variants with
+   fatal `decode_error` before ServerHello.
+5. The Go cross-check independently validates the inner-short handshake,
+   synthetic CA chain and exact response body.
+6. Certificates, private keys, images and captures remain in the ephemeral
+   runner; no artifacts are uploaded.
 
 ## Interpretation boundary
 
