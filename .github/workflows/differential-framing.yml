@@ -14,6 +14,7 @@ on:
       - audit/test_tls_inner_plaintext.py
       - audit/run_qemu_inner_plaintext.sh
       - audit/test_hrr_second_clienthello.py
+      - audit/hrr_second_clienthello.go
       - audit/run_qemu_hrr_second_ch.sh
       - audit/run_qemu_framing.sh
       - .github/workflows/differential-framing.yml
