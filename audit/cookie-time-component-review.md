@@ -23,9 +23,9 @@ A local TAP test now holds a synthetic SYN-ACK for 65 seconds before sending its
 
 ## Local teardown/replay experiment
 
-[Run 45442801633](https://github.com/miSultanato/k15/actions/runs/45442801633) now completes a local port-80 exchange and a full client-FIN/server-FIN close on all three pinned images. It then replays the original cookie ACK and receives another 180-byte HTTP response on all three.
+[Run 45443282691](https://github.com/miSultanato/k15/actions/runs/45443282691) completes a local port-80 exchange and a full client-FIN/server-FIN close on all three pinned images. It then replays the original cookie ACK and sends a request with a different length. The server ACK equals the new request's end sequence on all three, proving that the replay created a fresh slot and the new payload was consumed.
 
-That response alone is **not conclusive**: the port-80 handler serves one fixed response and does not distinguish request methods or paths. A retransmission of the old response could look identical to a newly allocated connection. The current follow-up probe therefore sends a replay request with a longer, unique header and compares the server's ACK number with the exact new request end sequence. A matching ACK would show that the replayed cookie created a fresh slot and the new payload was consumed; a stale ACK would indicate an old connection/retransmission instead. The differential run is pending.
+That response alone is **not conclusive**: the port-80 handler serves one fixed response and does not distinguish request methods or paths. A retransmission of the old response could look identical to a newly allocated connection. The current follow-up adds a 65-second wait after the completed teardown before replaying that same cookie, to measure whether the replay remains valid after a further interval.
 
 ## Safe scope
 
