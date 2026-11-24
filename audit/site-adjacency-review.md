@@ -90,3 +90,15 @@ an adjacency worth auditing, not evidence of key disclosure.
 This is a bounded static review of the HTTP path and packer, not a formal
 proof of every assembly instruction. It should be kept distinct from the
 separate stale-ARP disclosure and TLS framing findings.
+
+
+## CI validation
+
+The static guard passed as part of the complete bounded-audit workflow on
+2026-11-24:
+https://github.com/miSultanato/k15/actions/runs/45460761523
+
+The same run also passed the expanded private-scalar source checks, generated
+VM include comparison, native RDRAND sample, and Valgrind negative controls.
+This validates the authored checks against the pinned bounty source; it is
+not a formal proof of the complete binary or runtime.
