@@ -24,6 +24,14 @@ def section(source: str, start: str, end: str) -> str:
     return source[a:b]
 
 
+def require_ordered(source: str, fragments: tuple[str, ...], message: str) -> None:
+    offset = 0
+    for fragment in fragments:
+        found = source.find(fragment, offset)
+        require(found >= 0, f"{message}: missing or out-of-order {fragment!r}")
+        offset = found + len(fragment)
+
+
 def main() -> None:
     asm_path = Path(sys.argv[1] if len(sys.argv) > 1 else "target/src/os.asm")
     ec_path = Path(sys.argv[2] if len(sys.argv) > 2 else "target/tools/ec.py")
@@ -61,6 +69,16 @@ def main() -> None:
     init = section(asm, "mov edi, R_D", "mov edi, TABE")
     require(re.search(r"mov edi, R_D\s+mov cl, 8\s+rep movsq", init) is not None,
             "R_D initialization is no longer a fixed eight-qword copy")
+    boot_init = section(asm, "ecinit:", "mov edi, TABE")
+    nlow = section(boot_init, "mov esi, NLOW", "mov edi, R_X")
+    require(nlow.count("movsq") == 3,
+            "boot no longer consumes exactly the three NLOW qwords before EDC")
+    require_ordered(
+        boot_init,
+        ("mov esi, NLOW", "mov edi, R_X", "mov cl, 8", "rep movsq",
+         "inc byte [rdi]", "mov edi, R_D", "mov cl, 8", "rep movsq"),
+        "boot-time masked-scalar load",
+    )
 
     reg = section(asm, ".reg:", "; (T1 = 1 / Z")
     for fragment in ("and eax, 15", "shl eax, 5", "add eax, REGS", "stosd"):
@@ -89,6 +107,8 @@ def main() -> None:
                          "movdqa [rdi+rax], xmm4", "add eax, 16",
                          "cmp eax, ecx", "jb .c"):
             require(fragment in select, f"table selection access changed: {fragment}")
+    require(re.search(r"\[[^\]]*\b(?:edx|rdx)\b[^\]]*\]", select) is None,
+            "table selection uses the secret nibble as a memory address")
 
     # The only select path is through comb. Its callers use fixed entry widths:
     # 96 bytes for Edwards25519 and 64 bytes for P-256, both far below R_D at +448.
@@ -102,12 +122,30 @@ def main() -> None:
             "P-256 table entry width is no longer fixed at 64 bytes")
     require("call comb" in xdh and "call comb" in stock,
             "table selection no longer flows through the bounded comb callers")
+    require(asm.count("call comb") == 2,
+            "comb has an unexpected caller outside X25519 and nonce-stock generation")
+    require_ordered(
+        xdh,
+        ("mov esi, TABE", "push 96", "mov edx, X_MADDED", "mov ebx, E", "call comb"),
+        "X25519 table/program inputs",
+    )
+    require_ordered(
+        stock,
+        ("mov esi, TABP", "push 64", "mov edx, X_MADD256", "mov ebx, KD", "call comb"),
+        "P-256 nonce-stock table/program inputs",
+    )
+    comb = section(asm, "comb:", "select: mov edi, REGS")
+    for fragment in ("mov edx, eax", "movzx edx, byte [rbx+rdx]",
+                     "and edx, 15", "call select", "mov rsi, [rsp+24]", "call vm"):
+        require(fragment in comb, f"comb's bounded selector/program dispatch changed: {fragment}")
 
     sign = section(asm, "sign:   pushad", "; rand:")
     require(re.search(r"mov esi, X_SIGN\s+call vm", sign) is not None,
             "sign routine no longer invokes the fixed X_SIGN program")
     require(len(re.findall(r"\bX_SIGN\b", asm)) == 1,
             "X_SIGN has unexpected additional source references")
+    require(asm.count("call sign") == 1,
+            "the private-key signing routine has an unexpected additional caller")
 
     programs = []
     for match in re.finditer(r"(?m)^([A-Z0-9_]+)\s*=\s*asm\(", ec):
@@ -140,6 +178,13 @@ def main() -> None:
             "db(name, prog)" in gen and "ec.inc" in gen and
             "at += 8 * (len(prog) - 1) + 4" in gen,
             "tools/gen.py no longer emits ec.inc from tools/ec.py program definitions")
+    regs_output = section(gen, 'put(f"{out}/regs.inc"', "if __name__")
+    require_ordered(
+        regs_output,
+        ('db("REGC"', 'db("NLOW"', 'db("EDC"',
+         "le(d * R % curve.N256)", "secret=True"),
+        "generated private-scalar material",
+    )
 
     # Recreate the exact textual ec.inc emitted by gen.py from the imported
     # compile-time programs. This contains code only, never regs.inc or secrets.
