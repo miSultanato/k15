@@ -155,7 +155,10 @@ assembly's effective-scalar behavior for those vectors; it does not establish
 practical key recovery or measure the production RDRAND distribution.
 
 The local QEMU test in [run 45394182511](https://github.com/miSultanato/k15/actions/runs/45394182511)
-now reproduces both TLS behaviors end-to-end against the frozen image:
+reproduces both TLS behaviors end-to-end against the frozen image. A differential
+run against upstream framing-fix commit `a2d8893261b2be15b44c86d6f4483d65820e943a`
+([run 45394628025](https://github.com/miSultanato/k15/actions/runs/45394628025))
+observed the same two behaviors on that fixed image:
 
 - A corrupted client Finished was followed by an authenticated application
   request, and the guest returned an HTTP response.
