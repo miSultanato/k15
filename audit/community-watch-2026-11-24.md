@@ -478,3 +478,24 @@ using the test-generated local identity. The runner is ephemeral; no build
 directory, certificate, private key or disk image is uploaded as an artifact.
 This adds assembly/link/packing coverage, but still does not reproduce the
 production certificate or inspect the running Hetzner image.
+
+
+## Complete-image CI result (2026-11-24, follow-up)
+
+Run:
+https://github.com/miSultanato/k15/actions/runs/45376018641
+
+- Audit harness commit: `db491b350a1577d5020df28bdf60f239565463e9`.
+- Frozen target commit: `ab93479ebc7c85274c722b16897148286d1cfca3`.
+- Result: success, including the new complete-image build step.
+- The assembly crypto suite passed 70 signatures and 70 nonces.
+- The generated bootable OS binary was 14,586 bytes; the packed site occupied
+  727 bytes. The workflow then created `build/disk.img`.
+- All static RNG, private-scalar read-path and public-proof checks passed.
+- The runner uploaded no artifacts and was discarded after the job.
+
+This is stronger build reproducibility than the preceding run: it proves
+that the frozen source can be assembled and packed end-to-end with a
+freshly generated test identity in CI. It does not prove that the generated
+image is byte-identical to the deployed image, nor that the production
+machine behaves like the runner.
