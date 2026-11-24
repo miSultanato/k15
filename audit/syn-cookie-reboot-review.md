@@ -23,6 +23,13 @@ Pinned current upstream source at
 - `src/curves.asm` implements `rand` with `RDRAND`; it retries when the
   instruction reports failure and halts with `UD2` if a value repeats the
   immediately preceding value stored in `RLAST`.
+- `src/start.asm` clears the BSS range from `BSSN` up to `TABV` on every
+  entry to the boot path. `HKS` is at `BSS + 0x0F400` in `src/os.asm`, so the
+  cookie round keys are inside that cleared range; `setup.asm` then calls
+  `rand` to populate them before normal packet processing. This closes the
+  static reset-path gap: a full guest reboot re-enters startup with zeroed
+  HKS and generates a new key. It does not substitute for the dynamic QEMU
+  replay test, which still needs a recorded runtime result.
 
 This establishes the intended boot-time key-generation path. It does not,
 by itself, prove that a reboot actually regenerates a different key in the
