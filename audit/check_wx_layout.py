@@ -22,24 +22,15 @@ def fail(message: str) -> None:
 
 
 def label_offset(listing: list[str], label: str) -> int:
-    current = 0
-    label_re = re.compile(rf"(?<![A-Za-z0-9_]){re.escape(label)}:")
     for line in listing:
-        match = re.match(r"^\\s*\\d+\\s+(?:([0-9A-Fa-f]{1,16})\\s+)?(.*)$", line)
-        if not match:
+        if not re.search(rf"(?<![A-Za-z0-9_]){re.escape(label)}:", line):
             continue
-        address, rest = match.groups()
-        if address:
-            current = int(address, 16)
-        if label_re.search(rest):
-            return current
-        # NASM listing rows without an address are labels/directives. For
-        # emitted rows, advance over the contiguous hex byte columns.
-        for token in rest.split():
-            if re.fullmatch(r"[0-9A-Fa-f]{2,}", token) and len(token) % 2 == 0:
-                current += len(token) // 2
-            else:
-                break
+        fields = line.split()
+        if not fields or not fields[0].isdigit():
+            continue
+        for field in fields[1:]:
+            if re.fullmatch(r"[0-9A-Fa-f]{1,16}", field):
+                return int(field, 16)
     fail(f"NASM listing has no emitted offset for {label}:")
     raise AssertionError
 
