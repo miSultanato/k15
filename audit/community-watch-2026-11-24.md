@@ -1024,13 +1024,15 @@ Our harness deliberately distinguishes those two cases:
 - Outer record length one byte short, complete bytes still present on TCP.
 
 For both cases our QEMU regression checks confirm ServerHello acceptance.
-A purpose-built TLS 1.3 client is now committed in
+A purpose-built Python TLS 1.3 client is now committed in
 `audit/test_malformed_clienthello_handshake.py`. It constructs both variants
 before hashing: the complete malformed inner-length message, and the
 outer-record prefix actually processed by the server (with the final byte
 sent outside the record). It then verifies CertificateVerify and Finished,
 sends an encrypted HTTP request, and expects HTTP 200 on the frozen image;
-the fixed images must reject both with fatal decode_error.
+the fixed images must reject both with fatal decode_error. A separate patched
+Go `crypto/tls` client independently cross-checks the inner-short case and
+compares the exact HTTP body.
 
 This is a deliberately non-conforming client for the outer-short case: it
 mirrors the server's truncated transcript. The implementation is wired into
