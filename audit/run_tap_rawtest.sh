@@ -2,10 +2,10 @@
 # Run malformed raw frames and deterministic IPv4/ARP checks against a local TAP guest.
 set -euo pipefail
 
-target=\${1:?target directory required}
-seed=\${2:-20261124}
-mode=\${3:-expect}
-repo_root=$(cd "$(dirname "\${BASH_SOURCE[0]}")" && pwd)
+target=${1:?target directory required}
+seed=${2:-20261124}
+mode=${3:-expect}
+repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 target=$(cd "$target" && pwd)
 
 cd "$target"
