@@ -58,6 +58,27 @@ jobs:
       - name: Compare four source-level hardening deltas
         run: python3 audit/check_boot_hardening.py bounty fixed current
 
+      - name: Exercise NAME equal to the runner hostname through Make
+        run: |
+          host=$(hostname)
+          for directory in bounty fixed current; do
+            (cd "$directory" && NAME="$host" make -B B=build-name-check build-name-check/names.conf)
+          done
+          python3 - "$(hostname)" <<'PY'
+          from pathlib import Path
+          import sys
+          host = sys.argv[1]
+          bounty = Path("bounty/build-name-check/names.conf").read_text().split()
+          fixed = Path("fixed/build-name-check/names.conf").read_text().split()
+          current = Path("current/build-name-check/names.conf").read_text().split()
+          if not bounty or bounty[0] != host:
+              raise SystemExit(f"FAIL: frozen Makefile did not preserve NAME={host!r}: {bounty!r}")
+          if fixed or current:
+              raise SystemExit(f"FAIL: upstream Makefile did not clear hostname NAME: fixed={fixed!r}, current={current!r}")
+          print(f"PASS: frozen Makefile writes runner hostname {host!r} into names.conf")
+          print("PASS: both upstream Makefiles clear the accidental hostname before certificate generation")
+          PY
+
       - name: Keep the check static and artifact-free
         run: |
           echo "No image is booted and no synthetic key material is generated."
