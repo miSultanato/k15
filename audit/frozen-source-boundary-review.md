@@ -158,7 +158,11 @@ the first two server TLS records:
   the record immediately after ServerHello is type 20, as required.
 
 This reproduces finding #8 and confirms that the upstream image fixes it.
-The HelloRetryRequest path remains to be tested separately.
+The same run also elicits a HelloRetryRequest by replacing the ClientHello's
+X25519 key-share group with an unsupported group. The server emits the HRR but
+sends no second TLS record before receiving the second ClientHello. The final
+ServerHello flight after that second ClientHello is not yet tested, so the CCS
+behavior on that post-HRR flight remains open.
 
 
 ## 8. IPv4 checksum and ARP field matrix
