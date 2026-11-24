@@ -15,17 +15,19 @@ The audit also reproduces TLS record-validation, TCP ACK-window and MSS defects.
 
 ## Confirmed differential evidence
 
-| Finding | Frozen bounty image | Tested upstream image `a2d8893` | Evidence |
-| --- | --- | --- | --- |
-| ClientHello framing | Accepts five malformed cases (four inner lengths, one short outer record) | Rejects all five with fatal `decode_error` | [#45381737629](https://github.com/miSultanato/k15/actions/runs/45381737629) |
-| Client Finished | Corrupted Finished followed by valid application data still gets HTTP | Same behavior | [#45394628025](https://github.com/miSultanato/k15/actions/runs/45394628025) |
-| AEAD tag failure | Corrupt record is ignored; original valid same-sequence record is processed | Same behavior | [#45394628025](https://github.com/miSultanato/k15/actions/runs/45394628025) |
-| Dummy ChangeCipherSpec | Missing after normal ServerHello with 32-byte session ID | Sent after ServerHello | [#45395033747](https://github.com/miSultanato/k15/actions/runs/45395033747) |
-| Short ARP stale buffer | 24-byte ARP request returns a synthetic marker from the previous RX buffer | No marker reply observed | [#45397011333](https://github.com/miSultanato/k15/actions/runs/45397011333) |
-| IPv4 checksum / malformed ARP fields | Invalid IPv4-checksum SYN and malformed ARP hrd/pro/hlen/plen still receive replies | Same behavior | [#45396434723](https://github.com/miSultanato/k15/actions/runs/45396434723) |
-| TCP ACK-window | HTTP request with ACK 0x10000 beyond `SND.NXT` is processed | No HTTP payload observed | [#45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
-| Peer MSS=100 | Completes handshake and sends a 180-byte data segment; SYN-ACK advertises MSS=1460 | Sends no SYN-ACK | [#45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
-| ECDSA nonce boundaries | `n+1` aliases `1`; `n-1` verifies; `n` does not | Not compared | [#45393554079](https://github.com/miSultanato/k15/actions/runs/45393554079) |
+| Finding | Frozen bounty | First fix `a2d8893` | Current upstream main `cb9f76a` | Evidence |
+| --- | --- | --- | --- | --- |
+| ClientHello framing | Accepts five malformed cases | Rejects all five with fatal `decode_error` | Same rejection | [initial](https://github.com/miSultanato/k15/actions/runs/45381737629), [current comparison](https://github.com/miSultanato/k15/actions/runs/45401470623) |
+| ClientHello fields | Accepts 33-byte session ID, non-null compression, wrong handshake type and legacy_version 0x0301 | Rejects or normalizes all four | Same as first fix | [field tests](https://github.com/miSultanato/k15/actions/runs/45399706214), [handshake type](https://github.com/miSultanato/k15/actions/runs/45400449845), [current comparison](https://github.com/miSultanato/k15/actions/runs/45401470623) |
+| Client Finished | Corrupted Finished followed by valid application data still gets HTTP | Same behavior | Same behavior | [first fix](https://github.com/miSultanato/k15/actions/runs/45394628025), [current main](https://github.com/miSultanato/k15/actions/runs/45401470623) |
+| AEAD tag failure | Bad tag ignored; original valid same-sequence record processed | Same behavior | Same behavior | [first fix](https://github.com/miSultanato/k15/actions/runs/45394628025), [current main](https://github.com/miSultanato/k15/actions/runs/45401470623) |
+| Dummy ChangeCipherSpec | Missing after normal ServerHello with 32-byte session ID | Sent after ServerHello | Sent after ServerHello | [first fix](https://github.com/miSultanato/k15/actions/runs/45395033747), [current main](https://github.com/miSultanato/k15/actions/runs/45401470623) |
+| Short ARP stale buffer | 24-byte ARP request returns synthetic marker from previous RX buffer | No marker reply observed | No marker reply observed | [first fix](https://github.com/miSultanato/k15/actions/runs/45397011333), [current main](https://github.com/miSultanato/k15/actions/runs/45401501930) |
+| IPv4 checksum / malformed ARP fields | Invalid IPv4-checksum SYN and malformed ARP fields still receive replies | Same behavior | Same behavior | [first fix](https://github.com/miSultanato/k15/actions/runs/45396434723), [current main](https://github.com/miSultanato/k15/actions/runs/45401501930) |
+| TCP ACK-window | HTTP request with ACK 0x10000 beyond `SND.NXT` is processed | No HTTP payload | No HTTP payload | [first fix](https://github.com/miSultanato/k15/actions/runs/45397630737), [current main](https://github.com/miSultanato/k15/actions/runs/45401501930) |
+| Peer MSS=100 | Completes handshake and sends 180-byte segment; SYN-ACK advertises MSS=1460 | No SYN-ACK | No SYN-ACK | [first fix](https://github.com/miSultanato/k15/actions/runs/45397630737), [current main](https://github.com/miSultanato/k15/actions/runs/45401501930) |
+| HTTP methods | Lowercase `get` and unknown `FOO` return HTTP 200 | Same | Same | [first fix](https://github.com/miSultanato/k15/actions/runs/45400915976), [current main](https://github.com/miSultanato/k15/actions/runs/45401501930) |
+| ECDSA nonce boundaries | `n+1` aliases `1`; `n-1` verifies; `n` does not | Not compared | Not compared | [frozen signer test](https://github.com/miSultanato/k15/actions/runs/45393554079) |
 
 ## Additional negative evidence
 
@@ -33,7 +35,8 @@ The audit also reproduces TLS record-validation, TCP ACK-window and MSS defects.
   ClientHello cases. [#45382026675](https://github.com/miSultanato/k15/actions/runs/45382026675)
 - Lowercase `get` and unknown `FOO` HTTP methods both returned HTTP 200 on all three
   tested images; the reported method hang was not reproduced.
-  [#45400915976](https://github.com/miSultanato/k15/actions/runs/45400915976)
+  [first fix](https://github.com/miSultanato/k15/actions/runs/45400915976),
+  [current main](https://github.com/miSultanato/k15/actions/runs/45401501930)
 - Controlled SMP slot races RACE=1/2/3 pass on the frozen image.
   [#45382612903](https://github.com/miSultanato/k15/actions/runs/45382612903)
 - 10,240 + 1,024 local QEMU nonces showed no duplicates or cross-boot overlap;
