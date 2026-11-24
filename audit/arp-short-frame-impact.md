@@ -111,7 +111,7 @@ the frozen bounty image. It is stronger than a malformed-ARP conformance
 issue, but materially narrower than arbitrary memory disclosure or remote
 code execution.
 
-The one-instruction upstream length guard prevents both the stale dword read
+The early upstream length gate prevents both the stale dword read
 and the stale reply copy for frames shorter than 42 bytes. The three-way
 unicast differential confirms the guard's observed effect.
 
