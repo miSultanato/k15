@@ -61,6 +61,8 @@ user namespaces.
   then checks whether the local QEMU guest still processes valid app data.
 - `test_dummy_ccs.py`: compares the normal ServerHello record sequence and
   elicits HelloRetryRequest; the final post-HRR flight remains open.
+- `test_https_request.py`: probes lowercase/unknown methods and missing Host
+  over the TLS listener, exercising the decrypted HTTPS request parser.
 - `test_ip_arp_validation.py`: sends synthetic IPv4 SYNs with valid/invalid
   header checksums and ARP requests with malformed hardware/protocol fields over TAP.
 - `test_arp_short_frame.py`: primes RX buffers with a synthetic marker, then
