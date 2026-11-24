@@ -54,7 +54,6 @@ def main() -> None:
         fail(f"synthetic site's final byte is 0x{site[-1]:02x}, expected RET (0xc3)")
 
     site_offset = label_offset(listing, "SITE")
-    site_last = IMAGE_BASE + site_offset + len(site) - 1
     if expected == "alive":
         if not re.search(
             r"(?m)^CODEPG\s+equ\s+0x100\s+\+\s+\(\(codend\s*-\s*mb\s*\+\s*0xFFF\)\s*>>\s*12\)",
@@ -78,6 +77,7 @@ def main() -> None:
         xend = label_offset(listing, "xend")
         codepg = (IMAGE_BASE + delta + xend) >> 12
 
+    site_last = IMAGE_BASE + delta + site_offset + len(site) - 1
     site_page = site_last >> 12
     executable = site_page < codepg
     expected_executable = expected == "alive"
