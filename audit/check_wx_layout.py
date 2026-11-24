@@ -84,7 +84,16 @@ def main() -> None:
         if not match:
             fail(f"could not parse emitted DELTA definition: {delta_text!r}")
         delta = int(match.group(1))
-        xend = label_offset(listing, "xend")
+        apcount = label_offset(listing, "apcount")
+        # xend follows the final real-mode trampoline instructions: HLT; JMP .no.
+        # Their exact bytes end at xend, followed by at most three alignment bytes.
+        xend_candidates = [
+            end for end in range(max(3, apcount - 3), apcount + 1)
+            if image[end - 3 : end] == bytes.fromhex("f4 eb fd")
+        ]
+        if len(xend_candidates) != 1:
+            fail(f"could not uniquely locate trampoline xend before apcount at 0x{apcount:x}")
+        xend = xend_candidates[0]
         codepg = (IMAGE_BASE + delta + xend) >> 12
 
     site_last = IMAGE_BASE + delta + site_offset + len(site) - 1
