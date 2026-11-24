@@ -101,3 +101,20 @@ behavior.
    do not patch the frozen bounty image.
 4. Any further validation stays local, synthetic and isolated. Do not send
    probes to the production service.
+
+
+## Upstream audit cross-reference
+
+This behavior is already recorded by the upstream maintainer in
+[FileSherlock/k15 issue #1, finding 14](https://github.com/FileSherlock/k15/issues/1):
+"Initial sequence numbers and cookies have no clock." The issue describes the
+same property: the same four-tuple and client ISN produce the same server ISN
+later, and an observed ACK remains a valid cookie until the next boot.
+
+The maintainer's proposed direction is to mix `NOW` (64-second units) into
+the cookie and have `ckx` accept the current and immediately previous time
+unit. The pinned current `main`/`dev` revision still uses the timeless
+`prf`/`ckx` calculation described above, so this issue remains open in the
+source revision tested here. This audit adds an end-to-end replay observation
+and a changed-source-port control; it does not claim to discover the finding
+independently or to have implemented the upstream fix.
