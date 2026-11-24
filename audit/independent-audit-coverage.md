@@ -60,25 +60,19 @@ https://github.com/FileSherlock/k15/issues/1#issuecomment-7081448356
 
 ## Next bounded work, ordered
 
-1. Run and validate the new synthetic BIOS E820 response test for finding 19.
-   It executes the original boot-sector E820 loop without patching the frozen
-   target; the first CI result is pending.
-2. Finish the MSS=0/1 probes now running in the focused TAP matrix; the prior
-   boundary matrix already established the 180-byte payload behavior and the
-   upstream refusal of MSS 179..215.
-3. Complete the post-HelloRetryRequest second-ClientHello and CCS differential
-   for finding 8. The current probe elicits HRR but does not send the second CH.
-4. Extend the authenticated TLSInnerPlaintext differential to more padding
-   lengths and confirm exact fatal-alert/connection teardown semantics.
-5. Reproduce the short-site W^X result with an emitted-image page-table/NX
+1. Reproduce the short-site W^X result with an emitted-image page-table/NX
    assertion, in addition to the successful runtime synthetic-RET probe.
-6. If impact merits it, replay an ACK after a synthetic connection is fully
+2. If impact merits it, replay an ACK after a synthetic connection is fully
    torn down. The current 65-second test delays the first ACK and does not
    demonstrate post-teardown replay.
-
+3. Complete the malformed-ClientHello transcript experiment with a client that
+   hashes exactly the bytes the server processes; the current framing probes
+   establish parser behavior, not a completed mismatched-transcript handshake.
+4. Continue assessing the short-ARP stale-buffer disclosure only with
+   synthetic data and bounded same-link impact analysis.
 The emitted-image checks for AP counter alignment and GDT Accessed bits
-(findings 17–18), E820 SMAP instruction presence (19), and the generated
-certificate SAN regression (20) now pass. The TCP ACK-window matrix (2),
+(findings 17–18), E820 SMAP instruction presence and synthetic BIOS response
+(19), and the generated certificate SAN regression (20) now pass. The TCP ACK-window matrix (2),
 peer-MSS boundary tests (13), short-site W^X (1), authenticated
 TLSInnerPlaintext (11), TLS Finished/AEAD (9–10), HTTP Host/method behavior
 (4, 12), and ECDSA nonce boundaries (16) have local differential evidence.
