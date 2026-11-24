@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - audit/run_tap_hellofuzz.sh
+      - audit/run_tap_rawtest.sh
       - .github/workflows/parser-fuzz.yml
 
 permissions:
@@ -18,7 +19,7 @@ concurrency:
 
 jobs:
   fuzz:
-    name: 20,000 malformed ClientHellos — ${{ matrix.variant }}
+    name: 60,000 ClientHellos plus raw-frame fuzz — ${{ matrix.variant }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -65,6 +66,9 @@ jobs:
             echo "=== ${{ matrix.variant }} seed $seed ==="
             sudo unshare -n bash audit/run_tap_hellofuzz.sh ${{ matrix.directory }} "$seed" 20000
           done
+
+      - name: Fuzz malformed raw Ethernet, IPv4 and TCP frames
+        run: sudo unshare -n bash audit/run_tap_rawtest.sh ${{ matrix.directory }} 20261124
 
       - name: Confirm no generated key material or images are uploaded
         run: |
