@@ -1225,3 +1225,20 @@ Newer comments raise two points:
 Another brief comment asks for a larger bounty but adds no technical evidence.
 No commenter reports recovering the key or moving the bounty. The thread's
 comments are community reports, not independently verified results.
+
+
+## Upstream repository state (2026-11-24)
+
+The upstream repository still has `main` and `dev` at
+`cb9f76a5a100c418bfcaeddcd4f137d30ab489d2`; the latest commit says main is
+what the owner has taken from dev. No pull requests were listed. The closed
+upstream audit issue #1 remains the authoritative public record for the
+20-item audit and owner responses:
+https://github.com/FileSherlock/k15/issues/1
+
+Findings 14 (timeless SYN cookies) and 15 (IPv4 checksum / ARP metadata
+validation) remain relevant to our local observations. The owner has fixed
+the short-ARP length condition and several TLS/TCP items, but the pinned
+current source still has the no-clock cookie construction and the shared
+IPv4/full-length-ARP validation behavior described above. No new upstream
+commit beyond the pinned revision was found in this check.
