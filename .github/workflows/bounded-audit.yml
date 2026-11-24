@@ -9,6 +9,7 @@ on:
       - audit/nonce_cycle_demo.py
       - audit/check_rand_path.py
       - audit/check_key_read_path.py
+      - audit/check_site_read_path.py
       - audit/test_ecdsa_nonce_boundaries.py
       - audit/run_ct.sh
       - audit/test_clienthello_framing.py
@@ -83,6 +84,9 @@ jobs:
 
       - name: Audit private-scalar read path and generated curve include
         run: python3 audit/check_key_read_path.py target/src/os.asm target/tools/ec.py target/tools/gen.py target/build/ec.inc
+
+      - name: Audit the HTTP path-to-SITE response read path
+        run: python3 audit/check_site_read_path.py target/src/os.asm target/tools/pack.py target/Makefile
 
       - name: Reproduce Valgrind constant-time check and six negative controls
         run: bash audit/run_ct.sh target
