@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   differential:
-    name: Compare frozen bounty and upstream framing fix
+    name: Compare frozen bounty, first fix and current upstream
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -44,12 +44,22 @@ jobs:
           path: fixed
           persist-credentials: false
 
+      - name: Check out current upstream main
+        uses: actions/checkout@v4
+        with:
+          repository: FileSherlock/k15
+          ref: cb9f76a5a100c418bfcaeddcd4f137d30ab489d2
+          path: current
+          persist-credentials: false
+
       - name: Record exact source revisions
         run: |
-          echo "Bounty source: $(git -C bounty rev-parse HEAD)"
-          echo "Fixed source:  $(git -C fixed rev-parse HEAD)"
+          echo "Bounty source:  $(git -C bounty rev-parse HEAD)"
+          echo "First fix:      $(git -C fixed rev-parse HEAD)"
+          echo "Current main:   $(git -C current rev-parse HEAD)"
           test "$(git -C bounty rev-parse HEAD)" = "ab93479ebc7c85274c722b16897148286d1cfca3"
           test "$(git -C fixed rev-parse HEAD)" = "a2d8893261b2be15b44c86d6f4483d65820e943a"
+          test "$(git -C current rev-parse HEAD)" = "cb9f76a5a100c418bfcaeddcd4f137d30ab489d2"
 
       - name: Install isolated build and emulation dependencies
         run: |
@@ -65,14 +75,24 @@ jobs:
         working-directory: fixed
         run: make all
 
+      - name: Build current upstream image
+        working-directory: current
+        run: make all
+
       - name: Verify old bounty image accepts the malformed framing
         run: bash audit/run_qemu_framing.sh bounty accept
 
       - name: Verify fixed upstream image rejects the same malformed framing
         run: bash audit/run_qemu_framing.sh fixed reject
 
-      - name: Run upstream hostile-client regression suite against the fixed image
+      - name: Verify current upstream image rejects malformed framing
+        run: bash audit/run_qemu_framing.sh current reject
+
+      - name: Run hostile-client regression suite against the fixed image
         run: bash audit/run_qemu_abuse.sh fixed
+
+      - name: Run hostile-client regression suite against current upstream main
+        run: bash audit/run_qemu_abuse.sh current
 
       - name: Confirm no generated key material or images are uploaded
         run: |
