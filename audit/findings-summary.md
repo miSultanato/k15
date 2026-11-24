@@ -19,10 +19,11 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 | --- | --- | --- | --- | --- |
 | Short-site W^X | Executes a synthetic `RET` at the end of a one-file site and continues serving | Execution faults before service | Same as first fix | [three-way QEMU test](https://github.com/miSultanato/k15/actions/runs/45409649945) |
 | ClientHello framing | Accepts five malformed cases | Rejects all five with fatal `decode_error` | Same rejection | [initial](https://github.com/miSultanato/k15/actions/runs/45381737629), [current comparison](https://github.com/miSultanato/k15/actions/runs/45401470623) |
-| ClientHello fields | Accepts 33-byte session ID, non-null compression, wrong handshake type and legacy_version 0x0301 | Rejects or normalizes all four | Same as first fix | [field tests](https://github.com/miSultanato/k15/actions/runs/45399706214), [handshake type](https://github.com/miSultanato/k15/actions/runs/45400449845), [current comparison](https://github.com/miSultanato/k15/actions/runs/45401470623) |
+| ClientHello fields | Accepts 33-byte and 255-byte session IDs, non-null compression and wrong handshake type; echoes legacy_version 0x0301 | Rejects both oversized session IDs and non-null compression; rejects wrong type; responds with legacy_version 0x0303 | Same as first fix | [three-way framing/HRR run](https://github.com/miSultanato/k15/actions/runs/45436733972) |
 | Client Finished | Corrupted Finished followed by valid application data still gets HTTP | Same behavior | Same behavior | [first fix](https://github.com/miSultanato/k15/actions/runs/45394628025), [current main](https://github.com/miSultanato/k15/actions/runs/45401470623) |
 | AEAD tag failure | Bad tag ignored; original valid same-sequence record processed | Same behavior | Same behavior | [first fix](https://github.com/miSultanato/k15/actions/runs/45394628025), [current main](https://github.com/miSultanato/k15/actions/runs/45401470623) |
-| Dummy ChangeCipherSpec | Missing after normal ServerHello with 32-byte session ID | Sent after ServerHello | Sent after ServerHello | [first fix](https://github.com/miSultanato/k15/actions/runs/45395033747), [current main](https://github.com/miSultanato/k15/actions/runs/45401470623) |
+| Dummy ChangeCipherSpec | Missing after normal ServerHello with 32-byte session ID | Sent after ServerHello | Sent after ServerHello | [normal path](https://github.com/miSultanato/k15/actions/runs/45417214217), [HRR path](https://github.com/miSultanato/k15/actions/runs/45436733972) |
+| HRR / second ClientHello | Completes HRR -> second ClientHello -> final ServerHello; sends 0 server CCS records | Same handshake; sends 1 server CCS record | Same as first fix | [OpenSSL wire-capture differential](https://github.com/miSultanato/k15/actions/runs/45436733972) |
 | Short ARP stale buffer | 24-byte ARP request returns synthetic marker from previous RX buffer | No marker reply observed | No marker reply observed | [first fix](https://github.com/miSultanato/k15/actions/runs/45397011333), [current main](https://github.com/miSultanato/k15/actions/runs/45401501930) |
 | IPv4 checksum / malformed ARP fields | Invalid IPv4-checksum SYN and malformed ARP fields still receive replies | Same behavior | Same behavior | [first fix](https://github.com/miSultanato/k15/actions/runs/45396434723), [current main](https://github.com/miSultanato/k15/actions/runs/45401501930) |
 | TCP ACK-window | ACK offsets +1, +63, +64, +65535 and +65536 beyond `SND.NXT` all still get HTTP responses; same when `SND.NXT=0xFFFFFFC2` and +65536 wraps to `0x0000FFC2` | No HTTP payload for all offsets, including forced wrap | Same as first fix | [expanded TAP matrix](https://github.com/miSultanato/k15/actions/runs/45412713955), [forced-wrap matrix](https://github.com/miSultanato/k15/actions/runs/45413051340) |
@@ -73,16 +74,14 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 ## Next work
 
-1. Inspect the HRR/second-ClientHello trace from the current local QEMU run and
-   assert the CCS placement only if the trace confirms a complete HRR flight.
+1. Complete the synthetic BIOS E820 wrong-signature test; the source and emitted
+   boot-sector instruction comparisons are already verified.
 2. Add an emitted page-table/NX assertion for the short-site W^X layout; the
    runtime synthetic-RET differential is already reproduced.
 3. If useful, test a stale SYN-cookie ACK after a synthetic connection is fully
    torn down. The existing 65-second delayed-first-ACK test passes on all three
    revisions and does not prove post-teardown replay.
-4. Add a synthetic BIOS E820 response with an invalid SMAP signature; the
-   emitted boot-sector compare instruction is already verified.
-5. Continue assessing the short-ARP stale-buffer disclosure only with synthetic
+4. Continue assessing the short-ARP stale-buffer disclosure only with synthetic
    data. Do not attempt to access production memory.
 
 The ACK-window and peer-MSS boundaries (including 32-bit wrap, MSS 0 and MSS 1),
