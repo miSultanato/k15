@@ -9,6 +9,7 @@ on:
       - audit/nonce_cycle_demo.py
       - audit/check_rand_path.py
       - audit/check_key_read_path.py
+      - audit/run_ct.sh
       - audit/check_public_proof.py
       - .github/workflows/bounded-audit.yml
 
@@ -57,7 +58,7 @@ jobs:
       - name: Install minimal native build dependency
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends nasm
+          sudo apt-get install --yes --no-install-recommends nasm valgrind
 
       - name: Install Python test dependency
         run: python3 -m pip install --disable-pip-version-check cryptography
@@ -65,6 +66,9 @@ jobs:
       - name: Run upstream assembly crypto tests on the frozen commit
         working-directory: target
         run: make test
+
+      - name: Reproduce Valgrind constant-time check and six negative controls
+        run: bash audit/run_ct.sh target
 
       - name: Build complete bootable image from frozen source
         working-directory: target
