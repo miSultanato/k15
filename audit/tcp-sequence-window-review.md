@@ -87,12 +87,22 @@ data path. The current test matrix does not independently assert all
 combinations of out-of-window ACK with FIN/RST, nor every exact sequence
 window edge.
 
-No new FIN/RST vulnerability is claimed from source inspection alone. The
-next useful regression, if pursued, is a small deterministic matrix around
-the exact sequence edges (`-65,537`, `-65,536`, `-1`, `0`, `+65,535`,
-`+65,536`) with payload and FIN controls, followed by separate RST sequence
-checks. Each case must prove state change or application processing, not just
-the presence of an ACK response.
+A new local TAP test, `test_tcp_rst_sequence.py`, now creates a cookie-backed
+connection, sends a one-byte request prefix, observes the server's ACK (the
+wire value of `ackno`), then tries RST at that exact sequence and at -1/+1.
+It sends the remaining request at the next client sequence so that a freed
+slot cannot be silently recreated as the original SYN-cookie connection.
+The exact RST should prevent HTTP processing; either off-by-one RST should
+leave the connection alive and allow the request to complete. This is a
+deterministic behavioral oracle rather than merely checking for an ACK.
+The new three-revision workflow execution is pending; no runtime result is
+claimed yet.
+
+No new FIN/RST vulnerability is claimed from source inspection alone. Exact
+client-sequence window edges (`-65,537`, `-65,536`, `-1`, `0`,
+`+65,535`, `+65,536`) with payload and FIN controls remain a separate
+coverage task. Each case must prove state change or application processing,
+not just the presence of an ACK response.
 
 ## Assessment
 
