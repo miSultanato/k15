@@ -248,8 +248,8 @@ def exchange_and_reset(sport: int, client_seq: int, server_seq: int, request: by
     # Materialize the cookie-backed slot, send one HTTP request, then reset it
     # with the exact next client sequence number. The RST path frees the slot.
     sock.send(make_frame(sport, client_seq, server_seq, 0x10))
-    sock.send(make_frame(sport, client_seq, server_seq, 0x18, HTTP))
-    client_after_request = (client_seq + len(HTTP)) & 0xFFFFFFFF
+    sock.send(make_frame(sport, client_seq, server_seq, 0x18, request))
+    client_after_request = (client_seq + len(request)) & 0xFFFFFFFF
     response = bytearray()
     server_next = server_seq
     deadline = time.monotonic() + 4.0
