@@ -112,6 +112,7 @@ proofs of all hardware behavior or every possible SMP schedule. See
 
 | Evidence | Run |
 | --- | --- |
+| SYN-cookie replay after full FIN/FIN teardown, with a 65s delay and ACK-sequence proof on all three revisions | [45443936657](https://github.com/miSultanato/k15/actions/runs/45443936657) |
 | Short-site W^X: emitted SITE page is executable only on frozen bounty; upstream maps it NX, confirmed by QEMU RET probe | [45439460997](https://github.com/miSultanato/k15/actions/runs/45439460997) |
 | Synthetic BIOS E820: valid SMAP accepted by all; wrong-signature success counted only by frozen bounty | [45437038597](https://github.com/miSultanato/k15/actions/runs/45437038597) |
 | HRR second ClientHello: two ClientHellos/two ServerHellos; frozen sends 0 CCS, both upstream images send 1 | [45436733972](https://github.com/miSultanato/k15/actions/runs/45436733972) |
