@@ -1242,3 +1242,22 @@ the short-ARP length condition and several TLS/TCP items, but the pinned
 current source still has the no-clock cookie construction and the shared
 IPv4/full-length-ARP validation behavior described above. No new upstream
 commit beyond the pinned revision was found in this check.
+
+
+### Cross-check against the independent AEAD/key-path report
+
+The independent Reddit report says post-handshake plaintext is parsed only
+after AEAD verification and that the private scalar has one fixed VM read
+site. That is consistent with our source audit. Our separate bad-tag probe
+shows that a record with an invalid AEAD tag does not terminate the connection;
+the server ignores it and accepts a subsequent valid record at the same
+sequence number. It does **not** show that plaintext from the bad-tag record
+is parsed or that AEAD authentication is bypassed. Likewise, the corrupted
+client Finished test re-encrypts the altered Finished with a valid AEAD tag:
+it tests missing Finished verification, not a forged record tag.
+
+Keep these three properties separate:
+- AEAD tag verification before parsing: observed source behavior.
+- Fatal connection teardown after a bad tag: not implemented/observed.
+- Verification of the client's Finished transcript: absent in the frozen
+  image and independently exercised by the local handshake test.
