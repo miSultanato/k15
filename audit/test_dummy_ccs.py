@@ -10,7 +10,6 @@ import socket
 import sys
 from pathlib import Path
 
-from cryptography.hazmat.primitives.asymmetric import ec
 
 if len(sys.argv) not in (2, 3):
     raise SystemExit("usage: test_dummy_ccs.py TARGET [expect|observe]")
@@ -54,72 +53,33 @@ def parse_records(sock: socket.socket, count: int = 2):
     return parsed
 
 
-def client_hello_with_p256_key_share(hello: bytes) -> bytes:
-    if len(hello) < 9 or hello[0] != 22 or hello[5] != 1:
+def client_hello_without_x25519_share(record: bytes) -> bytes:
+    if len(record) < 9 or record[0] != 22 or record[5] != 1:
         raise RuntimeError("expected a single TLS ClientHello record")
-    hs_len = int.from_bytes(hello[6:9], "big")
-    body = hello[9 : 9 + hs_len]
-    if len(body) != hs_len or len(body) < 35:
-        raise RuntimeError("truncated ClientHello body")
-    pos = 34
-    sid_len = body[pos]
-    pos += 1 + sid_len
-    cipher_len = int.from_bytes(body[pos : pos + 2], "big")
-    pos += 2 + cipher_len
-    comp_len = body[pos]
-    pos += 1 + comp_len
-    ext_len_pos = pos
-    ext_len = int.from_bytes(body[pos : pos + 2], "big")
-    ext_start = pos + 2
-    ext_end = ext_start + ext_len
-    if ext_end != len(body):
-        raise RuntimeError("ClientHello extension length does not match body")
-
-    private = ec.generate_private_key(ec.SECP256R1())
-    numbers = private.public_key().public_numbers()
-    point = b"\x04" + numbers.x.to_bytes(32, "big") + numbers.y.to_bytes(32, "big")
-    share_entry = b"\x00\x17" + len(point).to_bytes(2, "big") + point
-    share_data = len(share_entry).to_bytes(2, "big") + share_entry
-
-    kept = bytearray()
-    found_share = False
-    found_groups = False
-    extensions = body[ext_start:ext_end]
-    i = 0
-    while i < len(extensions):
-        if i + 4 > len(extensions):
-            raise RuntimeError("truncated ClientHello extension header")
-        kind = int.from_bytes(extensions[i : i + 2], "big")
-        size = int.from_bytes(extensions[i + 2 : i + 4], "big")
-        end = i + 4 + size
-        if end > len(extensions):
+    handshake = bytearray(record[5:])
+    if int.from_bytes(record[3:5], "big") != len(record) - 5:
+        raise RuntimeError("expected one complete ClientHello record")
+    p = 38
+    p += 1 + handshake[p]
+    p += 2 + int.from_bytes(handshake[p : p + 2], "big")
+    p += 1 + handshake[p] + 2
+    found = False
+    while p + 4 <= len(handshake):
+        kind = int.from_bytes(handshake[p : p + 2], "big")
+        size = int.from_bytes(handshake[p + 2 : p + 4], "big")
+        if p + 4 + size > len(handshake):
             raise RuntimeError("truncated ClientHello extension")
-        data = extensions[i + 4 : end]
         if kind == 51:
-            kept.extend(kind.to_bytes(2, "big") + len(share_data).to_bytes(2, "big") + share_data)
-            found_share = True
-        elif kind == 10:
-            if len(data) < 2:
-                raise RuntimeError("malformed supported_groups extension")
-            groups_len = int.from_bytes(data[:2], "big")
-            groups = [data[j : j + 2] for j in range(2, 2 + groups_len, 2)]
-            if b"\x00\x1d" not in groups:
-                groups.append(b"\x00\x1d")
-            if b"\x00\x17" not in groups:
-                groups.append(b"\x00\x17")
-            group_data = b"".join(groups)
-            new_data = len(group_data).to_bytes(2, "big") + group_data
-            kept.extend(kind.to_bytes(2, "big") + len(new_data).to_bytes(2, "big") + new_data)
-            found_groups = True
-        else:
-            kept.extend(extensions[i:end])
-        i = end
-    if not found_share:
-        raise RuntimeError("OpenSSL ClientHello did not contain key_share extension")
-    if not found_groups:
-        raise RuntimeError("OpenSSL ClientHello did not contain supported_groups extension")
-
-    new_body = body[:ext_len_pos] + len(kept).to_bytes(2, "big") + bytes(kept)
-    new_hs = b"\x01" + len(new_body).to_bytes(3, "big") + new_body
-    return hello[:3] + len(new_hs).to_bytes(2, "big") + new_hs
+            q = p + 6
+            while q + 4 <= p + 4 + size:
+                share_len = int.from_bytes(handshake[q + 2 : q + 4], "big")
+                if handshake[q : q + 2] == b"\x00\x1d":
+                    handshake[q : q + 2] = b"\x01\x00"
+                    found = True
+                q += 4 + share_len
+        p += 4 + size
+    if not found:
+        raise RuntimeError("ClientHello has no X25519 key share to replace")
+    body = bytes(handshake)
+    return record[:3] + len(body).to_bytes(2, "big") + body
 
