@@ -129,6 +129,15 @@ def read_monitor_prompt(monitor: socket.socket) -> bytes:
     return bytes(response)
 
 
+def monitor_command(command: str) -> bytes:
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as monitor:
+        monitor.settimeout(0.5)
+        monitor.connect(MON)
+        read_monitor_prompt(monitor)
+        monitor.sendall(command.encode("ascii") + b"\n")
+        return read_monitor_prompt(monitor)
+
+
 def reset_guest() -> None:
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
@@ -141,7 +150,7 @@ def reset_guest() -> None:
                 response = read_monitor_prompt(monitor)  # wait for command completion
                 if b"Error" in response:
                     raise RuntimeError(f"QEMU system_reset failed: {response!r}")
-            print("OBSERVED: QEMU monitor acknowledged system_reset")
+            print(f"OBSERVED: QEMU monitor acknowledged system_reset: {response!r}")
             time.sleep(2.0)  # allow firmware, bootloader and guest initialization to finish
             return
         except (FileNotFoundError, ConnectionRefusedError):
@@ -178,7 +187,16 @@ try:
         # Drop any SYN-ACK queued before or during the monitor reset before
         # issuing the post-reset SYN with the same tuple and client ISN.
         drain_rx()
-        new_cookie = syn_cookie()
+        try:
+            new_cookie = syn_cookie()
+        except RuntimeError:
+            print("DIAGNOSTIC: QEMU status after reset")
+            print(monitor_command("info status").decode("utf-8", errors="replace"))
+            print("DIAGNOSTIC: QEMU CPU registers after reset")
+            print(monitor_command("info registers").decode("utf-8", errors="replace"))
+            print("DIAGNOSTIC: QEMU network devices after reset")
+            print(monitor_command("info network").decode("utf-8", errors="replace"))
+            raise
         print(f"OBSERVED: post-reset attempt {attempt} SYN cookie=0x{new_cookie:08x}")
         if new_cookie != old_cookie:
             break
