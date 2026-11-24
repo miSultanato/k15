@@ -11,6 +11,7 @@ on:
       - audit/test_arp_short_frame.py
       - audit/test_tcp_ack_mss.py
       - audit/run_tap_ip_arp.sh
+      - audit/run_tap_tcp_wrap.sh
       - .github/workflows/ip-arp-boundaries.yml
 
 permissions:
@@ -69,6 +70,13 @@ jobs:
 
       - name: Run deterministic IPv4 and ARP probes over TAP
         run: sudo unshare -n bash audit/run_tap_ip_arp.sh ${{ matrix.directory }} ${{ matrix.mode }}
+
+      - name: Build a forced-wrap TCP sequence image
+        working-directory: ${{ matrix.directory }}
+        run: make B=build-wrap ISNTOP=0xFFFFFFC0 ISNBITS=26 all
+
+      - name: Probe ACK-window boundaries across 2^32
+        run: sudo unshare -n bash audit/run_tap_tcp_wrap.sh ${{ matrix.directory }}
 
       - name: Confirm no generated key material or images are uploaded
         run: |
