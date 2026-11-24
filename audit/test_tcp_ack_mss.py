@@ -340,7 +340,7 @@ def test_cookie_replay_after_teardown() -> None:
     if not first_response.startswith(b"HTTP/1.") or not first_teardown or not first_fin:
         print(
             "OBSERVED: cookie replay after teardown: could not establish the "
-            f"initial HTTP exchange and reset (response={len(first_response)} bytes)"
+            f"initial HTTP exchange and orderly FIN close (response={len(first_response)} bytes)"
         )
         return
 
@@ -359,7 +359,7 @@ def test_cookie_replay_after_teardown() -> None:
     distinct_request = accepted and replay_peer_ack == expected_replay_ack
     replay_status = second_response.split(b"\r\n", 1)[0].decode("ascii", errors="replace")
     print(
-        "OBSERVED: cookie ACK replay after RST teardown: "
+        "OBSERVED: cookie ACK replay after FIN teardown: "
         f"first_http={first_response.startswith(b'HTTP/1.')}, "
         f"first_fin_close={first_fin}, replay_delay_s={replay_delay}, replay_http={accepted}, "
         f"replay_ack_matches_new_request={distinct_request}, replay_peer_ack=0x{replay_peer_ack:08x}, "
