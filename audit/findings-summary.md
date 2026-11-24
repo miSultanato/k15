@@ -20,7 +20,7 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 | Short-site W^X | Emitted final site byte is executable (`site_page=0x103 < CODEPG=0x104`); synthetic `RET` executes and guest continues serving | Emitted site page is NX (`site_page=0x104 = CODEPG=0x104`); guest faults before service | Same as first fix | [emitted-layout + three-way QEMU test](https://github.com/miSultanato/k15/actions/runs/45439460997) |
 | ClientHello framing | Accepts five parser-level malformed cases; transcript-faithful inner-short and outer-short both complete TLS 1.3 and return HTTP 200 | Rejects both full-handshake vectors with fatal `decode_error` (alert 50), as well as the parser-level cases | Same rejection | [parser differential](https://github.com/miSultanato/k15/actions/runs/45401470623), [full transcript differential](https://github.com/miSultanato/k15/actions/runs/45460246415) |
 | ClientHello fields | Accepts 33-byte and 255-byte session IDs, non-null compression and wrong handshake type; echoes legacy_version 0x0301 | Rejects both oversized session IDs and non-null compression; rejects wrong type; responds with legacy_version 0x0303 | Same as first fix | [three-way framing/HRR run](https://github.com/miSultanato/k15/actions/runs/45436733972) |
-| Client Finished | Corrupted Finished followed by valid application data still gets HTTP; a new test omitting Finished entirely is pending | Same behavior; omission control pending | Same behavior; omission control pending | [first fix](https://github.com/miSultanato/k15/actions/runs/45394628025), [current main](https://github.com/miSultanato/k15/actions/runs/45401470623) |
+| Client Finished | Processes authenticated application data without receiving client Finished; corrupted Finished also ignored | Same behavior | Same behavior | [three-way omission/corruption/AEAD differential](https://github.com/miSultanato/k15/actions/runs/45482705312) |
 | AEAD tag failure | Bad tag ignored; original valid same-sequence record processed | Same behavior | Same behavior | [first fix](https://github.com/miSultanato/k15/actions/runs/45394628025), [current main](https://github.com/miSultanato/k15/actions/runs/45401470623) |
 | Dummy ChangeCipherSpec | Missing after normal ServerHello with 32-byte session ID | Sent after ServerHello | Sent after ServerHello | [normal path](https://github.com/miSultanato/k15/actions/runs/45417214217), [HRR path](https://github.com/miSultanato/k15/actions/runs/45436733972) |
 | HRR / second ClientHello | Completes HRR -> second ClientHello -> final ServerHello; sends 0 server CCS records | Same handshake; sends 1 server CCS record | Same as first fix | [OpenSSL wire-capture differential](https://github.com/miSultanato/k15/actions/runs/45436733972) |
@@ -49,10 +49,13 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
   probe. The SYN MSS is encoded as a TCP option and queued pre-reset frames
   are drained before the new capture. The dynamic workflow still has no
   confirmed run result available; no pass is claimed.
-- `tls-client-finished-review.md` separates the static missing-Finished path
-  from the existing corrupted-Finished test. A new omission control sends
-  application data without transmitting the client Finished; its runtime
-  result is pending and is not yet counted as reproduced.
+- `tls-client-finished-review.md` records a successful three-way omission
+  control: frozen bounty, first upstream fix and current upstream all process
+  AEAD-authenticated application data without receiving client Finished.
+  [run 45482705312](https://github.com/miSultanato/k15/actions/runs/45482705312).
+  This is a shared TLS handshake-confirmation weakness, not a Finished-MAC
+  forgery or evidence that an attacker without the application traffic key
+  can inject data.
 - `run_wx_pte_probe.sh` / `probe_wx_pte.py` now add an independent, read-only
   QMP inspection of the live page-table hierarchy. Three-way run
   [45484886594](https://github.com/miSultanato/k15/actions/runs/45484886594)
