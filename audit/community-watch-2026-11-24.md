@@ -883,7 +883,7 @@ differential test remains the precise regression proof for the framing fix.
 ## Synthetic scalar guest-RAM snapshot (confirmed)
 
 The isolated TAP/QEMU memory scan passed:
-https://github.com/miSultanato/k15/actions/runs/45384689679
+https://github.com/miSultanato/k15/actions/runs/45384777117
 
 After 1,024 successful local TLS 1.3 handshakes, QEMU's monitor saved one
 256 MiB guest physical-RAM snapshot. The scan compared the generated local
