@@ -11,12 +11,12 @@ target=$(cd "$target" && pwd)
 mon="/tmp/k15-memory-monitor-$$"
 ram="/tmp/k15-guest-ram-$$.bin"
 export B=build SMP=4 MEM=256 MON="$mon"
-export HOST=10.0.2.15 PORT=443
+export HOST=10.0.2.15
 export REPO_ROOT="$repo_root" TARGET="$target" COUNT="$count" RAM="$ram"
 trap 'rm -f "$mon" "$ram"' EXIT
 
 cd "$target"
 ./tap.sh bash -c '
-  python3 "$REPO_ROOT/qemu_nonce_uniqueness.py" "$TARGET" "$COUNT" 4 &&
+  PORT=443 python3 "$REPO_ROOT/qemu_nonce_uniqueness.py" "$TARGET" "$COUNT" 4 &&
   python3 "$REPO_ROOT/qemu_memory_scan.py" "$TARGET" "$MON" "$RAM"
 '
