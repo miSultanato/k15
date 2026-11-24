@@ -9,14 +9,22 @@ on:
       - "audit/test_public_hygiene.py"
       - ".github/workflows/public-hygiene.yml"
       - "cert/**"
+      - "cert-*/**"
+      - "**/cert-*/**"
       - "build/**"
       - "build-*/**"
+      - "**/build-*/**"
       - "**/*.key"
       - "**/*.p12"
       - "**/*.pfx"
       - "**/*.img"
       - "**/*.bin"
       - "**/*.lst"
+      - "*.pem"
+      - "**/*.pem"
+      - "regs.inc"
+      - "**/regs.inc"
+      - "audit/test_public_hygiene.py"
   pull_request:
     paths:
       - "audit/check_public_hygiene.py"
@@ -45,6 +53,8 @@ jobs:
         with:
           persist-credentials: false
       - name: Test the hygiene guard with synthetic markers
+        run: python3 audit/test_public_hygiene.py
+      - name: Test the path and PEM-marker policy
         run: python3 audit/test_public_hygiene.py
       - name: Check tracked files for generated secrets and artifacts
         run: python3 audit/check_public_hygiene.py
