@@ -65,11 +65,13 @@ computing the transcript hash.
 
 ## Implementation status (2026-11-24)
 
-A purpose-built client is now implemented in `test_malformed_clienthello_handshake.py`.
-It constructs the short-length ClientHello before transcript hashing, derives the
+A purpose-built Python client is implemented in `test_malformed_clienthello_handshake.py`.
+It constructs both malformed variants before transcript hashing, derives the
 TLS 1.3 key schedule, verifies the server CertificateVerify and Finished, then
 sends a correctly encrypted client Finished and HTTP request. The differential
 runner invokes it against the frozen bounty and both pinned upstream images.
+A separate patched Go `crypto/tls` client cross-checks the inner-short case and
+validates the generated test CA and exact HTTP response body.
 The code and workflow trigger are committed; the next Actions run must validate
 the crypto/transcript implementation before this finding is considered closed.
 
@@ -100,7 +102,7 @@ The local-only test now:
    the server Finished against the transcript built from the exact transmitted
    ClientHello bytes.
 5. Send the client Finished and an encrypted HTTP request.
-6. Verify the encrypted HTTP response and its contents.
+6. Verify the decrypted HTTP 200 response; the Go cross-check also compares the exact local site body.
 7. Run the same malformed ClientHello against the fixed image and require a
    fatal `decode_error` before a ServerHello.
 8. Keep all key logs, certificates, private keys, images and packet captures
