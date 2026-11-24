@@ -1,4 +1,5 @@
 name: k15 crypto revision differential
+# Compare deterministic assembly signing behavior across all pinned source revisions.
 
 on:
   workflow_dispatch:
