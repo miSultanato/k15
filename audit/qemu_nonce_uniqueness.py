@@ -26,6 +26,7 @@ from cryptography import x509
 TARGET = Path(sys.argv[1] if len(sys.argv) > 1 else "target").resolve()
 COUNT = int(sys.argv[2]) if len(sys.argv) > 2 else 512
 WORKERS = int(sys.argv[3]) if len(sys.argv) > 3 else 4
+FINGERPRINT_PATH = Path(sys.argv[4]) if len(sys.argv) > 4 else None
 sys.path.insert(0, str(TARGET / "tools"))
 from tlsclient import BioClient, context  # noqa: E402
 
@@ -205,6 +206,12 @@ def main() -> None:
         print(f"Handshake/parser errors by type: {len(errors)} ({','.join(sorted(set(errors)))})")
     if len(results) != COUNT or len(set(rs)) != len(rs) or len(set(ks)) != len(ks):
         raise SystemExit("FAIL: incomplete handshakes or a repeated ECDSA nonce detected")
+    if FINGERPRINT_PATH is not None:
+        fingerprints = sorted(hashlib.sha256(
+            r.to_bytes(32, "big") + k.to_bytes(32, "big")
+        ).hexdigest() for r, k in results)
+        FINGERPRINT_PATH.write_text("\\n".join(fingerprints) + "\\n", encoding="ascii")
+        print(f"PASS: wrote {len(fingerprints)} one-way nonce fingerprints for cross-boot comparison")
     print("PASS: every locally generated CertificateVerify verifies and uses a unique nonce")
 
 
