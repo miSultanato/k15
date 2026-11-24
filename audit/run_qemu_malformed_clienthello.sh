@@ -13,4 +13,7 @@ cd "$target"
 export B=build IMG=build/os.bin PORT=8443 HPORT=9443 KVM=0 SMP=4 MEM=256
 source tools/vm.sh
 boot
+# Independent purpose-built client: raw alert code, CertificateVerify and Finished.
+timeout 20s python3 "$repo_root/test_malformed_clienthello_handshake.py" "$target" "$expected"
+# Go crypto/tls cross-check: validates the synthetic CA chain and exact HTTP body.
 timeout 20s "$client" "$target" "$expected"
