@@ -66,6 +66,10 @@ jobs:
         working-directory: target
         run: make test
 
+      - name: Build complete bootable image from frozen source
+        working-directory: target
+        run: make all
+
       - name: Report generated secret-bearing files are not uploaded
         run: |
           echo "No build/, cert/, private key, or generated image is uploaded as an artifact."
