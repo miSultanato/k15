@@ -87,6 +87,7 @@ def short_arp(guest_mac: bytes) -> bytes:
 def is_prime_reply(frame: bytes) -> bool:
     return (
         len(frame) >= 42
+        and frame[0:6] == VICTIM_MAC
         and frame[12:14] == b"\x08\x06"
         and frame[20:22] == b"\x00\x02"
         and frame[32:38] == VICTIM_MAC
