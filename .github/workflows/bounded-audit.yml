@@ -11,6 +11,8 @@ on:
       - audit/check_key_read_path.py
       - audit/run_ct.sh
       - audit/test_clienthello_framing.py
+      - audit/qemu_nonce_uniqueness.py
+      - audit/run_qemu_nonce.sh
       - audit/run_qemu_framing.sh
       - audit/check_public_proof.py
       - .github/workflows/bounded-audit.yml
@@ -75,6 +77,9 @@ jobs:
       - name: Build complete bootable image from frozen source
         working-directory: target
         run: make all
+
+      - name: Boot frozen image in QEMU TCG and check synthetic ECDSA nonce uniqueness
+        run: bash audit/run_qemu_nonce.sh target 512
 
       - name: Boot frozen image in QEMU TCG and reproduce ClientHello framing quirk
         run: bash audit/run_qemu_framing.sh target
