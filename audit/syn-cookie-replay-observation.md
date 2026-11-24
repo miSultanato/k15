@@ -19,6 +19,8 @@ different-length HTTP request is processed.
 Evidence:
 - Earlier three-way run: https://github.com/miSultanato/k15/actions/runs/45443936657
 - Expanded IPv4/ARP/TCP run: https://github.com/miSultanato/k15/actions/runs/45468109924
+- Tuple-binding control and same-tuple replay, all three jobs successful:
+  https://github.com/miSultanato/k15/actions/runs/45469926754
 
 The expanded run completed successfully on all three images. In the fixed and
 current upstream images, the ARP stale-buffer probe rejects the disclosure
