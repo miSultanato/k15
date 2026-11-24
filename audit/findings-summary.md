@@ -58,6 +58,10 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
   synthetic SITE byte's actual PTE for present, read-only and NX state after
   verifying that the guest installed its expected CR3. The new three-way
   workflow has not yet been observed completing; no live-PTE result is claimed.
+- `test_tcp_rst_sequence.py` adds an exact/off-by-one RST sequence test. It
+  uses the server's observed ACK as the reset sequence oracle, then verifies
+  connection state by sending the remaining HTTP request. The three-way
+  runtime result is pending; this is a coverage addition, not a new finding.
 
 ## Additional negative evidence
 
