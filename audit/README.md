@@ -66,7 +66,7 @@ user namespaces.
 - `test_tls_record_rejection.py`: corrupts a client Finished and an AEAD tag,
   then checks whether the local QEMU guest still processes valid app data.
 - `test_dummy_ccs.py`: compares the normal ServerHello record sequence and
-  elicits HelloRetryRequest. `hrr_second_clienthello.go` additionally drives a
+  elicits HelloRetryRequest. `test_hrr_second_clienthello.py` drives an OpenSSL client through a
   Go TLS 1.3 client through the second ClientHello and asserts the expected
   presence/absence of a dummy CCS on each pinned revision.
 - `test_https_request.py`: probes lowercase/unknown methods and missing Host
