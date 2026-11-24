@@ -21,7 +21,7 @@ revision offered by the k15 bounty.
 | Workflow | Purpose |
 | --- | --- |
 | `bounded-audit.yml` | Native runner RDRAND probe, source invariants, assembly crypto tests, exact `ec.inc` reconstruction, Valgrind controls, QEMU framing and runtime nonce checks |
-| `differential-framing.yml` | Compares frozen bounty, first upstream fix and current upstream main for TLS framing, record handling and HTTPS requests; runs each upstream hostile-client suite |
+| `differential-framing.yml` | Compares frozen bounty, first upstream fix and current upstream main for TLS framing, record handling, HTTPS requests and full HRR/second-ClientHello behavior; runs each upstream hostile-client suite |
 | `crypto-revision-check.yml` | Compares P-256 nonce boundaries, RNG source invariants, scalar-read paths and constant-time checks across all three source revisions |
 | `race-audit.yml` | Project's controlled cross-processor slot handover tests, `RACE=1,2,3` |
 | `parser-fuzz.yml` | Same deterministic 60,000-case ClientHello fuzzer (three seeds) plus raw Ethernet/IP/TCP frame fuzz against bounty, first fix and current main |
