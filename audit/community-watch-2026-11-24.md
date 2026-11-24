@@ -995,13 +995,14 @@ cleanup/history, not evidence that the bounty was paid or closed.
 ## Expanded native runner RDRAND sample (confirmed)
 
 The latest bounded audit run
-https://github.com/miSultanato/k15/actions/runs/45387323167
+https://github.com/miSultanato/k15/actions/runs/45387618913
 increased the direct native-instruction probe from one million to ten million
 64-bit RDRAND samples on the GitHub runner CPU.
 
 Observed:
 - Adjacent equal qwords: 0 / 10,000,000.
 - Equal qwords at distance four: 0 / 9,999,996.
+- Repeated qwords anywhere in the sample: 0.
 - Repeated four-qword nonce tuples: 0 / 2,500,000.
 
 The same run repeated the 10,240 + 1,024 QEMU nonce checks and cross-boot
