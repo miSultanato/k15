@@ -92,7 +92,7 @@ def main() -> None:
     outer_short = bytes((22, 3, 1)) + (len(body) - 1).to_bytes(2, "big") + body
     check("outer record length one byte short", exchange(outer_short))
 
-    wrong_type = b"\\x02" + body[1:]
+    wrong_type = b"\x02" + body[1:]
     wrong_type_wire = bytes((22, 3, 1)) + len(wrong_type).to_bytes(2, "big") + wrong_type
     check("handshake type is ServerHello, not ClientHello", exchange(wrong_type_wire))
     print(f"RESULT: framing cases match expected={expected}")
