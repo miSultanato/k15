@@ -795,3 +795,32 @@ independently reproduced by this audit. The same discussion identifies the
 short outer-record ClientHello truncation/transcript discrepancy that our
 QEMU tests now reproduce. The thread's participants do not report recovering
 the bounty key.
+
+
+## Cross-processor slot ownership race suite (confirmed)
+
+The race matrix passed on the exact frozen bounty source:
+https://github.com/miSultanato/k15/actions/runs/45382612903
+
+- RACE=1 (timer paused before `hold` marks the slot in-use): the new
+  connection takes the old slot; the timer recognizes the slot changed and
+  does not continue sending to the vanished client.
+- RACE=2 (timer paused after `hold` marks the slot in-use): the taker cannot
+  claim it; the timer gives up/resets the old connection, then the new
+  connection gets a slot.
+- RACE=3 (the only free slot counted in a bucket is taken before the walk
+  reaches it): the search remains inside the bucket; all six held port-80
+  connections remain responsive.
+
+Observed outcomes from the runner:
+- RACE=1: the third new connection got in 24 s after the slot became eligible;
+  the old client was not reset first.
+- RACE=2: the thirteenth new connection got in 34 s after eligibility; the old
+  client was reset immediately before the new connection took its slot.
+- RACE=3: 16 TLS connections filled the bucket; all six held port-80
+  connections remained responsive.
+
+All three harnesses passed. This materially closes the concurrency gap noted
+as not dynamically covered in the independent 2026-11-21 audit. It tests the
+specific controlled interleavings and slot-boundary condition, not every
+possible SMP schedule or all load/loss/reordering behavior.
