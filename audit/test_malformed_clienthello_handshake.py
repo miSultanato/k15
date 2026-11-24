@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Complete a TLS 1.3 handshake with an intentionally short ClientHello length.
+"""Complete TLS 1.3 handshakes with intentionally mismatched ClientHello lengths.
 
 The malformed ClientHello is the actual handshake message sent on the wire and
 is also the exact byte sequence hashed into the client transcript. This test
@@ -205,6 +205,7 @@ def make_client_hello(variant: str) -> tuple[bytes, x25519.X25519PrivateKey, byt
     record = b"\x16\x03\x01" + record_length.to_bytes(2, "big") + handshake
     return record, private, session_id, transcript_handshake
 
+
 def parse_server_hello(raw: bytes, session_id: bytes) -> bytes:
     if raw[0] != 2:
         fail(f"expected ServerHello, got handshake type {raw[0]}")
@@ -362,7 +363,6 @@ def run_case(target: Path, expected: str, variant: str) -> None:
                 or any(item[0] == 22 for item in items),
             )
             expect_rejection(records, variant)
-            print(f"PASS: fixed image rejected {variant}")
             return
 
         records = read_records(
@@ -484,6 +484,7 @@ def main() -> None:
         fail(f"target directory does not exist: {target}")
     for variant in ("inner-short", "outer-short"):
         run_case(target, sys.argv[2], variant)
+
 
 if __name__ == "__main__":
     main()
