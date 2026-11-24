@@ -8,6 +8,7 @@ on:
     paths:
       - audit/check_boot_hardening.py
       - audit/check_boot_binary.py
+      - audit/test_e820_signature.py
       - .github/workflows/boot-hardening-differential.yml
 
 permissions:
