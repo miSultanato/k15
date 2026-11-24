@@ -88,6 +88,7 @@ user namespaces.
   request from a different sender. The regression requires the frozen bounty
   to expose the stale eight-byte suffix and both upstream images to reject it.
   See `arp-short-frame-impact.md` for the exact data flow and limits.
+- `ipv4-arp-validation-review.md`: explains why invalid IPv4 header checksums and malformed full-length ARP metadata still receive replies on all three revisions, and separates that behavior from the short-frame disclosure.
 - `syn-cookie-replay-observation.md`: records the replayable cookie-ACK behavior after orderly FIN close, distinguishes it from the bounty-only findings, and documents the limits of the threat-model evidence.
 - `test_tcp_ack_mss.py`: asserts bounty acceptance versus upstream rejection of
   out-of-window ACKs, checks peer-MSS safety boundaries, delays a first SYN-cookie
