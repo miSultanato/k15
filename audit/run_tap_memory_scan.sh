@@ -9,11 +9,11 @@ count=${2:-1024}
 target=$(cd "$target" && pwd)
 
 mon="/tmp/k15-memory-monitor-$$"
-ram="/tmp/k15-guest-ram-$$.bin"
+ram="k15-guest-ram-$.bin"
 export B=build SMP=4 MEM=256 MON="$mon"
 export HOST=10.0.2.15
 export REPO_ROOT="$repo_root" TARGET="$target" COUNT="$count" RAM="$ram"
-trap 'rm -f "$mon" "$ram"' EXIT
+trap 'rm -f "$mon" "$target/$ram"' EXIT
 
 cd "$target"
 ./tap.sh bash -c '
