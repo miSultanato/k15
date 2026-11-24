@@ -150,10 +150,10 @@ def real_client() -> bool:
     )
     tls = tlsclient.context().wrap_socket(sock, server_hostname=tlsclient.NAME)
     try:
-        request = b"GET / HTTP/1.1\\r\\nHost: " + tlsclient.NAME.encode() + b"\\r\\n\\r\\n"
+        request = b"GET / HTTP/1.1\r\nHost: " + tlsclient.NAME.encode() + b"\r\n\r\n"
         tls.sendall(request)
         response = bytearray()
-        while b"\\r\\n\\r\\n" not in response:
+        while b"\r\n\r\n" not in response:
             chunk = tls.recv(65536)
             if not chunk:
                 break
