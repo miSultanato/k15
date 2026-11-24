@@ -138,6 +138,31 @@ def send_wire(sock: socket.socket, wire: bytes, stage: str) -> bool:
         return False
 
 
+def test_omitted_client_finished() -> None:
+    sock, inc, out, tls, finished = connect_and_handshake()
+    try:
+        # Deliberately discard the client's handshake-key Finished record.
+        # OpenSSL has already derived the application traffic keys locally;
+        # send only the first application-data record on the TCP stream.
+        if not any(kind == 23 for kind, _, _ in records(finished)):
+            raise RuntimeError("client Finished flight has no encrypted TLS record")
+        app = send_application(tls, out)
+        if not send_wire(sock, app, "application data without client Finished"):
+            return
+        response = read_http(sock, inc, tls)
+        accepted = response.startswith(b"HTTP/1.")
+        if mode == "expect" and not accepted:
+            raise SystemExit(
+                "FAIL: server did not process application data when client Finished was omitted; "
+                f"received={response[:80]!r}"
+            )
+        print(("PASS" if mode == "expect" and accepted else "OBSERVED") + ": " +
+              ("server processed" if accepted else "server did not process") +
+              " application data without receiving the client's Finished")
+    finally:
+        sock.close()
+
+
 def test_corrupt_client_finished() -> None:
     sock, inc, out, tls, finished = connect_and_handshake()
     try:
@@ -188,6 +213,7 @@ def test_bad_application_tag() -> None:
 
 
 if __name__ == "__main__":
+    test_omitted_client_finished()
     test_corrupt_client_finished()
     test_bad_application_tag()
     print(f"RESULT: TLS Finished / AEAD rejection probes completed in mode={mode}")
