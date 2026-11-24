@@ -9,6 +9,8 @@ on:
     paths:
       - audit/test_ip_arp_validation.py
       - audit/test_arp_short_frame.py
+      - audit/arp-short-frame-impact.md
+      - audit/independent-audit-coverage.md
       - audit/test_tcp_ack_mss.py
       - audit/run_tap_ip_arp.sh
       - audit/run_tap_tcp_wrap.sh

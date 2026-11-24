@@ -60,16 +60,25 @@ https://github.com/FileSherlock/k15/issues/1#issuecomment-7081448356
 
 ## Next bounded work, ordered
 
-1. Reproduce the short-site W^X result with an emitted-image page-table/NX
-   assertion, in addition to the successful runtime synthetic-RET probe.
-2. If impact merits it, replay an ACK after a synthetic connection is fully
-   torn down. The current 65-second test delays the first ACK and does not
-   demonstrate post-teardown replay.
-3. Complete the malformed-ClientHello transcript experiment with a client that
-   hashes exactly the bytes the server processes; the current framing probes
-   establish parser behavior, not a completed mismatched-transcript handshake.
-4. Continue assessing the short-ARP stale-buffer disclosure only with
-   synthetic data and bounded same-link impact analysis.
+1. If stronger W^X evidence is needed, add a QEMU live page-table read for the
+   short-site mapping. The emitted-image CODEPG calculation and synthetic-RET
+   runtime differential already agree; neither reads the live PTE directly.
+2. Run and inspect the valid-ARP priming regression in
+   `test_arp_short_frame.py`. The earlier synthetic-marker probe passed, but
+   the new test uses 512 full synthetic ARP requests and drains their ordinary
+   replies before sending the 24-byte frame. Its three-way TAP run is pending.
+3. Expand the one-byte inner/outer ClientHello truncation vectors only if
+   additional offsets materially clarify the parser boundary. Both current
+   vectors already complete TLS 1.3 on bounty and are rejected upstream.
+4. Keep the short-ARP impact bounded to same-link synthetic traffic. The
+   existing analysis does not establish multi-queue reliability, Internet
+   reachability or disclosure of anything beyond eight metadata bytes.
+
+The 65-second post-FIN/FIN SYN-cookie ACK replay is already confirmed on all
+three revisions in run 45443936657; it is common behavior, not a bounty-only
+regression. The transcript-faithful ClientHello experiment is also complete
+in run 45460246415. Neither remains an outstanding reproduction task.
+
 The emitted-image checks for AP counter alignment and GDT Accessed bits
 (findings 17–18), E820 SMAP instruction presence and synthetic BIOS response
 (19), and the generated certificate SAN regression (20) now pass. The TCP ACK-window matrix (2),
