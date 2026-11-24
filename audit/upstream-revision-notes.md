@@ -30,8 +30,10 @@ The GitHub compare lists these source changes:
 - `src/tcp.asm`: removes a development-only two-packet reset hook.
 - `src/poll.asm`: removes the matching development-only reset plumbing.
 - `src/curves.asm` and `tools/ec.py`: substantial X25519/P-256 performance
-  work. These changes need their own crypto regression and timing review; they
-  are not assumed to fix the nonce-generation questions.
+  work and a source split of curve routines out of `src/os.asm`. The VM private
+  scalar remains register D (register 14); the static audit must concatenate
+  both assembly files rather than treating a missing equate in `os.asm` as a
+  register change. Deterministic nonce-boundary tests pass on all revisions.
 
 Other commits improve packaging, deployment, certificate handling, tests and
 documentation. The current-main matrix now confirms that the TLS framing, ClientHello field,
