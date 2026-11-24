@@ -336,11 +336,11 @@ read-path checker revisions and make test.
 
 ## Revised priority
 
-1. Review the next bounded-audit Actions result for the expanded
-   R_D / D / X_SIGN / VM caller checks and the new packed-SITE read-path guard.
-   The static review now covers the masked dR boot source, fixed comb callers,
-   mask-only table selection, exact generated ec.inc comparison, and bounded
-   HTTP path-to-response offsets; CI validation is still pending.
+1. Retain the passing bounded-audit result
+   https://github.com/miSultanato/k15/actions/runs/45460761523 as the baseline
+   for the expanded R_D / D / X_SIGN / VM caller checks and packed-SITE
+   read-path guard. Re-run it when those scripts or their source assumptions
+   change.
 2. Keep the generated curve-program byte comparison against
    tools/ec.py in the audit. Do not attempt to recover or reconstruct the
    private scalar.
@@ -1040,9 +1040,11 @@ Go `crypto/tls` client independently cross-checks the inner-short case and
 compares the exact HTTP body.
 
 This is a deliberately non-conforming client for the outer-short case: it
-mirrors the server's truncated transcript. The implementation is wired into
-the differential QEMU runner but awaits a new Actions result. Until that run
-passes, successful end-to-end completion remains unconfirmed by our own test.
+mirrors the server's truncated transcript. The three-way differential run
+https://github.com/miSultanato/k15/actions/runs/45460246415 passed: the frozen
+image completed both handshakes and returned HTTP 200, while the first fix and
+current upstream rejected both with fatal decode_error. The Go client
+independently cross-checked inner-short and verified the exact response body.
 This is protocol-framing research, not a private-key disclosure path.
 
 
