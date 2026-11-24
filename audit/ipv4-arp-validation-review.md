@@ -75,3 +75,16 @@ not attempt to make the entire ARP parser a strict RFC conformance validator.
 
 All testing remains synthetic, local and isolated. No probes are sent to
 15kb.org.
+
+
+## Upstream audit cross-reference
+
+The upstream maintainer's
+[issue #1, finding 15](https://github.com/FileSherlock/k15/issues/1)
+already records the missing IPv4 header checksum verification and incomplete
+ARP metadata validation. It notes that the IPv4 fields protected only by that
+checksum (TOS, ID and TTL) are not used by the server, so the observed effect
+is nil; adding a 20-byte checksum calculation is a size/conformance trade-off.
+For ARP, the maintainer fixed the short-frame condition on the upstream
+revision tested here, while the full-length hardware/protocol metadata checks
+remain absent. Our TAP matrix confirms that distinction.
