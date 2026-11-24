@@ -97,6 +97,7 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | Differential TLS record behavior: upstream framing-fix commit still processes valid HTTP after both malformed records | [45394628025](https://github.com/miSultanato/k15/actions/runs/45394628025) |
 | Differential ClientHello framing and fixed-upstream hostile-client suite | [45394182367](https://github.com/miSultanato/k15/actions/runs/45394182367) |
 | Differential dummy CCS: bounty omits it; upstream framing fix sends it | [45395033747](https://github.com/miSultanato/k15/actions/runs/45395033747) |
+| Normal-path CCS plus HRR elicitation (post-HRR final flight still open) | [45398998479](https://github.com/miSultanato/k15/actions/runs/45398998479) |
 | TAP IPv4 checksum and ARP field matrix on bounty and upstream | [45396434723](https://github.com/miSultanato/k15/actions/runs/45396434723) |
 | Short ARP stale-buffer differential: bounty discloses synthetic marker; upstream does not | [45397011333](https://github.com/miSultanato/k15/actions/runs/45397011333) |
 | TCP ACK-window and peer-MSS differential | [45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
