@@ -119,7 +119,7 @@ def read_http(sock: socket.socket, inc: ssl.MemoryBIO, tls: ssl.SSLObject) -> by
     return bytes(response)
 
 
-def send_application(tls: ssl.SSLObject, out: ssl.MemoryBIO, sock: socket.socket) -> bytes:
+def send_application(tls: ssl.SSLObject, out: ssl.MemoryBIO) -> bytes:
     tls.write(REQUEST)
     wire = out.read()
     if not wire:
@@ -127,12 +127,25 @@ def send_application(tls: ssl.SSLObject, out: ssl.MemoryBIO, sock: socket.socket
     return wire
 
 
+def send_wire(sock: socket.socket, wire: bytes, stage: str) -> bool:
+    try:
+        sock.sendall(wire)
+        return True
+    except OSError as exc:
+        if mode == "expect":
+            raise
+        print(f"OBSERVED: guest closed the connection during {stage}: {exc}")
+        return False
+
+
 def test_corrupt_client_finished() -> None:
     sock, inc, out, tls, finished = connect_and_handshake()
     try:
-        sock.sendall(mutate_last_application_record(finished))
-        app = send_application(tls, out, sock)
-        sock.sendall(app)
+        if not send_wire(sock, mutate_last_application_record(finished), "corrupted Finished"):
+            return
+        app = send_application(tls, out)
+        if not send_wire(sock, app, "application data after corrupted Finished"):
+            return
         response = read_http(sock, inc, tls)
         accepted = response.startswith(b"HTTP/1.")
         if mode == "expect" and not accepted:
@@ -150,13 +163,16 @@ def test_corrupt_client_finished() -> None:
 def test_bad_application_tag() -> None:
     sock, inc, out, tls, finished = connect_and_handshake()
     try:
-        sock.sendall(finished)
-        app = send_application(tls, out, sock)
+        if not send_wire(sock, finished, "client Finished"):
+            return
+        app = send_application(tls, out)
         # Send a damaged copy followed by the original same-sequence record.
         # If the bad tag is silently ignored, the valid record can still be
         # authenticated with the unchanged TLS record sequence number.
-        sock.sendall(mutate_last_application_record(app))
-        sock.sendall(app)
+        if not send_wire(sock, mutate_last_application_record(app), "corrupted AEAD record"):
+            return
+        if not send_wire(sock, app, "valid same-sequence AEAD record"):
+            return
         response = read_http(sock, inc, tls)
         accepted = response.startswith(b"HTTP/1.")
         if mode == "expect" and not accepted:
