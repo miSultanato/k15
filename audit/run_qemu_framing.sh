@@ -15,6 +15,8 @@ boot
 python3 "$repo_root/test_clienthello_framing.py" "$target" "$expected"
 if [[ "$expected" == "accept" ]]; then
   python3 "$repo_root/test_tls_record_rejection.py" "$target" expect
+  python3 "$repo_root/test_dummy_ccs.py" "$target" expect
 else
   python3 "$repo_root/test_tls_record_rejection.py" "$target" observe
+  python3 "$repo_root/test_dummy_ccs.py" "$target" observe
 fi
