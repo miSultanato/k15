@@ -89,7 +89,9 @@ func main() {
 		if err == nil {
 			die("fixed image completed a malformed ClientHello handshake")
 		}
-		if !strings.Contains(strings.ToLower(err.Error()), "decode error") {
+		alertText := strings.ToLower(err.Error())
+		if !strings.Contains(alertText, "decode error") &&
+			!strings.Contains(alertText, "error decoding message") {
 			die("fixed image did not reject with decode_error; handshake error: %v", err)
 		}
 		if !captured.checked || captured.delta != 1 {
