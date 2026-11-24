@@ -9,6 +9,7 @@ on:
       - audit/nonce_cycle_demo.py
       - audit/check_rand_path.py
       - audit/check_key_read_path.py
+      - audit/test_ecdsa_nonce_boundaries.py
       - audit/run_ct.sh
       - audit/test_clienthello_framing.py
       - audit/qemu_nonce_uniqueness.py
@@ -69,6 +70,9 @@ jobs:
 
       - name: Install Python test dependency
         run: python3 -m pip install --disable-pip-version-check cryptography
+
+      - name: Test deterministic P-256 nonce boundaries against the frozen reference signer
+        run: python3 audit/test_ecdsa_nonce_boundaries.py target
 
       - name: Run upstream assembly crypto tests on the frozen commit
         working-directory: target
