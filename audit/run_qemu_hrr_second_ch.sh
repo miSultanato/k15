@@ -12,4 +12,4 @@ cd "$target"
 export B=build IMG=build/os.bin PORT=8443 HPORT=9443 KVM=0 SMP=4 MEM=256
 source tools/vm.sh
 boot
-timeout 30s go run "$repo_root/hrr_second_clienthello.go" "$expected_ccs"
+timeout 30s python3 "$repo_root/test_hrr_second_clienthello.py" "$target" "$expected_ccs"
