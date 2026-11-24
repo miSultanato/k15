@@ -209,18 +209,22 @@ the full ACK wraparound or all MSS thresholds.
 
 ## 10. ClientHello session ID, compression and legacy_version fields
 
-The expanded differential probe in [run 45399706214](https://github.com/miSultanato/k15/actions/runs/45399706214)
-tested three additional ClientHello fields:
+The expanded differential probes in [run 45399706214](https://github.com/miSultanato/k15/actions/runs/45399706214)
+and [run 45400182802](https://github.com/miSultanato/k15/actions/runs/45400182802)
+tested additional ClientHello fields:
 
 - A fully present 33-byte `legacy_session_id` gets ServerHello from the frozen
   image; the upstream image returns fatal `decode_error`.
+- A handshake message with type 2 (ServerHello) in place of type 1 (ClientHello)
+  gets ServerHello from the frozen image; the upstream image returns fatal
+  `unexpected_message` (alert description 10).
 - A non-null compression method gets ServerHello from the frozen image; the
   upstream image returns a fatal alert with description 47
   (`illegal_parameter`).
 - A ClientHello `legacy_version` of 0x0301 is echoed as 0x0301 by the frozen
   image; the upstream image responds with ServerHello legacy_version 0x0303.
 
-These reproduce findings #3, #5 and #7 against the frozen image and confirm
+These reproduce findings #3, #5, #6 and #7 against the frozen image and confirm
 that the tested upstream revision fixes them. The current tests cover one
 session-ID length, one invalid compression value and one legacy version; they
 do not exhaust all boundary combinations.
