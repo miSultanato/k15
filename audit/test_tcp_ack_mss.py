@@ -201,7 +201,7 @@ def test_bad_ack() -> None:
 
 
 def test_mss_boundary_matrix() -> None:
-    for index, peer_mss in enumerate((179, 180, 181, 215, 216)):
+    for index, peer_mss in enumerate((0, 1, 179, 180, 181, 215, 216)):
         sport = 52200 + index
         isn = 0x56780000 + index
         synack = handshake(sport, isn, peer_mss)
