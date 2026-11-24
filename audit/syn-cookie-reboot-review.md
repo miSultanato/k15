@@ -67,8 +67,20 @@ The probe's frame builder now encodes the SYN MSS as a real TCP option
 (including the TCP data-offset field), rather than appending option-looking
 bytes as SYN payload. It also drains queued receive frames before each new
 cookie capture, so a delayed pre-reset SYN-ACK cannot be mistaken for the
-post-reset response. These are harness correctness safeguards; they do not
-change the security interpretation above.
+post-reset response.
+
+The first runtime attempts exposed a harness issue, not a server finding:
+the generic `tap.sh` launcher sources `tools/vm.sh`, whose QEMU command
+includes `-no-reboot`. A monitor-triggered `system_reset` therefore caused
+the QEMU process/monitor socket to disappear instead of leaving the same VM
+running through firmware reboot. The dedicated
+`run_tap_syn_cookie_reboot.sh` now creates the same isolated TAP/virtio
+setup but deliberately omits `-no-reboot`, preserving the QEMU process and
+TAP interface. The monitor client consumes the greeting prompt and waits for
+the command-completion prompt before continuing. A diagnostic path records
+QEMU status, CPU registers and network-device state if the post-reset SYN
+still receives no SYN-ACK. These are harness corrections; they do not change
+the security interpretation above.
 
 The probe uses raw Ethernet/TCP frames only on the ephemeral runner's private
 TAP network. It contacts no production endpoint, uses no production key or
