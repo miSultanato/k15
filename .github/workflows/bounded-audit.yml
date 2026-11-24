@@ -9,6 +9,7 @@ on:
       - audit/nonce_cycle_demo.py
       - audit/check_rand_path.py
       - audit/check_key_read_path.py
+      - audit/check_public_proof.py
       - .github/workflows/bounded-audit.yml
 
 permissions:
@@ -49,6 +50,9 @@ jobs:
 
       - name: Audit private-scalar read path in frozen source
         run: python3 audit/check_key_read_path.py target/src/os.asm target/tools/ec.py
+
+      - name: Verify public cross-curve proof offline
+        run: python3 audit/check_public_proof.py target/tools target/bounty.proof
 
       - name: Install minimal native build dependency
         run: |
