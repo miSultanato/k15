@@ -40,7 +40,7 @@ user namespaces.
 
 ## Main checks
 
-- `rdrand_host_probe.c`: samples the runner's exposed native RDRAND instruction,
+- `rdrand_host_probe.c`: samples the runner's exposed RDRAND instruction (the runner may itself be virtualized),
   checking adjacent repeats, lag-four repeats, any repeated qwords and repeated four-qword tuples.
   This is only a host-runner data point, not a measurement of the production CPU.
 - `nonce_cycle_demo.py`: mathematical demonstration that a periodic sequence
