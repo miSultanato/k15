@@ -499,3 +499,45 @@ that the frozen source can be assembled and packed end-to-end with a
 freshly generated test identity in CI. It does not prove that the generated
 image is byte-identical to the deployed image, nor that the production
 machine behaves like the runner.
+
+
+## Upstream development branch: parser issue fixed outside the bounty image
+
+A fresh branch comparison on 2026-11-24 shows:
+
+- `bounty` remains frozen at `ab93479` (2026-11-20).
+- Upstream `main` is at `c4d4032` (2026-11-21), with the six small fixes
+  described in Issue #1.
+- Upstream `dev` is at `d335390` (2026-11-24), 39 commits ahead and
+  3 commits behind the frozen bounty branch. It contains substantial
+  subsequent engineering work and is not the deployed bounty image.
+
+Importantly, `dev` does address the ClientHello discrepancy described above.
+Commit `a2d8893` added checks in `src/tls.asm` for:
+
+- handshake message type exactly `1` (ClientHello), otherwise
+  `unexpected_message`;
+- session ID length no greater than 32;
+- the 24-bit ClientHello handshake length exactly matching the bytes in the
+  enclosing record, otherwise `decode_error`;
+- compression methods exactly `01 00`, otherwise `illegal_parameter`.
+
+The same commit adds regression cases in `tools/abuse.py`: wrong handshake
+types, declared lengths one byte too short/long, a 64 KiB mismatch, trailing
+bytes in the record, and malformed compression methods. It also tests that a
+normal client still works afterward.
+
+This is meaningful progress by the project owner, but it must not be
+misattributed to the bounty deployment: the fix is in `dev`, not in the
+frozen `bounty` commit. The later `dev` history also splits the monolithic
+assembly source into subsystem files and adds DHCP/IPv6, publish automation,
+and performance work. Those changes are outside our target and should not
+be merged into the bounty branch.
+
+Sources:
+- Current upstream branches and commit history:
+  https://github.com/FileSherlock/k15/branches
+- Parser fix commit:
+  https://github.com/FileSherlock/k15/commit/a2d8893261b2be15b44c86d6f4483d65820e943a
+- Current development tip:
+  https://github.com/FileSherlock/k15/commit/d335390feb3aee2a947277dfa792b86d14ea1828
