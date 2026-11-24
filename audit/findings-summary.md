@@ -33,6 +33,7 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 | Missing Host header | GET without Host returns 200 | GET without Host returns 200 | GET without Host returns 400 | [TLS differential](https://github.com/miSultanato/k15/actions/runs/45402956609) |
 | TLSInnerPlaintext without content type | Authenticated all-zero inner plaintext lengths 1, 2, 16, 255 and 300 are accepted; a following valid request is processed | Closes connection for all five lengths before following request | Same as first fix | [expanded three-way test](https://github.com/miSultanato/k15/actions/runs/45414676678) |
 | ECDSA nonce boundaries | `n+1` aliases `1`; `n-1` verifies; `n` does not | Not compared | Not compared | [frozen signer test](https://github.com/miSultanato/k15/actions/runs/45393554079) |
+| E820 BIOS signature | Frozen boot sector accepts a successful INT 15h response with wrong EAX signature | Rejects wrong signature | Same as first fix | [synthetic 16-bit BIOS differential](https://github.com/miSultanato/k15/actions/runs/45437038597) |
 
 ## Additional negative evidence
 
@@ -74,14 +75,12 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 ## Next work
 
-1. Complete the synthetic BIOS E820 wrong-signature test; the source and emitted
-   boot-sector instruction comparisons are already verified.
-2. Add an emitted page-table/NX assertion for the short-site W^X layout; the
+1. Add an emitted page-table/NX assertion for the short-site W^X layout; the
    runtime synthetic-RET differential is already reproduced.
-3. If useful, test a stale SYN-cookie ACK after a synthetic connection is fully
+2. If useful, test a stale SYN-cookie ACK after a synthetic connection is fully
    torn down. The existing 65-second delayed-first-ACK test passes on all three
    revisions and does not prove post-teardown replay.
-4. Continue assessing the short-ARP stale-buffer disclosure only with synthetic
+3. Continue assessing the short-ARP stale-buffer disclosure only with synthetic
    data. Do not attempt to access production memory.
 
 The ACK-window and peer-MSS boundaries (including 32-bit wrap, MSS 0 and MSS 1),
