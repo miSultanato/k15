@@ -154,15 +154,26 @@ modulo n) does not verify. The full bounded workflow passed. This confirms the
 assembly's effective-scalar behavior for those vectors; it does not establish
 practical key recovery or measure the production RDRAND distribution.
 
-The following remain source-derived test plans, not dynamically reproduced
-findings:
+The local QEMU test in [run 45394182511](https://github.com/miSultanato/k15/actions/runs/45394182511)
+now reproduces both TLS behaviors end-to-end against the frozen image:
 
-1. Corrupted client Finished and bad AEAD tag followed by a valid application record.
+- A corrupted client Finished was followed by an authenticated application
+  request, and the guest returned an HTTP response.
+- A corrupted application-record tag was followed by the original valid
+  same-sequence record, and the guest processed it and returned HTTP.
+
+This demonstrates that the guest does not fail the connection on either
+record; it does not demonstrate a remote attacker can forge authenticated
+application data or recover the server's private key. The remaining items are
+source-derived test plans, not dynamically reproduced findings:
+
+1. Reproduce the Finished and AEAD rejection tests against the fixed upstream image.
 2. Corrupted IPv4 checksum with correct TCP checksum.
 3. ARP field-by-field malformed request matrix.
 4. ACK range and wraparound state matrix.
 5. SYN MSS threshold matrix and actual outbound segment sizes.
-6. Extend nonce-distribution analysis only if a plausible attack model emerges;
+6. Characterize the dummy ChangeCipherSpec case (finding #8).
+7. Extend nonce-distribution analysis only if a plausible attack model emerges;
    the explicit `n-1`, `n`, and `n+1` assembly boundary vectors now pass.
 
 All tests remain offline against the frozen image in ephemeral QEMU. No
