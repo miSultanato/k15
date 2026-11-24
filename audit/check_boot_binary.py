@@ -40,7 +40,7 @@ if gdt + 24 > len(image):
     raise SystemExit("FAIL: GDT descriptor range is outside os.bin")
 
 aligned = ((apcount - tramp) & 3) == 0
-smap_signature_check = b"\\x3d\\x50\\x41\\x4d\\x53" in boot
+smap_signature_check = b"\x3d\x50\x41\x4d\x53" in boot
 code_access = image[gdt + 8 + 5]
 data_access = image[gdt + 16 + 5]
 observed = (code_access, data_access)
