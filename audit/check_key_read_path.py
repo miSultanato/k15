@@ -57,7 +57,7 @@ def main() -> None:
     require(len(re.findall(r"\bX_SIGN\b", asm)) == 1,
             "X_SIGN has unexpected additional source references")
 
-    programs = re.findall(r"(?ms)^([A-Z0-9_]+)\s*=\s*asm\(\"\"\"(.*?)\"\"\)", ec)
+    programs = re.findall(r'(?ms)^([A-Z0-9_]+)\s*=\s*asm\("""(.*?)""")', ec)
     require(programs, "no compile-time curve programs found in tools/ec.py")
     d_users = []
     for name, body in programs:
