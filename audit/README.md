@@ -99,6 +99,7 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | Differential dummy CCS: bounty omits it; upstream framing fix sends it | [45395033747](https://github.com/miSultanato/k15/actions/runs/45395033747) |
 | Normal-path CCS plus HRR elicitation (post-HRR final flight still open) | [45398998479](https://github.com/miSultanato/k15/actions/runs/45398998479) |
 | ClientHello session ID, compression and legacy_version differential | [45399706214](https://github.com/miSultanato/k15/actions/runs/45399706214) |
+| Wrong handshake message type: bounty accepts; fixed image sends fatal `unexpected_message` | [45400449845](https://github.com/miSultanato/k15/actions/runs/45400449845) |
 | TAP IPv4 checksum and ARP field matrix on bounty and upstream | [45396434723](https://github.com/miSultanato/k15/actions/runs/45396434723) |
 | Short ARP stale-buffer differential: bounty discloses synthetic marker; upstream does not | [45397011333](https://github.com/miSultanato/k15/actions/runs/45397011333) |
 | TCP ACK-window and peer-MSS differential | [45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
