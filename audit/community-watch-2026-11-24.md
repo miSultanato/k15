@@ -570,3 +570,31 @@ against the frozen source with the system package, rather than downloading
 the project's pinned Valgrind bundle. It is still a local host-build test:
 it does not establish resistance to every microarchitectural side channel
 or prove that the production CPU and hypervisor behave identically.
+
+
+## Exact generated-byte comparison (2026-11-24)
+
+Run:
+https://github.com/miSultanato/k15/actions/runs/45377189394
+
+The private-scalar checker now runs after `make test`, when the frozen
+source's actual `target/build/ec.inc` exists. It reconstructs the expected
+include from the imported `tools/ec.py` program definitions and the
+serialization rules in `tools/gen.py`, then compares the generated file
+byte-for-byte.
+
+Result: pass. The actual generated `ec.inc` matches the source
+reconstruction exactly. Its SHA-256 is
+`69f0760299bf3e19693545c138007c4b02c6e0adbe350cdc94f80c6d307de88f`.
+The comparison covers the 14 VM programs and 1,816 unpacked bytes.
+
+The same run passed the Valgrind normal path and all six negative controls,
+the 70-signature crypto suite, offline public proof verification, all
+source-level key-read assertions and the full bootable image build. Final
+result: success on audit harness commit
+`3b117d6e9692e83a505a5753f7b08c5ae9eef5ab`, targeting the unchanged
+`ab93479ebc7c85274c722b16897148286d1cfca3`.
+
+This closes the specific source-to-generated-VM-include comparison. It does
+not compare the resulting disk image with the production image, and it
+does not inspect runtime or hypervisor memory.
