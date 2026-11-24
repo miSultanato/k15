@@ -7,6 +7,8 @@ target=${1:?target directory required}
 label=${2:?label required}
 expected=${3:?expected state required: alive or reset}
 if [[ "$expected" != alive && "$expected" != reset ]]; then echo "expected must be alive or reset" >&2; exit 2; fi
+repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+target=$(cd "$target" && pwd)
 cd "$target"
 
 export B=build-wx-short
@@ -19,6 +21,7 @@ Path(sys.argv[1]).write_bytes(b"<!doctype html><title>short-site</title>\n\xc3")
 PY
 
 make -s -B B="$B" SITE="$B/one" COMPRESS=0 WXTEST=4 >/dev/null
+python3 "$repo_root/check_wx_layout.py" "$target" "$expected"
 export PORT=18500 HPORT=19500
 source tools/vm.sh
 IMG="$B/os.bin"
