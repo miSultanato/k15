@@ -1,0 +1,75 @@
+name: k15 differential ClientHello framing
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - audit/test_clienthello_framing.py
+      - audit/run_qemu_framing.sh
+      - .github/workflows/differential-framing.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k15-differential-framing
+  cancel-in-progress: false
+
+jobs:
+  differential:
+    name: Compare frozen bounty and upstream framing fix
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out audit harness
+        uses: actions/checkout@v4
+
+      - name: Check out frozen bounty source
+        uses: actions/checkout@v4
+        with:
+          repository: FileSherlock/k15
+          ref: ab93479ebc7c85274c722b16897148286d1cfca3
+          path: bounty
+          persist-credentials: false
+
+      - name: Check out upstream source with framing validation
+        uses: actions/checkout@v4
+        with:
+          repository: FileSherlock/k15
+          ref: a2d8893261b2be15b44c86d6f4483d65820e943a
+          path: fixed
+          persist-credentials: false
+
+      - name: Record exact source revisions
+        run: |
+          echo "Bounty source: $(git -C bounty rev-parse HEAD)"
+          echo "Fixed source:  $(git -C fixed rev-parse HEAD)"
+          test "$(git -C bounty rev-parse HEAD)" = "ab93479ebc7c85274c722b16897148286d1cfca3"
+          test "$(git -C fixed rev-parse HEAD)" = "a2d8893261b2be15b44c86d6f4483d65820e943a"
+
+      - name: Install isolated build and emulation dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends nasm qemu-system-x86
+          python3 -m pip install --disable-pip-version-check cryptography
+
+      - name: Build frozen bounty image
+        working-directory: bounty
+        run: make all
+
+      - name: Build upstream fixed image
+        working-directory: fixed
+        run: make all
+
+      - name: Verify old bounty image accepts the malformed framing
+        run: bash audit/run_qemu_framing.sh bounty accept
+
+      - name: Verify fixed upstream image rejects the same malformed framing
+        run: bash audit/run_qemu_framing.sh fixed reject
+
+      - name: Confirm no generated key material or images are uploaded
+        run: |
+          echo "Both images and generated certificates remain in the ephemeral runner."
+          echo "No artifacts are uploaded; the runner is discarded after the job."
