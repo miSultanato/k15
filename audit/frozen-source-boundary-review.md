@@ -183,6 +183,25 @@ it is not evidence of private-key disclosure or an internet-reachable exploit.
 The IPv4 checksum and malformed full-length ARP field behavior remain present
 in the tested upstream image.
 
+
+## 9. ACK-window bypass and peer MSS below 216
+
+The TAP differential in [run 45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737)
+established real local TCP connections to port 80 and sent controlled segments:
+
+- ACK-window test: after a valid handshake, the client sent an HTTP request
+  with an ACK value 0x10000 beyond the server's `SND.NXT`, while keeping the
+  receive sequence in-window. The frozen bounty image returned HTTP. The
+  upstream `a2d8893` image returned no HTTP payload.
+- MSS test: the client advertised MSS=100. The frozen image completed the
+  handshake, advertised MSS=1460 in its SYN-ACK, and emitted a 180-byte
+  outbound data segment, exceeding the peer's 100-byte limit. The upstream
+  image sent no SYN-ACK for this MSS.
+
+These are deterministic local reproductions of findings #2 and #13. The
+current matrix uses one ACK delta and one MSS value; it does not yet cover
+the full ACK wraparound or all MSS thresholds.
+
 ## Test status and next steps
 
 The deterministic ECDSA boundary test now runs against the frozen assembly
@@ -209,8 +228,8 @@ application data or recover the server's private key. The remaining items are
 source-derived test plans, not dynamically reproduced findings:
 
 1. Exercise the dummy ChangeCipherSpec behavior on the HelloRetryRequest path.
-2. ACK range and wraparound state matrix.
-3. SYN MSS threshold matrix and actual outbound segment sizes.
+2. Expand ACK range tests below/equal/inside/above the send window and around 32-bit wrap.
+3. Expand MSS tests across 0..215 and record reset/segment behavior.
 7. Extend nonce-distribution analysis only if a plausible attack model emerges;
    the explicit `n-1`, `n`, and `n+1` assembly boundary vectors now pass.
 
