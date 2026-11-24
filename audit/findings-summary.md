@@ -54,10 +54,11 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
   application data without transmitting the client Finished; its runtime
   result is pending and is not yet counted as reproduced.
 - `run_wx_pte_probe.sh` / `probe_wx_pte.py` now add an independent, read-only
-  QMP inspection of the live page-table hierarchy. The probe checks the
-  synthetic SITE byte's actual PTE for present, read-only and NX state after
-  verifying that the guest installed its expected CR3. The new three-way
-  workflow has not yet been observed completing; no live-PTE result is claimed.
+  QMP inspection of the live page-table hierarchy. Three-way run
+  [45484886594](https://github.com/miSultanato/k15/actions/runs/45484886594)
+  passed: frozen bounty's SITE PTE is present/read-only/NX=0; first fix and
+  current upstream are present/read-only/NX=1. All three report CR3=0x420000.
+  Exact VA/PTE values are recorded in `wx-short-site-impact.md`.
 - `test_tcp_rst_sequence.py` adds an exact/off-by-one RST sequence test. It
   uses the server's observed ACK as the reset sequence oracle, then verifies
   connection state by sending the remaining HTTP request. All three revisions
