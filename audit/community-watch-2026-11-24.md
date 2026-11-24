@@ -1023,10 +1023,17 @@ Our harness deliberately distinguishes those two cases:
 - Inner handshake length changed, outer record and body intact.
 - Outer record length one byte short, complete bytes still present on TCP.
 
-For both cases our current QEMU regression checks confirm ServerHello
-acceptance. They do **not** independently prove that a client completes the
-handshake or exchanges application data. Treat the completed-handshake claim
-as the owner's/independent auditor's report, not as a result of our own
-current probe. A custom client that builds its transcript from the exact
-bytes processed by the server is a possible next reproduction task, but it is
-outside the private-key disclosure path.
+For both cases our QEMU regression checks confirm ServerHello acceptance.
+A purpose-built TLS 1.3 client is now committed in
+`audit/test_malformed_clienthello_handshake.py`. It constructs both variants
+before hashing: the complete malformed inner-length message, and the
+outer-record prefix actually processed by the server (with the final byte
+sent outside the record). It then verifies CertificateVerify and Finished,
+sends an encrypted HTTP request, and expects HTTP 200 on the frozen image;
+the fixed images must reject both with fatal decode_error.
+
+This is a deliberately non-conforming client for the outer-short case: it
+mirrors the server's truncated transcript. The implementation is wired into
+the differential QEMU runner but awaits a new Actions result. Until that run
+passes, successful end-to-end completion remains unconfirmed by our own test.
+This is protocol-framing research, not a private-key disclosure path.
