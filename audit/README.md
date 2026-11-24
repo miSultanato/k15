@@ -131,7 +131,7 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | HRR second ClientHello: two ClientHellos/two ServerHellos on all three; frozen sends 0 CCS, both upstream revisions send 1 | [45460246415](https://github.com/miSultanato/k15/actions/runs/45460246415) |
 | Public repository hygiene: current tree and all reachable Git history clean of complete private-key PEM blocks and generated build artifacts | [45462044881](https://github.com/miSultanato/k15/actions/runs/45462044881) |
 | Repeat differential after correcting revision labels in the TLS rejection test | [45461137400](https://github.com/miSultanato/k15/actions/runs/45461137400) |
-| SYN-cookie replay after full FIN/FIN teardown, with a 65s delay and ACK-sequence proof on all three revisions | [45443936657](https://github.com/miSultanato/k15/actions/runs/45443936657) |
+| SYN-cookie replay after full FIN/FIN teardown, 65s delay, changed-port rejection and ACK-sequence proof on all three revisions | [45469926754](https://github.com/miSultanato/k15/actions/runs/45469926754) |
 | Short-site W^X: emitted SITE page is executable only on frozen bounty; upstream maps it NX, confirmed by QEMU RET probe | [45439460997](https://github.com/miSultanato/k15/actions/runs/45439460997) |
 | Synthetic BIOS E820: valid SMAP accepted by all; wrong-signature success counted only by frozen bounty | [45437038597](https://github.com/miSultanato/k15/actions/runs/45437038597) |
 | HRR second ClientHello: two ClientHellos/two ServerHellos; frozen sends 0 CCS, both upstream images send 1 | [45436733972](https://github.com/miSultanato/k15/actions/runs/45436733972) |
