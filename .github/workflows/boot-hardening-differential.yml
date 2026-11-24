@@ -86,11 +86,25 @@ jobs:
           sudo apt-get install --yes --no-install-recommends nasm
           python3 -m pip install --disable-pip-version-check cryptography
 
-      - name: Build the three pinned images locally
+      - name: Build with NAME set to the runner hostname
         run: |
-          make -C bounty all
-          make -C fixed all
-          make -C current all
+          host=$(hostname)
+          for directory in bounty fixed current; do
+            (cd "$directory" && NAME="$host" make all)
+          done
+          echo "Synthetic certificate build input: NAME=$host"
+
+      - name: Assert generated certificate SANs honor the Makefile guard
+        run: |
+          host=$(hostname)
+          openssl x509 -in bounty/cert/server.pem -noout -ext subjectAltName | grep -F "DNS:$host"
+          for directory in fixed current; do
+            if openssl x509 -in "$directory/cert/server.pem" -noout -ext subjectAltName | grep -F "DNS:$host"; then
+              echo "FAIL: $directory certificate retained the runner hostname" >&2
+              exit 1
+            fi
+          done
+          echo "PASS: frozen certificate includes the accidental hostname; upstream certificates do not"
 
       - name: Assert emitted-image AP counter alignment and GDT bytes
         run: |
