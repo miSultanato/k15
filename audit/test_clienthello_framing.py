@@ -18,7 +18,7 @@ expected = sys.argv[2]
 sys.path.insert(0, str(target / "tools"))
 from tlsclient import hello_record  # noqa: E402
 
-SERVER_HELLO = bytes.fromhex("1603030203")
+SERVER_HELLO = None  # TLS record content type 22; handshake message type 2 at byte 5
 DECODE_ERROR = bytes.fromhex("15030300020232")
 
 
@@ -40,7 +40,7 @@ def exchange(wire: bytes) -> bytes:
 
 def check(label: str, response: bytes) -> None:
     if expected == "accept":
-        ok = response.startswith(SERVER_HELLO)
+        ok = len(response) >= 6 and response[0] == 22 and response[5] == 2
         wanted = "ServerHello"
     else:
         ok = response.startswith(DECODE_ERROR)
