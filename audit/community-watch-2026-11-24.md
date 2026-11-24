@@ -1068,3 +1068,36 @@ a bounded static review, not a formal proof. The optional
 `WXTEST` write/execute probe is a separate compile-time page-permission test;
 the default `make all` path does not set `WXTEST`. This comment is therefore
 an adjacency concern worth checking, not evidence of key disclosure.
+
+
+## Community pulse: Reddit cross-posts and independent assessments (2026-11-24)
+
+The original project announcement has spread beyond the initial post:
+
+- `r/securityCTF`: the bounty announcement and technical discussion
+  (https://www.reddit.com/r/securityCTF/comments/1y1fjej/200_in_bitcoin_if_you_can_get_the_tls_key_out_of/)
+  has roughly 239 votes in the retrieved snapshot. Participants describe
+  independent local audits, nonce sampling, parser review and the cross-curve
+  proof. No participant reports recovering the key or claiming the bounty.
+- `r/ClaudeAI`: the project showcase
+  (https://www.reddit.com/r/ClaudeAI/comments/1y1fion/i_wanted_to_see_how_good_claude_is_at_sizecoding/)
+  has roughly 833 votes in the retrieved snapshot. Discussion is primarily
+  about sizecoding, the use of Claude Code, and the unusual bounty design;
+  it adds no independently reproduced security finding.
+- `r/asm`: a smaller technical showcase
+  (https://www.reddit.com/r/asm/comments/1y1fl7t/a_14_kb_https_server_os_in_x8664_assembly_boot/)
+  asks for assembly review but has little technical follow-up in the snapshot.
+- A Hacker News aggregator listing
+  (https://geezer.io/p/3511) shows no comments in the retrieved snapshot.
+
+One detailed community comment again raised the fact that key-related image
+bytes precede public `SITE` bytes. The targeted source review and CI guard
+are recorded above in the SITE/key adjacency section and
+`site-adjacency-review.md`. The other long-form participant reports largely
+agree with our current boundary: substantial local testing, no demonstrated
+key recovery, and no evidence that the published cross-curve proof leaks the
+scalar beyond the intended public relation.
+
+These are engagement snapshots, not security evidence. Vote counts and
+comment activity change, and no balance check of the bounty address was
+performed.
