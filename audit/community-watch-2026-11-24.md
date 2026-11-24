@@ -639,3 +639,28 @@ https://pastebin.com/izRBKd02 and says it found no exploit. The Pastebin
 page and its raw endpoint were inaccessible during this review, and search
 did not surface a mirror. We therefore record only that the link was posted;
 we have not read, validated or relied on its contents.
+
+
+## Reproducible ClientHello framing test (2026-11-24)
+
+The fork's bounded GitHub Actions run
+https://github.com/miSultanato/k15/actions/runs/45377562293
+booted the exact frozen bounty image under QEMU TCG and sent a locally
+generated ClientHello with its inner 24-bit handshake length one byte shorter
+than the actual handshake body. The image replied with a TLS ServerHello.
+This is runtime evidence that the frozen image accepts that malformed
+framing, not merely a static source inference.
+
+The test was then expanded in commit
+https://github.com/miSultanato/k15/commit/5b34a9d8651cb1d4104a051e7c702334f0e53184
+to try four inner-length values against the same complete valid body:
+zero, one byte short, one byte long, and the maximum 24-bit value. The outer
+TLS record length remains correct in each case. The expanded test's CI result
+is pending at the time of this note; do not treat the four-case matrix as
+confirmed until the QEMU job completes successfully.
+
+Scope: all probes run against 127.0.0.1 in an ephemeral GitHub runner. The
+bounty source revision remains pinned to ab93479ebc7c85274c722b16897148286d1cfca3.
+No request is sent to the production host. Acceptance of inconsistent
+handshake framing is a protocol-validation/conformance finding; no memory
+corruption, key disclosure, or practical remote exploit has been established.
