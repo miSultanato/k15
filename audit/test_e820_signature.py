@@ -9,7 +9,6 @@ Usage: test_e820_signature.py TARGET frozen|fixed
 """
 from __future__ import annotations
 
-import re
 import subprocess
 import sys
 import tempfile
@@ -29,27 +28,21 @@ def fail(message: str) -> None:
 
 
 def assemble(root: Path, temp: Path) -> tuple[bytes, int, int]:
-    listing = temp / "boot.lst"
     binary = temp / "boot.bin"
     subprocess.run(
-        ["nasm", "-f", "bin", "-l", str(listing), "-o", str(binary), str(root / "src/boot.asm")],
+        ["nasm", "-f", "bin", "-o", str(binary), str(root / "src/boot.asm")],
         check=True,
     )
-    lines = listing.read_text(encoding="utf-8", errors="replace").splitlines()
-
-    def label_address(name: str) -> int:
-        for line in lines:
-            if not re.search(rf"(?<![A-Za-z0-9_]){re.escape(name)}:", line):
-                continue
-            match = re.match(r"^\s*\d+\s+([0-9A-Fa-f]{8})\s+", line)
-            if match:
-                address = int(match.group(1), 16)
-                return address - ORG if address >= ORG else address
-        fail(f"NASM listing does not expose label {name}")
-        raise AssertionError
-
-    return binary.read_bytes(), label_address(".e820"), label_address(".done")
-
+    boot = binary.read_bytes()
+    # Identify the unmodified .e820 and .done instruction sequences directly
+    # in the emitted sector; offsets are relative to the binary.
+    e820_marker = bytes.fromhex("66 b8 20 e8 00 00 66 ba 50 41 4d 53")
+    done_marker = bytes.fromhex("81 ef 04 60")  # sub di, MMAP + 4
+    e820 = boot.find(e820_marker)
+    done = boot.find(done_marker, e820 + len(e820_marker))
+    if e820 < 0 or done < 0 or boot.find(e820_marker, e820 + 1) >= 0:
+        fail("could not locate unique E820 loop markers in assembled boot sector")
+    return boot, e820, done
 
 def run_response(boot: bytes, e820_offset: int, done_offset: int, signature: int) -> int:
     uc = Uc(UC_ARCH_X86, UC_MODE_16)
