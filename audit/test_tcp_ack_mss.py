@@ -190,6 +190,30 @@ def test_bad_ack() -> None:
 
 
 
+
+def test_delayed_syn_cookie() -> None:
+    # A SYN cookie without a time bucket should remain valid after the SYN
+    # retransmission cache has aged out. No ACK is sent until after the delay.
+    sport, isn = 52003, 0x3456789A
+    synack = handshake(sport, isn, 536)
+    if synack is None:
+        report("delayed SYN-cookie test", False, "no SYN-ACK for synthetic SYN")
+        return
+    delay = 65
+    print(f"OBSERVED: holding the synthetic SYN-ACK for {delay}s before its first ACK")
+    time.sleep(delay)
+    payloads = fetch_after_handshake(sport, isn, synack, bad_ack=False)
+    response = b"".join(payloads)
+    report(
+        "delayed SYN-cookie test",
+        response.startswith(b"HTTP/1."),
+        f"the ACK was accepted after {delay}s and the HTTP request was processed"
+        if response.startswith(b"HTTP/1.")
+        else f"no HTTP response after {delay}s; captured {len(response)} payload bytes",
+    )
+
+
+
 def test_small_mss() -> None:
     sport, isn, peer_mss = 52002, 0x23456789, 100
     synack = handshake(sport, isn, peer_mss)
@@ -210,6 +234,7 @@ if __name__ == "__main__":
     try:
         test_bad_ack()
         test_small_mss()
+        test_delayed_syn_cookie()
         print(f"RESULT: TCP ACK/MSS probes completed in mode={mode}")
     finally:
         sock.close()
