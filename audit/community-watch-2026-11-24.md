@@ -658,9 +658,11 @@ The test was then expanded in commit
 https://github.com/miSultanato/k15/commit/5b34a9d8651cb1d4104a051e7c702334f0e53184
 to try four inner-length values against the same complete valid body:
 zero, one byte short, one byte long, and the maximum 24-bit value. The outer
-TLS record length remains correct in each case. The expanded test's CI result
-is pending at the time of this note; do not treat the four-case matrix as
-confirmed until the QEMU job completes successfully.
+TLS record length remains correct in each case. The expanded four-case
+matrix completed successfully in the three-way differential run
+https://github.com/miSultanato/k15/actions/runs/45460246415: the frozen image
+returned ServerHello for all cases, while both upstream revisions rejected
+them with fatal TLS alerts.
 
 Scope: all probes run against 127.0.0.1 in an ephemeral GitHub runner. The
 bounty source revision remains pinned to ab93479ebc7c85274c722b16897148286d1cfca3.
