@@ -77,8 +77,8 @@ def client_hello_with_p256_key_share(hello: bytes) -> bytes:
 
     private = ec.generate_private_key(ec.SECP256R1())
     numbers = private.public_key().public_numbers()
-    point = b"\\x04" + numbers.x.to_bytes(32, "big") + numbers.y.to_bytes(32, "big")
-    share_entry = b"\\x00\\x17" + len(point).to_bytes(2, "big") + point
+    point = b"\x04" + numbers.x.to_bytes(32, "big") + numbers.y.to_bytes(32, "big")
+    share_entry = b"\x00\x17" + len(point).to_bytes(2, "big") + point
     share_data = len(share_entry).to_bytes(2, "big") + share_entry
 
     kept = bytearray()
@@ -103,10 +103,10 @@ def client_hello_with_p256_key_share(hello: bytes) -> bytes:
                 raise RuntimeError("malformed supported_groups extension")
             groups_len = int.from_bytes(data[:2], "big")
             groups = [data[j : j + 2] for j in range(2, 2 + groups_len, 2)]
-            if b"\\x00\\x1d" not in groups:
-                groups.append(b"\\x00\\x1d")
-            if b"\\x00\\x17" not in groups:
-                groups.append(b"\\x00\\x17")
+            if b"\x00\x1d" not in groups:
+                groups.append(b"\x00\x1d")
+            if b"\x00\x17" not in groups:
+                groups.append(b"\x00\x17")
             group_data = b"".join(groups)
             new_data = len(group_data).to_bytes(2, "big") + group_data
             kept.extend(kind.to_bytes(2, "big") + len(new_data).to_bytes(2, "big") + new_data)
@@ -120,6 +120,6 @@ def client_hello_with_p256_key_share(hello: bytes) -> bytes:
         raise RuntimeError("OpenSSL ClientHello did not contain supported_groups extension")
 
     new_body = body[:ext_len_pos] + len(kept).to_bytes(2, "big") + bytes(kept)
-    new_hs = b"\\x01" + len(new_body).to_bytes(3, "big") + new_body
+    new_hs = b"\x01" + len(new_body).to_bytes(3, "big") + new_body
     return hello[:3] + len(new_hs).to_bytes(2, "big") + new_hs
 
