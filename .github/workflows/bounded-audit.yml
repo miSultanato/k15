@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - audit/nonce_cycle_demo.py
+      - audit/check_rand_path.py
       - .github/workflows/bounded-audit.yml
 
 permissions:
@@ -41,6 +42,9 @@ jobs:
 
       - name: Run synthetic RDRAND-cycle and ECDSA recovery demonstration
         run: python3 audit/nonce_cycle_demo.py
+
+      - name: Check RNG call-site and nonce-pool invariants in frozen source
+        run: python3 audit/check_rand_path.py target/src/os.asm
 
       - name: Install minimal native build dependency
         run: |
