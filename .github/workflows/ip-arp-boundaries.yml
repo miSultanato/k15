@@ -1,4 +1,5 @@
 name: k15 IPv4 and ARP protocol boundaries
+# Run deterministic local TAP probes against the pinned bounty and upstream images.
 
 on:
   workflow_dispatch:
