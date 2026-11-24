@@ -1,41 +1,157 @@
 #!/usr/bin/env python3
-"""Summarize an OpenSSL s_client HRR/second-ClientHello trace from local QEMU."""
+"""Force and inspect a TLS 1.3 HelloRetryRequest on a local QEMU guest.
+
+OpenSSL offers secp384r1 first and X25519 second. A local TCP relay captures
+both directions so the test asserts the actual second ClientHello and server
+dummy ChangeCipherSpec count without modifying TLS bytes.
+
+Usage: test_hrr_second_clienthello.py TARGET none|some
+"""
 from __future__ import annotations
 
-import re
+import select
+import socket
+import subprocess
 import sys
+import threading
 from pathlib import Path
 
-if len(sys.argv) != 2:
-    raise SystemExit("usage: test_hrr_second_clienthello.py OPENSSL_TRACE")
-
-trace = Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace")
-flat = re.sub(r"[^0-9a-f]", "", trace.lower())
-hrr_random = "cf21ad74e59a6111be1d8c021e65b891c2a211167abb8c5e079e09e2c8a8339c"
-client_hellos = [m.start() for m in re.finditer("ClientHello", trace)]
-server_hellos = [m.start() for m in re.finditer("ServerHello", trace)]
-hrr_match = re.search(r"cf[\s:]+21[\s:]+ad[\s:]+74[\s:]+e5[\s:]+9a[\s:]+61[\s:]+11", trace.lower())
-hrr_present = hrr_random in flat
-second_client_hello = len(client_hellos) >= 2 and hrr_match is not None and client_hellos[1] > hrr_match.start()
-server_ccs = [m.start() for m in re.finditer(r"<<<[^\n]*ChangeCipherSpec", trace)]
-final_server_hello = server_hellos[1] if len(server_hellos) >= 2 else -1
-ccs_after_final_server_hello = final_server_hello >= 0 and any(p > final_server_hello for p in server_ccs)
-http = "HTTP/1.1" in trace or "HTTP/1.0" in trace
-
-print(
-    "HRR trace: "
-    f"hrr_random={hrr_present}, client_hellos={len(client_hellos)}, "
-    f"second_client_hello_after_hrr={second_client_hello}, "
-    f"server_hellos={len(server_hellos)}, server_ccs={len(server_ccs)}, "
-    f"server_ccs_after_final_server_hello={ccs_after_final_server_hello}, "
-    f"http_response={http}"
+HRR_RANDOM = bytes.fromhex(
+    "cf21ad74e59a6111be1d8c021e65b891"
+    "c2a211167abb8c5e079e09e2c8a8339c"
 )
-if not trace.strip():
-    raise SystemExit("FAIL: OpenSSL produced an empty trace")
-if not hrr_present or len(client_hellos) < 2:
-    print("HANDSHAKE TRACE MARKERS:")
-    for line in trace.splitlines():
-        if any(token in line for token in ("ClientHello", "ServerHello", "ChangeCipherSpec", "Random", "Handshake")):
-            print(line[:260])
-    print("TRACE TAIL:")
-    print("\n".join(trace.splitlines()[-18:]))
+
+
+def fail(message: str) -> None:
+    raise SystemExit("FAIL: " + message)
+
+
+def parse_records(data: bytes) -> list[tuple[int, bytes]]:
+    result: list[tuple[int, bytes]] = []
+    offset = 0
+    while offset + 5 <= len(data):
+        size = int.from_bytes(data[offset + 3 : offset + 5], "big")
+        if offset + 5 + size > len(data):
+            break
+        result.append((data[offset], data[offset + 5 : offset + 5 + size]))
+        offset += 5 + size
+    return result
+
+
+def parse_handshakes(items: list[tuple[int, bytes]]) -> list[tuple[int, bytes]]:
+    stream = b"".join(payload for kind, payload in items if kind == 22)
+    result: list[tuple[int, bytes]] = []
+    offset = 0
+    while offset + 4 <= len(stream):
+        size = int.from_bytes(stream[offset + 1 : offset + 4], "big")
+        if offset + 4 + size > len(stream):
+            break
+        result.append((stream[offset], stream[offset + 4 : offset + 4 + size]))
+        offset += 4 + size
+    return result
+
+
+class Relay:
+    def __init__(self) -> None:
+        self.client_bytes = bytearray()
+        self.server_bytes = bytearray()
+        self.ready = threading.Event()
+        self.error: BaseException | None = None
+        self.listener = socket.socket()
+        self.listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.listener.bind(("127.0.0.1", 8444))
+        self.listener.listen(1)
+        self.listener.settimeout(12)
+
+    def run(self) -> None:
+        try:
+            client, _ = self.listener.accept()
+            with client, socket.create_connection(("127.0.0.1", 8443), timeout=5) as upstream:
+                client.setblocking(False)
+                upstream.setblocking(False)
+                while True:
+                    readable, _, _ = select.select([client, upstream], [], [], 12)
+                    if not readable:
+                        break
+                    for source in readable:
+                        chunk = source.recv(65536)
+                        if not chunk:
+                            return
+                        if source is client:
+                            self.client_bytes.extend(chunk)
+                            upstream.sendall(chunk)
+                        else:
+                            self.server_bytes.extend(chunk)
+                            client.sendall(chunk)
+        except BaseException as exc:
+            self.error = exc
+        finally:
+            self.listener.close()
+            self.ready.set()
+
+
+def main() -> None:
+    if len(sys.argv) != 3 or sys.argv[2] not in {"none", "some"}:
+        fail("usage: test_hrr_second_clienthello.py TARGET none|some")
+    if not Path(sys.argv[1]).is_dir():
+        fail(f"target directory does not exist: {sys.argv[1]}")
+
+    relay = Relay()
+    thread = threading.Thread(target=relay.run, daemon=True)
+    thread.start()
+    command = [
+        "openssl", "s_client",
+        "-connect", "127.0.0.1:8444",
+        "-tls1_3",
+        "-groups", "secp384r1:x25519",
+        "-servername", "localhost",
+        "-brief",
+    ]
+    try:
+        client = subprocess.run(
+            command, input=b"", stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            timeout=18, check=False,
+        )
+    except subprocess.TimeoutExpired:
+        fail("OpenSSL client timed out during local HRR handshake")
+    thread.join(timeout=5)
+    if not relay.ready.is_set():
+        fail("local TLS relay did not finish capturing the handshake")
+    if relay.error is not None:
+        fail(f"local TLS relay failed: {relay.error}")
+
+    sent = parse_records(bytes(relay.client_bytes))
+    received = parse_records(bytes(relay.server_bytes))
+    client_messages = parse_handshakes(sent)
+    server_messages = parse_handshakes(received)
+    client_hellos = sum(kind == 1 for kind, _ in client_messages)
+    server_hellos = sum(kind == 2 for kind, _ in server_messages)
+    hrr = any(
+        kind == 2 and len(body) >= 34 and body[2:34] == HRR_RANDOM
+        for kind, body in server_messages
+    )
+    server_ccs = sum(kind == 20 for kind, _ in received)
+    output = client.stdout.decode("utf-8", errors="replace")
+    print(output.strip())
+    print(
+        f"HRR capture: client_hellos={client_hellos}, hrr={hrr}, "
+        f"server_hellos={server_hellos}, server_ccs={server_ccs}, "
+        f"openssl_exit={client.returncode}"
+    )
+
+    if not hrr or client_hellos < 2:
+        fail("OpenSSL did not complete the intended HRR -> second ClientHello path")
+    if client.returncode != 0 or "Protocol version: TLSv1.3" not in output:
+        fail("OpenSSL TLS 1.3 handshake did not complete")
+    if server_hellos < 2:
+        fail("server did not send a final ServerHello after HRR")
+    expected = sys.argv[2]
+    if expected == "none" and server_ccs != 0:
+        fail(f"expected no server dummy CCS, observed {server_ccs}")
+    if expected == "some" and server_ccs == 0:
+        fail("expected server dummy CCS on the HRR handshake")
+    print(f"PASS: completed HRR second-ClientHello handshake; server CCS expectation={expected}")
+
+
+if __name__ == "__main__":
+    main()
