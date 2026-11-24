@@ -18,7 +18,7 @@ if len(sys.argv) not in (2, 3):
     raise SystemExit("usage: test_tcp_ack_mss.py TARGET [expect|observe]")
 
 mode = sys.argv[2] if len(sys.argv) == 3 else "expect"
-if mode not in {"expect", "observe"}:
+if mode not in {"expect", "observe", "wrap"}:
     raise SystemExit("mode must be expect or observe")
 
 GUEST_IP = socket.inet_aton("10.0.2.15")
@@ -180,6 +180,11 @@ def test_bad_ack() -> None:
     if synack is None:
         report("ACK-window test", False, "no SYN-ACK for control connection")
         return
+    server_next = (synack["seq"] + 1) & 0xFFFFFFFF
+    if mode == "wrap":
+        print(f"OBSERVED: forced-wrap server ISS=0x{synack['seq']:08x}, SND.NXT=0x{server_next:08x}")
+        if server_next < 0xFFFF0000:
+            raise SystemExit(f"FAIL: forced-wrap image did not place SND.NXT near 2^32: 0x{server_next:08x}")
     payloads = fetch_after_handshake(sport, isn, synack, bad_ack=True)
     response = b"".join(payloads)
     report(
@@ -226,6 +231,11 @@ def test_ack_boundary_matrix() -> None:
         if synack is None:
             print(f"OBSERVED: ACK delta +{delta}: no SYN-ACK for control connection")
             continue
+        server_next = (synack["seq"] + 1) & 0xFFFFFFFF
+        if mode == "wrap":
+            print(f"OBSERVED: ACK boundary server SND.NXT=0x{server_next:08x}")
+            if server_next < 0xFFFF0000:
+                raise SystemExit(f"FAIL: forced-wrap SND.NXT not near 2^32: 0x{server_next:08x}")
         payloads = fetch_after_handshake(
             sport, isn, synack, bad_ack=False, ack_delta=delta
         )
@@ -255,8 +265,9 @@ if __name__ == "__main__":
     try:
         test_bad_ack()
         test_ack_boundary_matrix()
-        test_small_mss()
-        test_delayed_syn_cookie()
+        if mode != "wrap":
+            test_small_mss()
+            test_delayed_syn_cookie()
         print(f"RESULT: TCP ACK/MSS probes completed in mode={mode}")
     finally:
         sock.close()
