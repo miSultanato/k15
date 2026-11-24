@@ -173,6 +173,8 @@ def main() -> None:
     print("PASS: only one direct R_D source reference initializes the register")
     print("PASS: all direct REGS address operations are enumerated and bounded")
     print("PASS: VM register decoding masks indices to 0..15 before address formation")
+    print("PASS: boot loads the masked dR scalar from the EDC block after the fixed NLOW layout")
+    print("PASS: comb has exactly two fixed table/program callers; secret nibbles select by masks, not addresses")
     print("PASS: sign invokes the fixed X_SIGN curve program")
     require("for name, prog in curve.PROGRAMS.items()" in gen and
             "db(name, prog)" in gen and "ec.inc" in gen and
