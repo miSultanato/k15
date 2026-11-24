@@ -325,10 +325,11 @@ and 1,816 unpacked bytes; the deterministic generated include has SHA-256
 This is a deterministic source-derived manifest, not a byte comparison with
 a production image or an assembled binary.
 
-The new offline proof check is being added separately: it will validate the
-committed public cross-curve proof and its address without connecting to
-15kb.org or accessing a private key. None of these checks exercise real
-RDRAND hardware, the production VM, or the live server.
+The offline proof check now validates the committed public cross-curve proof
+and its address without connecting to 15kb.org or accessing a private key.
+It does not compare the proof's P-256 point with a live TLS certificate.
+None of these checks exercise real RDRAND hardware, the production VM, or
+the live server.
 
 Earlier runs 45371790632 and 45371845295 also passed the preceding
 read-path checker revisions and make test.
@@ -367,3 +368,37 @@ An offline CI verifier has been added to check the repository's exact proof
 file, compare the verified Bitcoin address with its header, and report the
 public P-256 and secp256k1 points. It must not be described as proving
 knowledge of the private scalar or as a key-recovery method.
+
+
+## Final bounded CI result (2026-11-24)
+
+Run:
+https://github.com/miSultanato/k15/actions/runs/45373486262
+
+- Audit harness commit: `9391464c7407b64d0dd542f9f88fae060252e9e1`.
+- Frozen target: `ab93479ebc7c85274c722b16897148286d1cfca3`.
+- Result: success.
+- Synthetic periodic-stream/ECDSA model: all configured periods passed.
+- RNG source guard: all four call sites, per-CPU `RLAST`, and 64-entry nonce pool passed.
+- Private-scalar read-path guard: `R_D` initialization, bounded register decode,
+  fixed `X_SIGN`, table lookup bounds and source-to-generator linkage passed.
+- Generated VM program manifest: 14 programs, 1,816 unpacked bytes,
+  deterministic `ec.inc` SHA-256
+  `02a6eb75314455ade2a5690b27ef85d7f4185a8585d96a078f1f188528a0d369`.
+- Public proof: offline verification passed; version 1, `flip=0`,
+  41,172 binary bytes; verified address
+  `bc1qy53kjpg50e8scustvqk25ds3gh77578a7hj0g9`.
+- Upstream crypto test: 70 signatures and 70 nonces passed.
+
+The proof check validates the public proof's internal relation and derived
+Bitcoin address. It does not fetch or compare the live TLS certificate.
+The workflow checks out the exact bounty commit and does not upload build
+images, certificates, private keys or generated secret-bearing files.
+
+## Current conclusion
+
+No public source reviewed through 2026-11-24 reports a successful key
+recovery or bounty spend. Community write-ups are detailed but self-reported;
+their raw datasets and harnesses are not public in the thread. Our additional
+static checks strengthen the finite source-level argument around the scalar,
+but do not prove the production hypervisor, CPU RNG or image contents.
