@@ -689,3 +689,15 @@ Current assessment: reproducible TLS framing/conformance bug on the bounty
 image; no demonstrated key disclosure, memory-safety violation, transcript
 integrity failure, or bounty-winning exploit. Keep it separate from any
 outer-record truncation/fragmentation hypothesis.
+
+
+## Separate outer-record-length probe (pending)
+
+A second, deliberately separate local QEMU probe has been added in commit
+https://github.com/miSultanato/k15/commit/1fde392f1819d55a6316c77a5c8c2ba5a2faab30.
+It keeps the complete original ClientHello bytes on the TCP stream but makes
+the enclosing TLS record length one byte shorter, leaving the final byte
+outside that record. This tests the outer-record behavior discussed by the
+community auditor, rather than the already-confirmed inner handshake-length
+mismatch. Its result is pending; no conclusion should be drawn until CI logs
+are available.
