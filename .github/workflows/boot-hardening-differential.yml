@@ -1,0 +1,64 @@
+name: k15 boot hardening source differential
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - audit/check_boot_hardening.py
+      - .github/workflows/boot-hardening-differential.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k15-boot-hardening-source
+  cancel-in-progress: false
+
+jobs:
+  source:
+    name: Boot/build hardening — frozen vs upstream
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out audit harness
+        uses: actions/checkout@v4
+
+      - name: Check out frozen bounty source
+        uses: actions/checkout@v4
+        with:
+          repository: FileSherlock/k15
+          ref: ab93479ebc7c85274c722b16897148286d1cfca3
+          path: bounty
+          persist-credentials: false
+
+      - name: Check out first upstream fix
+        uses: actions/checkout@v4
+        with:
+          repository: FileSherlock/k15
+          ref: a2d8893261b2be15b44c86d6f4483d65820e943a
+          path: fixed
+          persist-credentials: false
+
+      - name: Check out current upstream main snapshot
+        uses: actions/checkout@v4
+        with:
+          repository: FileSherlock/k15
+          ref: cb9f76a5a100c418bfcaeddcd4f137d30ab489d2
+          path: current
+          persist-credentials: false
+
+      - name: Verify all source pins
+        run: |
+          test "$(git -C bounty rev-parse HEAD)" = "ab93479ebc7c85274c722b16897148286d1cfca3"
+          test "$(git -C fixed rev-parse HEAD)" = "a2d8893261b2be15b44c86d6f4483d65820e943a"
+          test "$(git -C current rev-parse HEAD)" = "cb9f76a5a100c418bfcaeddcd4f137d30ab489d2"
+
+      - name: Compare four source-level hardening deltas
+        run: python3 audit/check_boot_hardening.py bounty fixed current
+
+      - name: Keep the check static and artifact-free
+        run: |
+          echo "No image is booted and no synthetic key material is generated."
+          echo "No artifacts are uploaded."
