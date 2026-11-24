@@ -95,8 +95,12 @@ slot cannot be silently recreated as the original SYN-cookie connection.
 The exact RST should prevent HTTP processing; either off-by-one RST should
 leave the connection alive and allow the request to complete. This is a
 deterministic behavioral oracle rather than merely checking for an ACK.
-The new three-revision workflow execution is pending; no runtime result is
-claimed yet.
+The three-revision run [45484598190](https://github.com/miSultanato/k15/actions/runs/45484598190)
+passed on frozen bounty, first upstream fix and current upstream. In every
+revision, the exact observed ACK sequence reset the connection and prevented
+the remaining request from producing HTTP; offsets -1 and +1 left the
+connection alive and the request completed. This confirms the intended exact
+match in the tested state, not a security defect.
 
 No new FIN/RST vulnerability is claimed from source inspection alone. Exact
 client-sequence window edges (`-65,537`, `-65,536`, `-1`, `0`,
