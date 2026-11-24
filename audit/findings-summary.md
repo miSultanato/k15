@@ -60,8 +60,10 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
   workflow has not yet been observed completing; no live-PTE result is claimed.
 - `test_tcp_rst_sequence.py` adds an exact/off-by-one RST sequence test. It
   uses the server's observed ACK as the reset sequence oracle, then verifies
-  connection state by sending the remaining HTTP request. The three-way
-  runtime result is pending; this is a coverage addition, not a new finding.
+  connection state by sending the remaining HTTP request. All three revisions
+  pass: exact sequence resets the slot; offsets -1/+1 preserve it.
+  [run 45484598190](https://github.com/miSultanato/k15/actions/runs/45484598190).
+  This is expected behavior and closes a coverage gap, not a new finding.
 
 ## Additional negative evidence
 
