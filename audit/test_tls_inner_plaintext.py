@@ -101,5 +101,5 @@ def observe(label: str, inner: bytes) -> None:
 
 
 if __name__ == "__main__":
-    observe("TLSInnerPlaintext=1 zero byte", bytes(1))
-    observe("TLSInnerPlaintext=300 zero bytes", bytes(300))
+    for length in (1, 2, 16, 255, 300):
+        observe(f"TLSInnerPlaintext={length} all-zero bytes", bytes(length))
