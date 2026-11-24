@@ -541,3 +541,32 @@ Sources:
   https://github.com/FileSherlock/k15/commit/a2d8893261b2be15b44c86d6f4483d65820e943a
 - Current development tip:
   https://github.com/FileSherlock/k15/commit/d335390feb3aee2a947277dfa792b86d14ea1828
+
+
+## Valgrind taint-check reproduction (2026-11-24)
+
+Run:
+https://github.com/miSultanato/k15/actions/runs/45376601972
+
+The workflow now installs the runner's packaged Valgrind and runs the
+upstream `test/ct.c` against the assembly host object built from the frozen
+bounty source:
+
+- Normal cryptographic run: zero Valgrind errors.
+- Deliberately bad control 1 (branch on shared secret): detected.
+- Control 2 (branch on key-schedule secret): detected.
+- Control 3 (branch on plaintext before sealing): detected.
+- Control 4 (branch on decrypted record data): detected.
+- Control 5 (branch on signature before publication): detected.
+- Control 6 (index a table with a secret byte): detected.
+
+All six negative controls were detected, so this is not merely a clean run
+with a broken taint harness. The same CI run also passed the 70-signature
+crypto suite, all static source checks and the complete bootable-image build
+(14,586-byte OS binary, 727-byte site).
+
+This independently reproduces the project's Valgrind constant-time check
+against the frozen source with the system package, rather than downloading
+the project's pinned Valgrind bundle. It is still a local host-build test:
+it does not establish resistance to every microarchitectural side channel
+or prove that the production CPU and hypervisor behave identically.
