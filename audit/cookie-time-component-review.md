@@ -19,10 +19,10 @@ This is a source-level review, not a demonstrated remote replay exploit.
 
 The frozen cookie is keyed and bound to the address/port tuple and the client's initial sequence number, but the cookie itself has no time component. The key material is initialized at boot, so a reboot changes the key; within one boot, the source does not show a time-based expiry in the cookie verification path.
 
-This makes replay of a previously valid SYN-ACK/ACK exchange a candidate to test within one boot. It does **not** by itself show that an off-path attacker can learn or forge a cookie, bypass TCP sequence checks, hijack an established connection, or obtain TLS secrets. Those are separate questions.
+A local TAP test now holds a synthetic SYN-ACK for 65 seconds before sending its first ACK. The frozen bounty and first upstream fix both accept that delayed ACK and process a following HTTP request; the current-upstream matrix job is still pending in run [45410737525](https://github.com/miSultanato/k15/actions/runs/45410737525). This demonstrates no 64-second cookie expiry in the tested revisions. It is **not** a replay after connection teardown and does not show that an off-path attacker can learn or forge a cookie, bypass TCP sequence checks, hijack an established connection, or obtain TLS secrets.
 
 ## Safe next test
 
-Build only the frozen image under local QEMU/TAP. Use a synthetic client tuple and fixed ISN, capture its SYN-ACK, complete and close that synthetic connection, then replay the old ACK after a controlled delay and observe whether the server allocates a new slot. Keep all traffic local. Compare the same sequence against the pinned upstream image if its cookie algorithm has changed.
+If this merits further testing, build only local images under QEMU/TAP. First complete and close a synthetic connection, then replay its old ACK after a controlled delay and observe whether the server allocates a new slot. Keep all traffic local and compare the frozen image with the pinned upstream revisions.
 
 Do not send stale ACKs to `15kb.org`, do not spoof third-party addresses, and do not use production infrastructure.
