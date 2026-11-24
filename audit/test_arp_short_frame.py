@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Probe short-ARP stale receive-buffer bytes using synthetic marker data on TAP.
+"""Probe short-ARP stale receive-buffer bytes using synthetic ARP traffic on TAP.
 
-The test primes RX buffers with a non-IP Ethernet frame whose bytes at offsets
-22..31 contain a synthetic marker and whose bytes 38..41 equal the guest IP.
-It then sends 24-byte ARP requests that omit those fields. A reply addressed
-to the primed MAC and containing the marker demonstrates stale-buffer reuse.
+The test primes RX buffers with full ARP requests from a synthetic MAC/IP,
+then sends 24-byte ARP requests that omit the sender and target fields. A
+reply containing the previous sender IP demonstrates stale-buffer reuse.
 Usage: test_arp_short_frame.py TARGET [expect|observe]
 """
 from __future__ import annotations
@@ -35,10 +34,9 @@ broadcast = b"\xff" * 6
 
 
 def prime_frame() -> bytes:
-    payload = bytearray(28)  # frame offsets 14..41
-    payload[8:18] = host_mac + MARKER_IP  # frame offsets 22..31
-    payload[24:28] = GUEST_IP             # frame offsets 38..41
-    return broadcast + host_mac + b"\x88\xb5" + payload
+    header = struct.pack("!HHBBH", 1, 0x0800, 6, 4, 1)
+    arp = header + host_mac + MARKER_IP + b"\0" * 6 + GUEST_IP
+    return broadcast + host_mac + b"\x08\x06" + arp
 
 
 def short_arp() -> bytes:
@@ -56,6 +54,19 @@ def leaked_marker(frame: bytes) -> bool:
     )
 
 
+def drain_prime_replies(timeout: float) -> int:
+    """Drain normal replies to the full priming ARP requests before probing."""
+    deadline = time.monotonic() + timeout
+    count = 0
+    while time.monotonic() < deadline:
+        ready, _, _ = select.select([sock], [], [], max(0, deadline - time.monotonic()))
+        if not ready:
+            break
+        if leaked_marker(sock.recv(65536)):
+            count += 1
+    return count
+
+
 def wait_marker(timeout: float) -> bool:
     ready, _, _ = select.select([sock], [], [], timeout)
     while ready:
@@ -70,10 +81,15 @@ if __name__ == "__main__":
     try:
         prime = prime_frame()
         short = short_arp()
-        # Fill and wrap the single-queue RX ring with the same synthetic marker.
+        # Fill and wrap the single-queue RX ring with valid ARP requests. Their
+        # normal replies are drained so they cannot be mistaken for the leak.
         for _ in range(512):
             sock.send(prime)
         time.sleep(0.1)
+        primed = drain_prime_replies(0.5)
+        if primed == 0:
+            raise SystemExit("FAIL: guest did not answer the full ARP priming requests")
+        print(f"OBSERVED: drained {primed} normal replies to full ARP priming requests")
         found = False
         for _ in range(128):
             sock.send(short)
