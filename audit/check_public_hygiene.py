@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Fail if generated secrets or private build artifacts enter the public Git tree.
 
-This checks tracked paths and their checked-out contents. It intentionally does
-not attempt broad heuristic secret detection: false positives in public source
-are worse than a narrow, auditable guardrail.
+This checks tracked paths, checked-out contents and all reachable historical
+Git blobs. It intentionally avoids broad heuristic secret detection: false
+positives in public source are worse than a narrow, auditable guardrail.
 """
 from __future__ import annotations
 
