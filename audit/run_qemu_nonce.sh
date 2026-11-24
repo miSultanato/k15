@@ -12,4 +12,6 @@ cd "$target"
 export B=build IMG=build/os.bin PORT=8443 HPORT=9443 KVM=0 SMP=4 MEM=256
 source tools/vm.sh
 boot
-python3 "$repo_root/qemu_nonce_uniqueness.py" "$target" "$count" 4
+args=("$target" "$count" 4)
+[[ -n "${3:-}" ]] && args+=("$3")
+python3 "$repo_root/qemu_nonce_uniqueness.py" "${args[@]}"
