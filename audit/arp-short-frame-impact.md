@@ -95,8 +95,15 @@ three-way synthetic differential confirms the guard's observed effect.
 ## Safe follow-up
 
 The follow-up is implemented in `test_arp_short_frame.py`: it primes the
-single-queue RX ring with full synthetic ARP requests, drains their ordinary
-replies, then sends 24-byte short requests and checks for the stale suffix.
-The next step is to run the existing three-way TAP workflow and inspect its
-logs. Keep all traffic on the local guest, use synthetic MAC/IP values, and
+single-queue RX ring with 32,768 valid synthetic ARP requests, drains every
+ordinary marker-bearing reply, then sends 24-byte short requests and checks
+for the stale suffix. The workflow uses `SMP=1 MEM=256`; the test splits the
+priming into 512 batches of 64 to avoid TAP burst loss.
+
+Three-way run 45463654039 confirmed the marker on the frozen bounty and no
+marker on the first upstream fix. The current-upstream leg of that run failed
+during priming (303/512 replies in the old 512-frame burst), so it is a
+harness packet-loss result, not a target finding. The paced 64-frame-batch
+rerun is tracked in run 45464009546 and remains pending at the time of this
+update. Keep all traffic on the local guest, use synthetic MAC/IP values, and
 upload no packet captures or artifacts.
