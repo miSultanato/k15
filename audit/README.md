@@ -62,13 +62,15 @@ user namespaces.
   fuzzer and verifies the QEMU guest remains alive and port-80 output stays bounded.
 - `test_clienthello_framing.py`: checks inner/outer lengths, session IDs of
   33 and 255 bytes, compression method and legacy_version against local QEMU
-  images; the 255-byte frozen behavior is recorded rather than presumed.
+  images; both oversized session IDs receive ServerHello on frozen bounty and
+  fatal alerts on the two fixed upstream images.
 - `test_tls_record_rejection.py`: corrupts a client Finished and an AEAD tag,
   then checks whether the local QEMU guest still processes valid app data.
 - `test_dummy_ccs.py`: compares the normal ServerHello record sequence and
   elicits HelloRetryRequest. `test_hrr_second_clienthello.py` drives an OpenSSL client through a
   Go TLS 1.3 client through the second ClientHello and asserts the expected
-  presence/absence of a dummy CCS on each pinned revision.
+  presence/absence of a dummy CCS on each pinned revision. The OpenSSL wire
+  capture confirms two ClientHellos/two ServerHellos on all three revisions.
 - `test_https_request.py`: probes lowercase/unknown methods and missing Host
   over the TLS listener, exercising the decrypted HTTPS request parser.
 - `test_ip_arp_validation.py`: sends synthetic IPv4 SYNs with valid/invalid
