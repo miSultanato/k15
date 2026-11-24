@@ -9,9 +9,9 @@
 
 No private-key disclosure or practical key-recovery exploit has been found.
 
-Several concrete defects are now reproduced against the frozen image. The most notable memory-safety-adjacent result is a **same-link stale-buffer disclosure through a 24-byte ARP request**: the frozen image returned a synthetic marker left in a previous receive buffer. The tested upstream image did not return that marker. This does not show that the disclosed bytes can be selected from private-key memory, or that the issue is reachable over the Internet.
+Several concrete defects are now reproduced against the frozen image. The most notable memory-safety-adjacent result is a **same-link stale-buffer disclosure through a 24-byte ARP request**: the frozen image returned a synthetic marker left in a previous receive buffer. Neither tested upstream image returned that marker. This does not show that the disclosed bytes can be selected from private-key memory, or that the issue is reachable over the Internet.
 
-The audit also reproduces TLS record-validation, TCP ACK-window and MSS defects. Some remain present in upstream framing-fix commit `a2d8893`; others are fixed there. The bounty target branch remains unchanged and pinned to its original commit.
+The audit also reproduces TLS record-validation, TCP ACK-window and MSS defects. Some remain present in upstream framing-fix commit `a2d8893`; others are fixed there. The bounty target branch remains unchanged and pinned to its original commit. Current upstream main is pinned separately at `cb9f76a5a100c418bfcaeddcd4f137d30ab489d2`.
 
 ## Confirmed differential evidence
 
@@ -31,7 +31,7 @@ The audit also reproduces TLS record-validation, TCP ACK-window and MSS defects.
 
 - The local upstream hostile-client regression suite passes, including malformed
   ClientHello cases. [#45382026675](https://github.com/miSultanato/k15/actions/runs/45382026675)
-- Lowercase `get` and unknown `FOO` HTTP methods both returned HTTP 200 on both
+- Lowercase `get` and unknown `FOO` HTTP methods both returned HTTP 200 on all three
   tested images; the reported method hang was not reproduced.
   [#45400915976](https://github.com/miSultanato/k15/actions/runs/45400915976)
 - Controlled SMP slot races RACE=1/2/3 pass on the frozen image.
