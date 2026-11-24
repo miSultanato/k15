@@ -4,7 +4,7 @@
 The test primes RX buffers with full ARP requests from a synthetic MAC/IP,
 then sends 24-byte ARP requests that omit the sender and target fields. A
 reply containing the previous sender IP demonstrates stale-buffer reuse.
-Usage: test_arp_short_frame.py TARGET [expect|observe]
+Usage: test_arp_short_frame.py TARGET [expect|reject]
 """
 from __future__ import annotations
 
@@ -20,8 +20,8 @@ if len(sys.argv) not in (2, 3):
     raise SystemExit("usage: test_arp_short_frame.py TARGET [expect|observe]")
 
 mode = sys.argv[2] if len(sys.argv) == 3 else "expect"
-if mode not in {"expect", "observe"}:
-    raise SystemExit("mode must be expect or observe")
+if mode not in {"expect", "reject"}:
+    raise SystemExit("mode must be expect or reject")
 
 target = Path(sys.argv[1]).resolve()
 TAP = os.environ.get("TAP", "k2t")
@@ -124,8 +124,10 @@ if __name__ == "__main__":
                 found = True
                 break
         if mode == "expect" and not found:
-            raise SystemExit("FAIL: no short-ARP stale-buffer marker reply observed")
-        label = "PASS" if mode == "expect" and found else "OBSERVED"
+            raise SystemExit("FAIL: no short-ARP prior-victim marker was disclosed")
+        if mode == "reject" and found:
+            raise SystemExit("FAIL: fixed image disclosed the prior-victim marker")
+        label = "PASS" if (mode == "expect") == found else "FAIL"
         print(label + (": short ARP reply exposed the prior synthetic victim MAC/IP suffix"
                        if found else ": no prior-victim marker reply observed"))
         print(f"RESULT: short ARP probe completed in mode={mode}")
