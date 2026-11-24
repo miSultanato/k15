@@ -336,11 +336,14 @@ read-path checker revisions and make test.
 
 ## Revised priority
 
-1. Finish and independently inspect the static read-site audit around
-   R_D / D, X_SIGN, XP, and vm.
-2. Compare generated curve-program bytes in the frozen image with the
-   source-level tools/ec.py definitions. Do not attempt to recover or
-   reconstruct the private scalar.
+1. Review the next bounded-audit Actions result for the expanded
+   R_D / D / X_SIGN / VM caller checks and the new packed-SITE read-path guard.
+   The static review now covers the masked dR boot source, fixed comb callers,
+   mask-only table selection, exact generated ec.inc comparison, and bounded
+   HTTP path-to-response offsets; CI validation is still pending.
+2. Keep the generated curve-program byte comparison against
+   tools/ec.py in the audit. Do not attempt to recover or reconstruct the
+   private scalar.
 3. Deprioritize broad RDRAND cycle speculation unless a public hardware or
    hypervisor erratum matches the actual host model, or a reproducible local
    experiment produces a concrete anomalous stream.
