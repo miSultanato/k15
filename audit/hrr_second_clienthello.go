@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"os"
 	"time"
 )
 
@@ -112,6 +113,10 @@ func inspectServer(records []record) (hrr bool, serverHellos, serverCCS int, ccs
 }
 
 func main() {
+	if len(os.Args) != 2 || (os.Args[1] != "none" && os.Args[1] != "some") {
+		panic("usage: hrr_second_clienthello.go none|some")
+	}
+	expectCCS := os.Args[1] == "some"
 	fmt.Println("HRR probe: dialing local QEMU guest")
 	raw, err := net.DialTimeout("tcp", "127.0.0.1:8443", 5*time.Second)
 	if err != nil {
@@ -128,8 +133,9 @@ func main() {
 		MaxVersion:         tls.VersionTLS13,
 		CurvePreferences:   []tls.CurveID{tls.CurveP384, tls.X25519},
 	})
-	if err := client.Handshake(); err != nil {
-		fmt.Printf("TLS handshake error: %v\n", err)
+	handshakeErr := client.Handshake()
+	if handshakeErr != nil {
+		fmt.Printf("TLS handshake did not complete: %v\n", handshakeErr)
 	} else {
 		fmt.Println("HRR probe: TLS handshake completed; application data intentionally not sent")
 	}
@@ -141,7 +147,18 @@ func main() {
 		"HRR differential: client_hellos=%d, hrr=%t, server_hellos=%d, server_ccs=%d, server_ccs_after_final_serverhello=%t\n",
 		clientHelloCount, hrr, serverHelloCount, serverCCS, ccsAfterFinal,
 	)
-	if !hrr || clientHelloCount < 2 || serverHelloCount < 2 {
+	if !hrr || clientHelloCount < 2 {
 		fmt.Printf("Client records: %d, server records: %d\n", len(outRecords), len(inRecords))
+		panic("HRR was not followed by a second ClientHello")
 	}
+	if handshakeErr == nil && serverHelloCount < 2 {
+		panic("handshake completed without a final ServerHello after HRR")
+	}
+	if expectCCS && serverCCS == 0 {
+		panic("expected a dummy ChangeCipherSpec on the HRR handshake")
+	}
+	if !expectCCS && serverCCS != 0 {
+		panic(fmt.Sprintf("expected no dummy ChangeCipherSpec, got %d", serverCCS))
+	}
+	fmt.Printf("PASS: HRR second-ClientHello path observed; handshake_completed=%t, server_ccs=%d, expected_ccs=%t\n", handshakeErr == nil, serverCCS, expectCCS)
 }
