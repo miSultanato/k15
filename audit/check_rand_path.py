@@ -30,6 +30,15 @@ def main() -> None:
     require(re.search(r"(?m)^RLAST\s+equ\s+NV\s*\+\s*208\b", source) is not None,
             "RLAST offset changed; review per-processor health-check state")
 
+    require(re.search(r"(?m)^POOLR\s+equ\s+BSS\s*\+", source) is not None,
+            "POOLR is no longer stored in BSS")
+    require(re.search(r"(?m)^POOLK\s+equ\s+POOLR\s*\+", source) is not None,
+            "POOLK is no longer adjacent to the per-processor nonce pool")
+    require(re.search(r"(?m)^POOLN\s+equ\s+NV\s*\+\s*64\b", source) is not None,
+            "POOLN offset changed; review snapshot/rollback state")
+    require(re.search(r"(?m)^POOLFILL\s+equ\s+NV\s*\+\s*68\b", source) is not None,
+            "POOLFILL offset changed; review snapshot/rollback state")
+
     rand_match = re.search(r"(?ms)^rand:\s*(.*?)^\.stuck:", source)
     require(rand_match is not None, "could not isolate rand routine")
     rand_body = rand_match.group(1)
@@ -53,6 +62,16 @@ def main() -> None:
     boot = re.search(r"(?m)^\s*mov edi, HKS\b.*\n\s*push 22\s*\n\s*pop rcx\s*\n\s*call rand\b", source)
     require(boot is not None, "boot-time 22-qword HKS draw changed")
 
+    # The BSP creates HKS before AP startup. Each AP then receives a private
+    # 2 MiB BSS copy, which includes the current RLAST and empty pool counters.
+    ap_copy = re.search(
+        r"(?ms)^\s*mov esi, BSS\s*\n.*?mov ecx, 0x200000 / 8\s*\n\s*rep movsq\s*\n\s*mov \[rdi\+CPUN-STACK\], ebx",
+        source,
+    )
+    require(ap_copy is not None, "could not verify the per-AP 2 MiB BSS copy")
+    require(boot.start() < ap_copy.start(),
+            "AP BSS copy no longer follows the BSP's HKS random draw")
+
     handshake = re.search(r"(?ms)^handshake:.*?(?=^[A-Za-z_][A-Za-z0-9_]*:)", source)
     require(handshake is not None, "could not isolate TLS handshake routine")
     handshake_calls = re.findall(r"(?m)^\s*call\s+rand\b", handshake.group(0))
@@ -63,6 +82,9 @@ def main() -> None:
     print("PASS: rand retries CF=0 and rejects adjacent repeated qwords via RLAST")
     print("PASS: stock consumes four qwords per nonce and holds 64 nonce slots")
     print("PASS: RLAST is processor-local BSS state (NV + 208)")
+    print("PASS: APs receive a private BSS copy after BSP HKS generation; the initial RLAST is cloned")
+    print("PASS: POOLR/POOLK and POOLN/POOLFILL are guest-memory nonce-pool state")
+    print("LIMIT: per-processor RLAST is not a global cross-CPU duplicate detector")
     print("LIMIT: static source assertions only; no RDRAND hardware behavior is tested")
 
 
