@@ -15,6 +15,7 @@ on:
       - audit/run_qemu_nonce.sh
       - audit/run_qemu_framing.sh
       - audit/check_public_proof.py
+      - audit/rdrand_host_probe.c
       - .github/workflows/bounded-audit.yml
 
 permissions:
