@@ -60,12 +60,15 @@ user namespaces.
   Optional one-way fingerprints allow comparison across separate QEMU boots.
 - `run_tap_rawtest.sh`: runs the upstream raw Ethernet/IPv4/TCP malformed-frame
   fuzzer and verifies the QEMU guest remains alive and port-80 output stays bounded.
-- `test_clienthello_framing.py`: checks inner/outer lengths, session ID length,
-  compression method and legacy_version against local QEMU images.
+- `test_clienthello_framing.py`: checks inner/outer lengths, session IDs of
+  33 and 255 bytes, compression method and legacy_version against local QEMU
+  images; the 255-byte frozen behavior is recorded rather than presumed.
 - `test_tls_record_rejection.py`: corrupts a client Finished and an AEAD tag,
   then checks whether the local QEMU guest still processes valid app data.
 - `test_dummy_ccs.py`: compares the normal ServerHello record sequence and
-  elicits HelloRetryRequest; the final post-HRR flight remains open.
+  elicits HelloRetryRequest. `hrr_second_clienthello.go` additionally drives a
+  Go TLS 1.3 client through the second ClientHello and asserts the expected
+  presence/absence of a dummy CCS on each pinned revision.
 - `test_https_request.py`: probes lowercase/unknown methods and missing Host
   over the TLS listener, exercising the decrypted HTTPS request parser.
 - `test_ip_arp_validation.py`: sends synthetic IPv4 SYNs with valid/invalid
