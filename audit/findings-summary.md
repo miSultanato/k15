@@ -9,7 +9,7 @@
 
 No private-key disclosure or practical key-recovery exploit has been found.
 
-Several concrete defects are now reproduced against the frozen image. The most notable memory-safety-adjacent result is a **same-link stale-buffer disclosure through a 24-byte ARP request**: the frozen image returned a synthetic marker left in a previous receive buffer. Neither tested upstream image returned that marker. This does not show that the disclosed bytes can be selected from private-key memory, or that the issue is reachable over the Internet.
+Several concrete defects are now reproduced against the frozen image. A new short-site QEMU differential confirms a **W^X boundary failure**: with a one-file synthetic site ending in a `RET` byte, the frozen image executes that site byte and continues serving, while both tested upstream revisions fault before serving. The most notable memory-safety-adjacent result remains a **same-link stale-buffer disclosure through a 24-byte ARP request**: the frozen image returned a synthetic marker left in a previous receive buffer. Neither tested upstream image returned that marker. Neither result demonstrates private-key disclosure or Internet reachability.
 
 The audit also reproduces TLS record-validation, TCP ACK-window and MSS defects. Some remain present in upstream framing-fix commit `a2d8893`; others are fixed there. The bounty target branch remains unchanged and pinned to its original commit. Current upstream main is pinned separately at `cb9f76a5a100c418bfcaeddcd4f137d30ab489d2`.
 
