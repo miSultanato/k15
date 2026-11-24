@@ -348,6 +348,7 @@ def main() -> None:
     session_id = bytes.fromhex("102132435465768798a9bacbdcedfe0f") * 2
     sock = socket.create_connection((HOST, PORT), timeout=5)
     sock.settimeout(5)
+    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
     try:
         sock.sendall(wire)
         if sys.argv[2] == "reject":
@@ -454,10 +455,9 @@ def main() -> None:
             client_finished_key, transcript_after_finished, hashlib.sha256
         ).digest()
         client_finished = b"\x14\x00\x00\x20" + client_finished_verify
-        sock.sendall(
-            encrypt_record(client_hs_secret, 0, client_finished, 22)
-            + encrypt_record(client_app_secret, 0, REQUEST, 23)
-        )
+        sock.sendall(encrypt_record(client_hs_secret, 0, client_finished, 22))
+        time.sleep(0.02)
+        sock.sendall(encrypt_record(client_app_secret, 0, REQUEST, 23))
 
         response = read_http_response(sock, server_app_secret)
         if not response.startswith(b"HTTP/1.1 200"):
