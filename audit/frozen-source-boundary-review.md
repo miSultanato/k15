@@ -232,12 +232,13 @@ do not exhaust all boundary combinations.
 
 ## 11. Lowercase and unknown HTTP methods — negative reproduction
 
-The TAP test in [run 45400915976](https://github.com/miSultanato/k15/actions/runs/45400915976)
-sent correctly framed HTTP/1.1 requests using lowercase `get` and unknown
-method `FOO`. Both the frozen bounty image and upstream `a2d8893` returned
-HTTP 200. The auditor's reported hang was not reproduced with these inputs.
-This is not enough to mark the issue resolved: additional method tokens,
-request-line edge cases and repeated requests remain untested.
+The earlier test in [run 45400915976](https://github.com/miSultanato/k15/actions/runs/45400915976)
+sent lowercase `get` and unknown `FOO` over cleartext TCP port 80. Both images
+returned HTTP 200, but that does not exercise the audited parser in
+`src/request.asm`, which handles decrypted HTTPS application records. That
+result is therefore only a port-80 control, not a valid negative reproduction
+for finding #4. A dedicated TLS 1.3 test now sends these methods and a missing-
+Host request over the HTTPS listener; results are pending.
 
 
 ## 12. Current upstream main comparison
@@ -260,8 +261,8 @@ The current-main differential runs show:
 
 Evidence: [TLS/current-main differential run 45401470623](https://github.com/miSultanato/k15/actions/runs/45401470623)
 and [TAP/current-main run 45401501930](https://github.com/miSultanato/k15/actions/runs/45401501930).
-The post-HRR final ServerHello flight and the new Host-header behavior are
-still separate follow-ups.
+The post-HRR final ServerHello flight and the HTTPS request-method/Host
+behavior are still separate follow-ups.
 
 ## Test status and next steps
 
