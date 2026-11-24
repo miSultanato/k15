@@ -31,6 +31,9 @@ The audit also reproduces TLS record-validation, TCP ACK-window and MSS defects.
 
 - The local upstream hostile-client regression suite passes, including malformed
   ClientHello cases. [#45382026675](https://github.com/miSultanato/k15/actions/runs/45382026675)
+- Lowercase `get` and unknown `FOO` HTTP methods both returned HTTP 200 on both
+  tested images; the reported method hang was not reproduced.
+  [#45400915976](https://github.com/miSultanato/k15/actions/runs/45400915976)
 - Controlled SMP slot races RACE=1/2/3 pass on the frozen image.
   [#45382612903](https://github.com/miSultanato/k15/actions/runs/45382612903)
 - 10,240 + 1,024 local QEMU nonces showed no duplicates or cross-boot overlap;
