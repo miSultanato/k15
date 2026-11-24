@@ -58,7 +58,7 @@ def main() -> None:
             "X_SIGN has unexpected additional source references")
 
     programs = []
-    for match in re.finditer(r"(?m)^([A-Z0-9_]+)\\s*=\\s*asm\\(", ec):
+    for match in re.finditer(r"(?m)^([A-Z0-9_]+)\s*=\s*asm\(", ec):
         opening = ec.find('"""', match.end())
         closing = ec.find('"""', opening + 3)
         require(opening >= 0 and closing > opening,
