@@ -306,7 +306,7 @@ def test_cookie_replay_after_teardown() -> None:
     )
     accepted = second_response.startswith(b"HTTP/1.")
     distinct_request = accepted and len(second_response) < len(first_response)
-    replay_status = second_response.split(b"\\r\\n", 1)[0].decode("ascii", errors="replace")
+    replay_status = second_response.split(b"\r\n", 1)[0].decode("ascii", errors="replace")
     print(
         "OBSERVED: cookie ACK replay after RST teardown: "
         f"first_http={first_response.startswith(b'HTTP/1.')}, "
