@@ -157,7 +157,7 @@ def read_records(sock: socket.socket, stop, timeout: float = 6.0) -> list[bytes]
     return records
 
 
-def make_client_hello() -> tuple[bytes, x25519.X25519PrivateKey]:
+def make_client_hello(variant: str) -> tuple[bytes, x25519.X25519PrivateKey, bytes, bytes]:
     private = x25519.X25519PrivateKey.generate()
     public = private.public_key().public_bytes(
         serialization.Encoding.Raw, serialization.PublicFormat.Raw
@@ -169,29 +169,41 @@ def make_client_hello() -> tuple[bytes, x25519.X25519PrivateKey]:
 
     extensions = b"".join(
         (
-            extension(43, b"\x02\x03\x04"),                 # TLS 1.3
-            extension(10, b"\x00\x02\x00\x1d"),           # X25519
-            extension(13, b"\x00\x02\x04\x03"),           # ecdsa_secp256r1_sha256
-            extension(51, b"\x00\x24\x00\x1d\x00\x20" + public),
+            extension(43, b"\\x02\\x03\\x04"),                 # TLS 1.3
+            extension(10, b"\\x00\\x02\\x00\\x1d"),           # X25519
+            extension(13, b"\\x00\\x02\\x04\\x03"),           # ecdsa_secp256r1_sha256
+            extension(51, b"\\x00\\x24\\x00\\x1d\\x00\\x20" + public),
         )
     )
+    if variant == "outer-short":
+        # Unknown extension after the complete key share. Its one data byte is
+        # placed outside the declared TLS record, leaving a parseable prefix.
+        extensions += extension(0xFFFF, b"\\xA5")
     body = (
-        b"\x03\x03"
+        b"\\x03\\x03"
         + bytes.fromhex("00112233445566778899aabbccddeeff") * 2
         + bytes((len(session_id),))
         + session_id
-        + b"\x00\x02\x13\x01"
-        + b"\x01\x00"
+        + b"\\x00\\x02\\x13\\x01"
+        + b"\\x01\\x00"
         + len(extensions).to_bytes(2, "big")
         + extensions
     )
-    # Deliberately declare one byte less than the complete body. The outer TLS
-    # record still carries every byte, and this exact malformed handshake is
-    # what the client hashes below.
-    handshake = b"\x01" + (len(body) - 1).to_bytes(3, "big") + body
-    record = b"\x16\x03\x01" + len(handshake).to_bytes(2, "big") + handshake
-    return record, private
-
+    if variant == "inner-short":
+        handshake = b"\\x01" + (len(body) - 1).to_bytes(3, "big") + body
+        record_length = len(handshake)
+        transcript_handshake = handshake
+    elif variant == "outer-short":
+        handshake = b"\\x01" + len(body).to_bytes(3, "big") + body
+        record_length = len(handshake) - 1
+        transcript_handshake = handshake[:record_length]
+    else:
+        fail(f"unknown malformed ClientHello variant: {variant}")
+    # For outer-short, the final byte is still sent on TCP but is not part of
+    # the TLS record or the server's transcript. The client deliberately hashes
+    # only the record payload the server processes.
+    record = b"\\x16\\x03\\x01" + record_length.to_bytes(2, "big") + handshake
+    return record, private, session_id, transcript_handshake
 
 def parse_server_hello(raw: bytes, session_id: bytes) -> bytes:
     if raw[0] != 2:
@@ -336,28 +348,21 @@ def expect_rejection(records: list[bytes]) -> None:
     print("PASS: fixed image rejected the short inner handshake length with fatal decode_error")
 
 
-def main() -> None:
-    if len(sys.argv) != 3 or sys.argv[2] not in {"accept", "reject"}:
-        fail("usage: test_malformed_clienthello_handshake.py TARGET accept|reject")
-    target = Path(sys.argv[1]).resolve()
-    if not target.is_dir():
-        fail(f"target directory does not exist: {target}")
-
-    wire, private = make_client_hello()
-    handshake = wire[5:]
-    session_id = bytes.fromhex("102132435465768798a9bacbdcedfe0f") * 2
+def run_case(target: Path, expected: str, variant: str) -> None:
+    wire, private, session_id, transcript_handshake = make_client_hello(variant)
     sock = socket.create_connection((HOST, PORT), timeout=5)
     sock.settimeout(5)
     sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
     try:
         sock.sendall(wire)
-        if sys.argv[2] == "reject":
+        if expected == "reject":
             records = read_records(
                 sock,
                 lambda items: any(item[0] == 21 for item in items)
                 or any(item[0] == 22 for item in items),
             )
             expect_rejection(records)
+            print(f"PASS: fixed image rejected {variant}")
             return
 
         records = read_records(
@@ -367,7 +372,7 @@ def main() -> None:
         )
         server_hello_record = next((r for r in records if r[0] == 22), None)
         if server_hello_record is None:
-            fail("frozen image did not send a plaintext ServerHello")
+            fail(f"frozen image did not send a plaintext ServerHello for {variant}")
         server_messages = parse_handshakes(server_hello_record[5:])
         if len(server_messages) != 1 or server_messages[0][0] != 2:
             fail("expected one ServerHello handshake message")
@@ -382,7 +387,9 @@ def main() -> None:
             early_secret, b"derived", hashlib.sha256(b"").digest()
         )
         handshake_secret = hkdf_extract(derived_early, shared_secret)
-        transcript_ch_sh = hashlib.sha256(handshake + server_hello).digest()
+        transcript_ch_sh = hashlib.sha256(
+            transcript_handshake + server_hello
+        ).digest()
         client_hs_secret = derive_secret(
             handshake_secret, b"c hs traffic", transcript_ch_sh
         )
@@ -404,13 +411,13 @@ def main() -> None:
         by_type = {kind: (body, raw) for kind, body, raw in handshake_messages}
         required = (8, 11, 15, 20)
         if any(kind not in by_type for kind in required):
-            fail(f"server flight omitted one of EncryptedExtensions/Certificate/CV/Finished: {[m[0] for m in handshake_messages]}")
+            fail(f"server flight omitted EncryptedExtensions/Certificate/CV/Finished: {[m[0] for m in handshake_messages]}")
 
-        ee_body, ee_raw = by_type[8]
+        _, ee_raw = by_type[8]
         cert_body, cert_raw = by_type[11]
         cv_body, cv_raw = by_type[15]
         finished_body, finished_raw = by_type[20]
-        if len(cv_body) < 4 or cv_body[:2] != b"\x04\x03":
+        if len(cv_body) < 4 or cv_body[:2] != b"\\x04\\x03":
             fail("server CertificateVerify did not use ecdsa_secp256r1_sha256")
         sig_len = int.from_bytes(cv_body[2:4], "big")
         signature = cv_body[4 : 4 + sig_len]
@@ -418,12 +425,12 @@ def main() -> None:
             fail("truncated CertificateVerify signature")
         certificates = parse_certificate_chain(cert_body)
         transcript_before_cv = hashlib.sha256(
-            handshake + server_hello + ee_raw + cert_raw
+            transcript_handshake + server_hello + ee_raw + cert_raw
         ).digest()
         verify_certificate_verify(certificates, signature, transcript_before_cv)
 
         transcript_before_finished = hashlib.sha256(
-            handshake + server_hello + ee_raw + cert_raw + cv_raw
+            transcript_handshake + server_hello + ee_raw + cert_raw + cv_raw
         ).digest()
         finished_key = hkdf_expand_label(
             server_hs_secret, b"finished", b"", 32
@@ -432,10 +439,10 @@ def main() -> None:
             finished_key, transcript_before_finished, hashlib.sha256
         ).digest()
         if not hmac.compare_digest(finished_body, expected_finished):
-            fail("server Finished did not verify against the exact malformed ClientHello transcript")
+            fail(f"server Finished did not verify against the exact {variant} transcript")
 
         transcript_after_finished = hashlib.sha256(
-            handshake + server_hello + ee_raw + cert_raw + cv_raw + finished_raw
+            transcript_handshake + server_hello + ee_raw + cert_raw + cv_raw + finished_raw
         ).digest()
         derived_master = derive_secret(
             handshake_secret, b"derived", hashlib.sha256(b"").digest()
@@ -454,21 +461,29 @@ def main() -> None:
         client_finished_verify = hmac.new(
             client_finished_key, transcript_after_finished, hashlib.sha256
         ).digest()
-        client_finished = b"\x14\x00\x00\x20" + client_finished_verify
+        client_finished = b"\\x14\\x00\\x00\\x20" + client_finished_verify
         sock.sendall(encrypt_record(client_hs_secret, 0, client_finished, 22))
         time.sleep(0.02)
         sock.sendall(encrypt_record(client_app_secret, 0, REQUEST, 23))
 
         response = read_http_response(sock, server_app_secret)
         if not response.startswith(b"HTTP/1.1 200"):
-            fail(f"no HTTP 200 after the verified malformed handshake: {response[:120]!r}")
-        print("PASS: frozen image accepted the short inner length")
-        print("PASS: server CertificateVerify verified against the exact malformed ClientHello transcript")
-        print("PASS: server Finished verified against the exact malformed ClientHello transcript")
+            fail(f"no HTTP 200 after verified {variant} handshake: {response[:120]!r}")
+        print(f"PASS: frozen image accepted {variant}")
+        print(f"PASS: CertificateVerify and Finished verified against the exact {variant} transcript")
         print(f"PASS: encrypted HTTP request returned {response.splitlines()[0].decode('ascii', 'replace')}")
     finally:
         sock.close()
 
+
+def main() -> None:
+    if len(sys.argv) != 3 or sys.argv[2] not in {"accept", "reject"}:
+        fail("usage: test_malformed_clienthello_handshake.py TARGET accept|reject")
+    target = Path(sys.argv[1]).resolve()
+    if not target.is_dir():
+        fail(f"target directory does not exist: {target}")
+    for variant in ("inner-short", "outer-short"):
+        run_case(target, sys.argv[2], variant)
 
 if __name__ == "__main__":
     main()
