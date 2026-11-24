@@ -74,7 +74,11 @@ jobs:
 
       - name: Audit private-scalar read path and generated curve include
         run: |
-          python3 audit/check_key_read_path.py ${{ matrix.directory }}/src/os.asm ${{ matrix.directory }}/tools/ec.py ${{ matrix.directory }}/tools/gen.py ${{ matrix.directory }}/build/ec.inc
+          cat ${{ matrix.directory }}/src/os.asm > /tmp/k15-source-audit.asm
+          if [ -f ${{ matrix.directory }}/src/curves.asm ]; then
+            cat ${{ matrix.directory }}/src/curves.asm >> /tmp/k15-source-audit.asm
+          fi
+          python3 audit/check_key_read_path.py /tmp/k15-source-audit.asm ${{ matrix.directory }}/tools/ec.py ${{ matrix.directory }}/tools/gen.py ${{ matrix.directory }}/build/ec.inc
 
       - name: Run constant-time checks and negative controls
         run: bash audit/run_ct.sh ${{ matrix.directory }}
