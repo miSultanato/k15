@@ -1,0 +1,62 @@
+name: k15 live W^X PTE probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - audit/run_wx_pte_probe.sh
+      - audit/probe_wx_pte.py
+      - .github/workflows/wx-pte-probe.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k15-wx-pte-probe-v1
+  cancel-in-progress: false
+
+jobs:
+  pte:
+    name: Live PTE — ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: frozen-bounty
+            directory: bounty
+            ref: ab93479ebc7c85274c722b16897148286d1cfca3
+            expected: alive
+          - variant: first-upstream-fix
+            directory: fixed
+            ref: a2d8893261b2be15b44c86d6f4483d65820e943a
+            expected: reset
+          - variant: current-upstream
+            directory: current
+            ref: cb9f76a5a100c418bfcaeddcd4f137d30ab489d2
+            expected: reset
+    steps:
+      - name: Check out audit harness
+        uses: actions/checkout@v4
+      - name: Check out exact source revision
+        uses: actions/checkout@v4
+        with:
+          repository: FileSherlock/k15
+          ref: ${{ matrix.ref }}
+          path: ${{ matrix.directory }}
+          persist-credentials: false
+      - name: Verify source pin
+        working-directory: ${{ matrix.directory }}
+        run: test "$(git rev-parse HEAD)" = "${{ matrix.ref }}"
+      - name: Install local QEMU build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends nasm qemu-system-x86 gcc libssl-dev
+          python3 -m pip install --disable-pip-version-check cryptography
+      - name: Build and inspect live page tables
+        run: bash audit/run_wx_pte_probe.sh ${{ matrix.directory }} ${{ matrix.variant }} ${{ matrix.expected }}
+      - name: Confirm no artifacts are uploaded
+        run: echo "QEMU images, synthetic SITE and monitor state remain ephemeral; no artifacts are uploaded."
