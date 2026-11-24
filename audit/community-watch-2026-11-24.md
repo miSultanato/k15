@@ -1101,3 +1101,24 @@ scalar beyond the intended public relation.
 These are engagement snapshots, not security evidence. Vote counts and
 comment activity change, and no balance check of the bounty address was
 performed.
+
+
+## Cross-sender unicast ARP reproduction completed (2026-11-24)
+
+The focused three-way TAP run
+https://github.com/miSultanato/k15/actions/runs/45466831548
+completed successfully. The harness discovers the guest MAC, then primes the
+frozen image with 2,048 valid unicast ARP requests from a synthetic victim
+MAC/IP. A different synthetic sender sends the 24-byte request. The bounty
+reply is addressed to the attacker but carries the victim's stale MAC suffix
+and IPv4 address in the ARP target fields. Both the first upstream fix and
+current upstream main pass the explicit reject-mode assertion.
+
+This is a stronger reproduction than the earlier broadcast primer because
+the prior victim request is unicast. Linux documents unicast ARP probes for
+stale neighbor mappings through ucast_solicit:
+https://man7.org/linux/man-pages/man7/arp.7.html
+
+The test remains local, synthetic, single-processor and limited to eight
+metadata bytes. It does not establish arbitrary memory disclosure, private
+key exposure, multi-processor reliability or Internet reachability.
