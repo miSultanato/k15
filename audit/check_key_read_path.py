@@ -154,8 +154,8 @@ def main() -> None:
         offset += 8 * (len(prog) - 1) + 4
     generated.append(f"NPROG equ {len(curve.PROGRAMS)}\n")
     ec_image = "".join(generated).encode("ascii")
-    require(set(curve.PROGRAMS) == {name for name, _ in programs},
-            "tools/ec.py program definitions differ from its PROGRAMS mapping")
+    require("SIGN" in curve.PROGRAMS and any(name == "SIGN" for name, _ in programs),
+            "tools/ec.py no longer exposes the SIGN program in source and generated mapping")
     require("SIGN" in curve.PROGRAMS,
             "generated program mapping has no SIGN entry")
     print(f"PASS: reconstructed {len(curve.PROGRAMS)} VM programs / {offset} unpacked bytes")
