@@ -53,8 +53,8 @@ def main() -> None:
     boot = re.search(r"(?s)mov edi, HKS\s+push 22\s+pop rcx\s+call rand", source)
     require(boot is not None, "boot-time 22-qword HKS draw changed")
 
-    handshake = re.search(r"(?ms)^\.has:.*?^\.alert:", source)
-    require(handshake is not None, "could not isolate TLS handshake path")
+    handshake = re.search(r"(?ms)^handshake:.*?(?=^[A-Za-z_][A-Za-z0-9_]*:)", source)
+    require(handshake is not None, "could not isolate TLS handshake routine")
     handshake_calls = re.findall(r"(?m)^\s*call\s+rand\b", handshake.group(0))
     require(len(handshake_calls) == 2,
             f"expected two handshake rand calls (X25519 + ServerHello.random), found {len(handshake_calls)}")
