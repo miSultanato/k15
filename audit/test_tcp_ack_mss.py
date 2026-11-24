@@ -272,7 +272,7 @@ def exchange_and_reset(sport: int, client_seq: int, server_seq: int, request: by
             sock.send(make_frame(sport, client_ack, server_next, 0x10))
 
     if not response.startswith(b"HTTP/1."):
-        return bytes(response), False
+        return bytes(response), False, client_ack
 
     # A client FIN advances C_NXT once and asks the server to close its side too.
     sock.send(make_frame(sport, client_ack, server_next, 0x11))
@@ -326,7 +326,7 @@ def test_cookie_replay_after_teardown() -> None:
         )
         return
 
-    # The RST with the correct C_NXT should free the slot. Replay the exact ACK
+    # The sequence-valid close should free the slot. Replay the exact ACK
     # that completed the SYN cookie, then send a fresh request at the old sequence.
     drain_deadline = time.monotonic() + 0.25
     while time.monotonic() < drain_deadline:
