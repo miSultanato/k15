@@ -91,8 +91,9 @@ user namespaces.
 - `syn-cookie-replay-observation.md`: records the replayable cookie-ACK behavior after orderly FIN close, distinguishes it from the bounty-only findings, and documents the limits of the threat-model evidence.
 - `test_tcp_ack_mss.py`: asserts bounty acceptance versus upstream rejection of
   out-of-window ACKs, checks peer-MSS safety boundaries, delays a first SYN-cookie
-  ACK, then observes cookie replay after teardown. The forced-wrap runner uses
-  the same expect/reject assertions with SND.NXT near 2^32.
+  ACK, rejects replay under a changed source port, then observes same-tuple
+  cookie replay after FIN/FIN close. The forced-wrap runner uses the same
+  expect/reject assertions with SND.NXT near 2^32.
 - `check_current_rand_path.py`: checks the refactored current-main RDRAND-to-nonce path.
 - `check_boot_hardening.py`: compares four source-level boot/build hardening changes between the frozen bounty, first upstream fix and pinned current main.
 - `check_public_hygiene.py` and `test_public_hygiene.py`: narrow guardrail for this public fork; scans the tracked tree and all reachable Git history, rejecting generated secret directories/files, complete PEM private-key blocks, disk images, binaries and NASM listings. Synthetic PEM/path tests cover detection and false-positive behavior. It is not a general-purpose secret scanner.
