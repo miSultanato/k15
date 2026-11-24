@@ -1,0 +1,69 @@
+name: k15 SYN-cookie replay across guest reboot
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - audit/test_syn_cookie_reboot.py
+      - audit/run_tap_syn_cookie_reboot.sh
+      - .github/workflows/syn-cookie-reboot.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k15-syn-cookie-reboot-v1
+  cancel-in-progress: false
+
+jobs:
+  reboot:
+    name: SYN-cookie reboot replay — ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: frozen-bounty
+            directory: bounty
+            ref: ab93479ebc7c85274c722b16897148286d1cfca3
+          - variant: upstream-fixed
+            directory: fixed
+            ref: a2d8893261b2be15b44c86d6f4483d65820e943a
+          - variant: upstream-current
+            directory: current
+            ref: cb9f76a5a100c418bfcaeddcd4f137d30ab489d2
+    steps:
+      - name: Check out audit harness
+        uses: actions/checkout@v4
+
+      - name: Check out exact source revision
+        uses: actions/checkout@v4
+        with:
+          repository: FileSherlock/k15
+          ref: ${{ matrix.ref }}
+          path: ${{ matrix.directory }}
+          persist-credentials: false
+
+      - name: Verify pinned source
+        working-directory: ${{ matrix.directory }}
+        run: test "$(git rev-parse HEAD)" = "${{ matrix.ref }}"
+
+      - name: Install QEMU and TAP dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends nasm qemu-system-x86 iproute2 gcc libssl-dev curl
+          python3 -m pip install --disable-pip-version-check cryptography
+
+      - name: Build local image with synthetic certificate
+        working-directory: ${{ matrix.directory }}
+        run: make all
+
+      - name: Capture cookie, reboot QEMU, replay old ACK and test fresh ACK
+        run: sudo unshare -n bash audit/run_tap_syn_cookie_reboot.sh ${{ matrix.directory }}
+
+      - name: Confirm no generated key material or images are uploaded
+        run: |
+          echo "Synthetic certificates, private keys and images remain in the ephemeral runner."
+          echo "No artifacts are uploaded."
