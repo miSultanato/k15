@@ -70,6 +70,7 @@ user namespaces.
   checks whether a 24-byte ARP request discloses stale bytes.
 - `test_tcp_ack_mss.py`: sends a data-bearing segment with an out-of-window ACK
   and tests whether a peer MSS of 100 is respected.
+- `check_current_rand_path.py`: checks the refactored current-main RDRAND-to-nonce path.
 - `run_qemu_abuse.sh`: runs the upstream hostile-client regression suite against
   the first upstream fix and current main, not against the frozen bounty image.
 - `tools/racetest.sh`: exercises the project's deliberately synchronized
