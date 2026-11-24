@@ -96,13 +96,13 @@ jobs:
         run: bash audit/run_qemu_inner_plaintext.sh current
 
       - name: Exercise HRR and second ClientHello on frozen bounty
-        run: timeout 60s bash audit/run_qemu_hrr_second_ch.sh bounty
+        run: timeout 60s bash audit/run_qemu_hrr_second_ch.sh bounty none
 
       - name: Exercise HRR and second ClientHello on first upstream fix
-        run: timeout 60s bash audit/run_qemu_hrr_second_ch.sh fixed
+        run: timeout 60s bash audit/run_qemu_hrr_second_ch.sh fixed some
 
       - name: Exercise HRR and second ClientHello on current upstream
-        run: timeout 60s bash audit/run_qemu_hrr_second_ch.sh current
+        run: timeout 60s bash audit/run_qemu_hrr_second_ch.sh current some
 
       - name: Verify old bounty image accepts the malformed framing
         run: bash audit/run_qemu_framing.sh bounty accept
