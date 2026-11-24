@@ -151,6 +151,8 @@ def fetch_after_handshake(
     client_next = (client_isn + 1) & 0xFFFFFFFF
     sock.send(make_frame(sport, client_next, server_next, 0x10))
     ack = (server_next + 0x10000) & 0xFFFFFFFF if bad_ack else server_next
+    if ack_delta is not None:
+        ack = (server_next + ack_delta) & 0xFFFFFFFF
     sock.send(make_frame(sport, client_next, ack, 0x18, request))
     deadline = time.monotonic() + 2.0
     payloads = []
@@ -214,6 +216,24 @@ def test_delayed_syn_cookie() -> None:
 
 
 
+
+def test_ack_boundary_matrix() -> None:
+    for index, delta in enumerate((1, 63, 64, 0xFFFF, 0x10000)):
+        sport = 52100 + index
+        isn = 0x45670000 + index
+        synack = handshake(sport, isn, 536)
+        if synack is None:
+            print(f"OBSERVED: ACK delta +{delta}: no SYN-ACK for control connection")
+            continue
+        payloads = fetch_after_handshake(
+            sport, isn, synack, bad_ack=False, ack_delta=delta
+        )
+        response = b"".join(payloads)
+        result = "HTTP processed" if response.startswith(b"HTTP/1.") else "no HTTP payload"
+        print(f"OBSERVED: ACK delta +{delta} beyond SND.NXT: {result}")
+
+
+
 def test_small_mss() -> None:
     sport, isn, peer_mss = 52002, 0x23456789, 100
     synack = handshake(sport, isn, peer_mss)
@@ -233,6 +253,7 @@ def test_small_mss() -> None:
 if __name__ == "__main__":
     try:
         test_bad_ack()
+        test_ack_boundary_matrix()
         test_small_mss()
         test_delayed_syn_cookie()
         print(f"RESULT: TCP ACK/MSS probes completed in mode={mode}")
