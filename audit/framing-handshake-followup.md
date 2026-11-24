@@ -59,7 +59,23 @@ its transcript calculation:
 
 The current OpenSSL `MemoryBIO` helper is not sufficient if it generates a
 normal ClientHello and the test mutates the emitted bytes afterward: OpenSSL's
-internal transcript would still contain the original bytes.
+internal transcript would still contain the original bytes. The new purpose-built
+client avoids that mismatch by constructing the malformed handshake bytes before
+computing the transcript hash.
+
+## Implementation status (2026-11-24)
+
+A purpose-built client is now implemented in `test_malformed_clienthello_handshake.py`.
+It constructs the short-length ClientHello before transcript hashing, derives the
+TLS 1.3 key schedule, verifies the server CertificateVerify and Finished, then
+sends a correctly encrypted client Finished and HTTP request. The differential
+runner invokes it against the frozen bounty and both pinned upstream images.
+The code and workflow trigger are committed; the next Actions run must validate
+the crypto/transcript implementation before this finding is considered closed.
+
+The current implementation covers the **inner handshake-length mismatch** only.
+The outer TLS-record-length mismatch remains a separate follow-up and must not
+be described as covered by this test.
 
 ## Required end-to-end assertions
 
