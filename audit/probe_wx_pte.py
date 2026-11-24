@@ -44,7 +44,7 @@ class QMP:
             if not line:
                 fail("QMP closed unexpectedly")
             obj = json.loads(line)
-            if "return" in obj or "error" in obj:
+            if "return" in obj or "error" in obj or "QMP" in obj:
                 return obj
 
     def command(self, name: str, arguments: dict | None = None):
