@@ -210,7 +210,7 @@ def main() -> None:
         fingerprints = sorted(hashlib.sha256(
             r.to_bytes(32, "big") + k.to_bytes(32, "big")
         ).hexdigest() for r, k in results)
-        FINGERPRINT_PATH.write_text("\\n".join(fingerprints) + "\\n", encoding="ascii")
+        FINGERPRINT_PATH.write_text("\n".join(fingerprints) + "\n", encoding="ascii")
         print(f"PASS: wrote {len(fingerprints)} one-way nonce fingerprints for cross-boot comparison")
     print("PASS: every locally generated CertificateVerify verifies and uses a unique nonce")
 
