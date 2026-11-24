@@ -46,11 +46,23 @@ jobs:
           sudo apt-get install --yes --no-install-recommends nasm qemu-system-x86 iproute2 gcc libssl-dev curl
           python3 -m pip install --disable-pip-version-check cryptography
 
-      - name: Check rootless network namespace support
-        run: unshare -Urn true
+      - name: Check privileged network namespace support
+        run: sudo unshare -n true
+
+      - name: Adapt the project's rootless unshare call to the runner namespace
+        run: |
+          mkdir -p "$RUNNER_TEMP/k15-bin"
+          cat > "$RUNNER_TEMP/k15-bin/unshare" <<'SH'
+          #!/usr/bin/env bash
+          if [[ "${1:-}" == "-Urn" ]]; then
+            shift
+            exec "$@"
+          fi
+          exec /usr/bin/unshare "$@"
+          SH
+          chmod +x "$RUNNER_TEMP/k15-bin/unshare"
+          echo "$RUNNER_TEMP/k15-bin" >> "$GITHUB_PATH"
 
       - name: Reproduce cross-processor slot handover race
         working-directory: target
-        env:
-          SMP: "2"
-        run: bash tools/racetest.sh "${{ matrix.race }}"
+        run: sudo env SMP=2 PATH="$PATH" unshare -n bash tools/racetest.sh "${{ matrix.race }}"
