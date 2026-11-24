@@ -105,6 +105,22 @@ conformance defect, not private-key disclosure, memory corruption, or a
 practical route to recover the bounty scalar. Keep the framing finding
 separate from the key-extraction objective.
 
+
+## HRR trigger experiments (2026-11-24)
+
+A local Go TLS 1.3 client configured with P-256 first and X25519 second
+completed a normal handshake on all three pinned images: one ClientHello,
+one ServerHello, no HRR. This shows that this particular offer does not
+force a retry; P-256 is accepted when X25519 is also present in the supported
+groups list. A stock OpenSSL attempt had the same result.
+
+The next probe places P-384 first and X25519 second. If the server does not
+support P-384, this should preserve X25519 in supported_groups while omitting
+an X25519 key share from the first ClientHello, forcing HRR. The updated
+Go-based probe is local-only and captures both directions' TLS records.
+Its result must be inspected before claiming that a second ClientHello or
+HRR was exercised.
+
 ## Safety
 
 - Frozen target remains `ab93479ebc7c85274c722b16897148286d1cfca3`.
