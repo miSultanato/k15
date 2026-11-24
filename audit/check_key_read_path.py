@@ -40,6 +40,14 @@ def main() -> None:
     require(len(r_d_refs) == 2 and "equ" in r_d_refs[0][1] and "mov edi, R_D" in r_d_refs[1][1],
             f"unexpected direct R_D references: {r_d_refs}")
 
+    regs_ops = [line.strip().split(";", 1)[0].strip()
+                for line in asm.splitlines()
+                if re.search(r"\\bREGS\\b", line)
+                and "equ" not in line
+                and not line.lstrip().startswith(";")]
+    require(regs_ops == ["mov edi, REGS", "mov edi, REGS", "add eax, REGS"],
+            f"unexpected direct register-bank address operations: {regs_ops}")
+
     init = section(asm, "mov edi, R_D", "mov edi, TABE")
     require(re.search(r"mov edi, R_D\s+mov cl, 8\s+rep movsq", init) is not None,
             "R_D initialization is no longer a fixed eight-qword copy")
@@ -102,6 +110,7 @@ def main() -> None:
 
     print("PASS: R_D is register 14 in the per-processor BSS register bank")
     print("PASS: only one direct R_D source reference initializes the register")
+    print("PASS: all direct REGS address operations are enumerated and bounded")
     print("PASS: VM register decoding masks indices to 0..15 before address formation")
     print("PASS: sign invokes the fixed X_SIGN curve program")
     require("for name, prog in curve.PROGRAMS.items()" in gen and
