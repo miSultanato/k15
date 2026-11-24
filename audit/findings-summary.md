@@ -61,6 +61,8 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 ## Interpretation and limits
 
+- Invalid IPv4 header checksums with valid TCP checksums, and malformed full-length ARP metadata, are accepted on all three revisions. Source review shows the IPv4 header checksum is not separately verified and the ARP metadata fields are not all checked. No security consequence was demonstrated; these are low-priority validation observations, distinct from the frozen-only short-ARP disclosure. See `ipv4-arp-validation-review.md`.
+
 - The SYN-cookie replay test is an observation, not a confirmed bounty finding: all three revisions accept the same cookie ACK after orderly FIN/FIN teardown, while rejecting that ACK after a source-port change. The upstream cookie is keyed to the client tuple and initial sequence with a boot-time secret, but has no visible time bucket or single-use counter. The local test does not demonstrate off-path forgery, cross-tuple replay, application-authentication bypass or production reachability. See `syn-cookie-replay-observation.md`.
 
 - The ARP result is a real, local stale-buffer metadata disclosure using
