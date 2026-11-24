@@ -865,11 +865,11 @@ Both images remained alive and served a verified normal TLS page after each
 
 - Frozen bounty `ab93479...`: 20,000 in 91 s; 7,035 ServerHello responses,
   4,425 alert 70, 4,341 alert 40, 2,467 HelloRetryRequest/key-share prompts,
-  1,115 silent responses and 617 resets. Final result: `ok: and the server
+  1,115 silent responses and 617 connection resets. Final result: `ok: and the server
   serves as before`.
 - Upstream fixed `a2d8893...`: 20,000 in 103 s; 6,311 ServerHello responses,
   4,387 alert 70, 3,717 alert 40, 2,467? [see note below], 1,970 alert 50,
-  1,114 silent responses, 361 resets, 88 alert 47 and 53 alert 10. Final
+  1,114 silent responses, 361 connection resets, 88 alert 47 and 53 alert 10. Final
   result: `ok: and the server serves as before`.
 
 The fuzzer is a robustness/memory-safety smoke test, not a proof of absence
