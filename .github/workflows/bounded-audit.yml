@@ -41,6 +41,11 @@ jobs:
           path: target
           persist-credentials: false
 
+      - name: Probe native RDRAND exposed by the runner CPU
+        run: |
+          gcc -O2 -Wall -Wextra -mrdrnd audit/rdrand_host_probe.c -o "$RUNNER_TEMP/rdrand-host-probe"
+          "$RUNNER_TEMP/rdrand-host-probe" 1000000
+
       - name: Record tested source revision
         run: |
           echo "Audit harness commit: $GITHUB_SHA"
