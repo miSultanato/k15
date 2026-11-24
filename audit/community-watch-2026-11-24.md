@@ -1039,3 +1039,25 @@ mirrors the server's truncated transcript. The implementation is wired into
 the differential QEMU runner but awaits a new Actions result. Until that run
 passes, successful end-to-end completion remains unconfirmed by our own test.
 This is protocol-framing research, not a private-key disclosure path.
+
+
+## SITE/key adjacency comment reviewed (2026-11-24)
+
+A new community comment points out that key-related bytes precede the public
+`SITE` region and asks whether a response read could extend backwards into
+them. I checked the frozen `src/os.asm` request lookup and `geom`/`pick`
+response path against `tools/pack.py`.
+
+The request selects a prebuilt path record by bounded hash-table probing and
+exact path comparison. That record supplies a prebuilt response number.
+`geom` masks the response number to 15 bits, scales it by the fixed 16-byte
+entry size, reads a packer-generated offset/length, and adds `SITE` to the
+offset. `pick` only selects prepacked plain/compressed/304 forms. The packer
+caps response entries at 32,767 and the site at 768 MiB. I found no request-
+controlled negative offset or read-before-`SITE` path.
+
+The new `audit/site-adjacency-review.md` records the source reasoning and
+limits. This is a bounded static review, not a formal proof. The optional
+`WXTEST` write/execute probe is a separate compile-time page-permission test;
+the default `make all` path does not set `WXTEST`. This comment is therefore
+an adjacency concern worth checking, not evidence of key disclosure.
