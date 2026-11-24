@@ -25,6 +25,7 @@ revision offered by the k15 bounty.
 | `race-audit.yml` | Project's controlled cross-processor slot handover tests, `RACE=1,2,3` |
 | `parser-fuzz.yml` | Same deterministic 60,000-case ClientHello fuzzer (three seeds) plus raw Ethernet/IP/TCP frame fuzz against bounty and fixed images |
 | `memory-scan.yml` | Local synthetic-key CertificateVerify capture and one guest-RAM snapshot scan |
+| `host-rdrand.yml` | One-million-sample native RDRAND probe on the runner's exposed CPU feature; not the production host |
 
 All are runnable from GitHub Actions. The race workflow uses a privileged,
 isolated network namespace because GitHub-hosted runners disallow unprivileged
@@ -32,6 +33,9 @@ user namespaces.
 
 ## Main checks
 
+- `rdrand_host_probe.c`: samples the runner's exposed native RDRAND instruction,
+  checking adjacent repeats, lag-four repeats and repeated four-qword tuples.
+  This is only a host-runner data point, not a measurement of the production CPU.
 - `nonce_cycle_demo.py`: mathematical demonstration that a periodic sequence
   can evade adjacent-equality checks and repeat ECDSA nonces. Synthetic only;
   it is not evidence that real RDRAND behaves this way.
