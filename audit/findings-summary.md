@@ -89,6 +89,8 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 2. The cross-sender unicast short-ARP differential is complete. Any further
    work must remain synthetic and local; do not attempt to access production memory.
 
+The short-site W^X regression is now documented separately in `wx-short-site-impact.md`: the frozen image executes a built-in synthetic RET byte on a site page, while both upstream revisions fault. This is a real executable-page permission regression, not proof of a request-controlled write, arbitrary instruction pointer, or remote code execution.
+
 The ACK-window and peer-MSS boundaries (including 32-bit wrap, MSS 0 and MSS 1),
 the TLSInnerPlaintext lengths 1/2/16/255/300, and the emitted boot hardening
 checks have already been exercised locally. No private TLS key or scalar
