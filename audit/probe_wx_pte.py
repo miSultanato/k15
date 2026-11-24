@@ -51,7 +51,7 @@ class QMP:
         payload = {"execute": name}
         if arguments is not None:
             payload["arguments"] = arguments
-        self.file.write(json.dumps(payload).encode() + b"\\r\\n")
+        self.file.write(json.dumps(payload).encode() + b"\r\n")
         result = self._read()
         if "error" in result:
             fail(f"QMP {name}: {result['error']}")
@@ -87,7 +87,7 @@ def main() -> None:
     delta_file = build / "delta"
     delta = 0
     if delta_file.exists():
-        match = re.fullmatch(r"-DDELTA=(\\d+)\\s*", delta_file.read_text(encoding="ascii"))
+        match = re.fullmatch(r"-DDELTA=(\d+)\s*", delta_file.read_text(encoding="ascii"))
         if not match:
             fail("could not parse DELTA build definition")
         delta = int(match.group(1))
