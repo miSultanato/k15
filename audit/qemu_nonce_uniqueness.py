@@ -30,7 +30,7 @@ FINGERPRINT_PATH = Path(sys.argv[4]) if len(sys.argv) > 4 else None
 sys.path.insert(0, str(TARGET / "tools"))
 from tlsclient import BioClient, context  # noqa: E402
 
-HOST, PORT = "127.0.0.1", 8443
+HOST, PORT = os.environ.get("HOST", "127.0.0.1"), int(os.environ.get("PORT", "8443"))
 P256_N = int("FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551", 16)
 
 
