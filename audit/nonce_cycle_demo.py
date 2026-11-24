@@ -70,8 +70,9 @@ def check_periodic_stream(period):
     batch_period = len(period) // gcd(len(period), 4)
     stream = [period[i % len(period)] for i in range(4 * (batch_period + 1))]
 
-    # Model rand's per-processor RLAST check, including its zero initial value.
-    previous = 0
+    # Model rand's per-processor RLAST check with the preceding cycle word
+    # already stored in RLAST (the runtime state after boot).
+    previous = period[-1]
     for word in stream:
         assert word != previous, "periodic stream unexpectedly trips adjacent check"
         previous = word
@@ -100,8 +101,31 @@ def main():
         0xFEDCBA9876543210,
         0xA5A5A5A55A5A5A5A,
     )
-    k1 = nonce_from_words(words)
-    k2 = nonce_from_words(words)
+    # Boot consumed 22 qwords into HKS. Each TLS handshake additionally
+    # consumes 8 qwords (4 for the X25519 scalar and 4 for ServerHello.random).
+    # Simulate one stock nonce replenishment per handshake. For period 4,
+    # both the 22-qword prefix and 8-qword interleaving preserve batch phase.
+    previous = words[(22 - 1) % 4]
+    stream_index = 22
+    interleaved_nonces = []
+    for _ in range(5):
+        for _ in range(8):
+            word = words[stream_index % 4]
+            assert word != previous
+            previous = word
+            stream_index += 1
+        nonce_words = []
+        for _ in range(4):
+            word = words[stream_index % 4]
+            assert word != previous
+            previous = word
+            nonce_words.append(word)
+            stream_index += 1
+        interleaved_nonces.append(nonce_from_words(nonce_words))
+    assert len(set(interleaved_nonces)) == 1
+
+    k1 = interleaved_nonces[0]
+    k2 = interleaved_nonces[1]
     assert 0 < k1 < N and k1 == k2
 
     d = 0x123456789ABCDEF123456789ABCDEF123456789ABCDEF123456789ABCDEF
