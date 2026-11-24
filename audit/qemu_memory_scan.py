@@ -70,6 +70,9 @@ def main() -> None:
     response = until_prompt(monitor, timeout=120)
     monitor.close()
 
+    if not RAM_PATH.exists():
+        print("QEMU monitor response:", response.decode("utf-8", errors="replace")[-1000:])
+        raise SystemExit("FAIL: QEMU monitor did not create the guest RAM snapshot")
     size = RAM_PATH.stat().st_size
     if size != RAM_SIZE:
         raise SystemExit(f"FAIL: expected {RAM_SIZE} guest RAM bytes, got {size}")
