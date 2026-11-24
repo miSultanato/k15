@@ -221,6 +221,9 @@ def test_mss_boundary_matrix() -> None:
             continue
         advertised = parse_mss(synack["options"])
         payloads = fetch_after_handshake(sport, isn, synack, bad_ack=False)
+        response = b"".join(payloads)
+        if not response.startswith(b"HTTP/1."):
+            raise SystemExit(f"FAIL: peer MSS={peer_mss}: accepted SYN but no HTTP response")
         maximum = max((len(payload) for payload in payloads), default=0)
         observed_violation = maximum > peer_mss
         expected_violation = EXPECT_ACCEPT and peer_mss < 180
