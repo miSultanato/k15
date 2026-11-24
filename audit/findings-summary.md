@@ -53,6 +53,11 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
   from the existing corrupted-Finished test. A new omission control sends
   application data without transmitting the client Finished; its runtime
   result is pending and is not yet counted as reproduced.
+- `run_wx_pte_probe.sh` / `probe_wx_pte.py` now add an independent, read-only
+  QMP inspection of the live page-table hierarchy. The probe checks the
+  synthetic SITE byte's actual PTE for present, read-only and NX state after
+  verifying that the guest installed its expected CR3. The new three-way
+  workflow has not yet been observed completing; no live-PTE result is claimed.
 
 ## Additional negative evidence
 
