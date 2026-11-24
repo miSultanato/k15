@@ -91,7 +91,7 @@ user namespaces.
   See `arp-short-frame-impact.md` for the exact data flow and limits.
 - `ipv4-arp-validation-review.md`: explains why invalid IPv4 header checksums and malformed full-length ARP metadata still receive replies on all three revisions, and separates that behavior from the short-frame disclosure.
 - `public-cross-curve-proof-review.md` and `test_public_proof.py`: review the public DLEQ proof’s serialized fields and intentional `flip` bit, then test both synthetic proof paths, tamper rejection and key-binding checks.
-- `cookie-time-component-review.md` and `syn-cookie-replay-observation.md`: document the source-level no-clock cookie construction, 65-second delayed/replay tests, changed-port rejection, upstream issue #1 finding 14, and conservative threat-model limits.
+- `cookie-time-component-review.md` and `syn-cookie-replay-observation.md`: document the source-level no-clock cookie construction, 65-second delayed/replay tests, changed-port rejection, upstream issue #1 finding 14, and conservative threat-model limits. `syn-cookie-reboot-review.md` documents the boot-time HKS/RDRAND path and the new QEMU reset/replay differential; runtime result is pending.
 - `test_syn_cookie_reboot.py` and `run_tap_syn_cookie_reboot.sh`: capture a synthetic SYN cookie, issue QEMU monitor `system_reset` while keeping the TAP interface and tuple, then replay the old ACK and verify a fresh post-reset cookie still works. This is a local reboot/key-rotation regression probe; it uploads no artifacts.
 - `test_tcp_ack_mss.py`: asserts bounty acceptance versus upstream rejection of
   out-of-window ACKs, checks peer-MSS safety boundaries, delays a first SYN-cookie
