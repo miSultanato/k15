@@ -114,20 +114,34 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 ## Next work
 
-1. If useful, extend the ClientHello matrix to additional truncation offsets
-   and record-prefix alignments. The one-byte inner-short and outer-short cases
-   are now fully reproduced end-to-end; this remains a framing defect, not a
-   demonstrated key-recovery path.
-2. The cross-sender unicast short-ARP differential is complete. Any further
-   work must remain synthetic and local; do not attempt to access production memory.
+1. Finish the SYN-cookie reboot probe. The current harness confirms the
+   monitor acknowledges `system_reset`, but no post-reset SYN-ACK is observed
+   on any of the three images. A diagnostic rerun now captures QEMU status,
+   CPU registers and network-device state before any security conclusion.
+2. Extend TCP client-sequence coverage to exact admission-window edges and
+   FIN/RST combinations. The RST exact-match matrix now passes on all three
+   revisions; it does not reveal a defect.
+3. If useful, extend the ClientHello matrix to additional truncation offsets
+   and record-prefix alignments. The one-byte inner-short and outer-short
+   cases are already reproduced end-to-end.
 
-The short-site W^X regression is now documented separately in `wx-short-site-impact.md`: the frozen image executes a built-in synthetic RET byte on a site page, while both upstream revisions fault. This is a real executable-page permission regression, not proof of a request-controlled write, arbitrary instruction pointer, or remote code execution.
+The short-site W^X regression is now confirmed at three independent levels:
+emitted layout, the QEMU RET self-test, and a live PTE walk. The frozen image's
+synthetic SITE page is present/read-only/NX=0; both upstream revisions are
+present/read-only/NX=1. This is a real executable-page permission regression,
+not proof of request-controlled writes, an arbitrary instruction pointer, or
+remote code execution.
+
+The client Finished omission is now dynamically reproduced on all three
+revisions: each processes an AEAD-authenticated application record without
+receiving client Finished. This is a shared TLS handshake-confirmation
+weakness, not a Finished-MAC forgery or proof that a party without the
+application traffic key can inject data.
 
 The ACK-window and peer-MSS boundaries (including 32-bit wrap, MSS 0 and MSS 1),
-the TLSInnerPlaintext lengths 1/2/16/255/300, and the emitted boot hardening
-checks have already been exercised locally. No private TLS key or scalar
-recovery has been demonstrated.
-
+the TLSInnerPlaintext lengths 1/2/16/255/300, TCP RST exact/off-by-one handling,
+and emitted/live boot hardening checks have been exercised locally. No private
+TLS key or scalar recovery has been demonstrated.
 
 Do not merge upstream development fixes into the frozen bounty branch. All
 dynamic tests remain local, offline and synthetic-key only; no request is sent
