@@ -78,6 +78,9 @@ jobs:
           if [ -f ${{ matrix.directory }}/src/tls.asm ]; then
             cat ${{ matrix.directory }}/src/tls.asm >> /tmp/k15-source-audit.asm
           fi
+          if [ -f ${{ matrix.directory }}/src/setup.asm ]; then
+            cat ${{ matrix.directory }}/src/setup.asm >> /tmp/k15-source-audit.asm
+          fi
 
       - name: Check frozen RNG call-site and nonce-pool invariants
         if: matrix.variant == 'frozen-bounty'
