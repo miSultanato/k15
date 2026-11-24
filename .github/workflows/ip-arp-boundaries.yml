@@ -18,7 +18,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: k15-ip-arp-boundaries-v2
+  group: k15-ip-arp-boundaries-v3
   cancel-in-progress: false
 
 jobs:
