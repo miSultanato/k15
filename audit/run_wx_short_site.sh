@@ -19,14 +19,18 @@ Path(sys.argv[1]).write_bytes(b"<!doctype html><title>short-site</title>\n\xc3")
 PY
 
 make -s -B B="$B" SITE="$B/one" COMPRESS=0 WXTEST=4 >/dev/null
+export PORT=18500 HPORT=19500
 source tools/vm.sh
-PORT=18500
-HPORT=19500
 IMG="$B/os.bin"
 log=$(mktemp)
 qemu "$B/disk.img" "$(slirp)" >"$log" 2>&1 &
 pid=$!
-sleep 4
+served=no
+for _ in $(seq 1 40); do
+  if ! kill -0 "$pid" 2>/dev/null; then break; fi
+  if curl -fsS --max-time 0.5 -o /dev/null "http://127.0.0.1:$HPORT"; then served=yes; break; fi
+  sleep 0.25
+done
 if kill -0 "$pid" 2>/dev/null; then
   state=alive
   kill "$pid" 2>/dev/null || true
@@ -37,12 +41,13 @@ else
 fi
 printf '%s: short-site WXTEST=4 guest=%s (expected %s)\n' "$label" "$state" "$expected"
 if [[ "$state" != "$expected" ]]; then echo "FAIL: guest state mismatch" >&2; exit 1; fi
-if [[ "$state" == alive ]]; then
-  curl -fsS --max-time 2 -o /dev/null "http://127.0.0.1:$HPORT" || { echo "FAIL: executable-page control stayed alive but did not serve HTTP" >&2; exit 1; }
+if [[ "$state" == alive && "$served" == yes ]]; then
   echo "PASS: guest remained alive and served the synthetic short site"
-else
-  if curl -fsS --max-time 2 -o /dev/null "http://127.0.0.1:$HPORT"; then echo "FAIL: reset guest still served HTTP" >&2; exit 1; fi
+elif [[ "$state" == reset && "$served" == no ]]; then
   echo "PASS: execution attempt faulted before the guest could serve HTTP"
+else
+  echo "FAIL: inconsistent guest/HTTP result (guest=$state, served=$served)" >&2
+  exit 1
 fi
 if [[ -s "$log" ]]; then
   echo "QEMU diagnostic (first 300 bytes):"
