@@ -82,6 +82,7 @@ proofs of all hardware behavior or every possible SMP schedule. See
 
 | Evidence | Run |
 | --- | --- |
+| Full bounded audit plus deterministic P-256 assembly nonce boundaries (`n-1`, `n`, `n+1`) | [45393554079](https://github.com/miSultanato/k15/actions/runs/45393554079) |
 | Differential framing: five malformed cases accepted by bounty, rejected by fix | [45381737629](https://github.com/miSultanato/k15/actions/runs/45381737629) |
 | Upstream hostile-client regression suite | [45382026675](https://github.com/miSultanato/k15/actions/runs/45382026675) |
 | Controlled SMP slot races, RACE=1/2/3 | [45382612903](https://github.com/miSultanato/k15/actions/runs/45382612903) |
