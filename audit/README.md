@@ -23,7 +23,7 @@ revision offered by the k15 bounty.
 | `bounded-audit.yml` | Source invariants, assembly crypto tests, exact `ec.inc` reconstruction, Valgrind controls, QEMU framing and runtime nonce checks |
 | `differential-framing.yml` | Same malformed ClientHello cases against frozen bounty and upstream fixed images; then upstream `tools/abuse.py` |
 | `race-audit.yml` | Project's controlled cross-processor slot handover tests, `RACE=1,2,3` |
-| `parser-fuzz.yml` | Same deterministic 60,000-case ClientHello fuzzer (three seeds) against bounty and fixed images |
+| `parser-fuzz.yml` | Same deterministic 60,000-case ClientHello fuzzer (three seeds) plus raw Ethernet/IP/TCP frame fuzz against bounty and fixed images |
 | `memory-scan.yml` | Local synthetic-key CertificateVerify capture and one guest-RAM snapshot scan |
 
 All are runnable from GitHub Actions. The race workflow uses a privileged,
@@ -50,6 +50,8 @@ user namespaces.
   verifies each CertificateVerify with the synthetic certificate key, and
   recovers the corresponding ECDSA nonce. It prints aggregate counts only.
   Optional one-way fingerprints allow comparison across separate QEMU boots.
+- `run_tap_rawtest.sh`: runs the upstream raw Ethernet/IPv4/TCP malformed-frame
+  fuzzer and verifies the QEMU guest remains alive and port-80 output stays bounded.
 - `test_clienthello_framing.py`: checks inner handshake-length and outer
   record-length mismatches against a local QEMU image.
 - `run_qemu_abuse.sh`: runs the upstream hostile-client suite against the
