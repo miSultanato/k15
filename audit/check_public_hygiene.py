@@ -28,7 +28,7 @@ def tracked_paths() -> list[str]:
 def forbidden_path(path: str) -> str | None:
     p = PurePosixPath(path)
     parts = p.parts
-    if any(part == "cert" or part == "build" or part.startswith("build-") for part in parts[:-1]):
+    if any(part == "cert" or part.startswith("cert-") or part == "build" or part.startswith("build-") for part in parts[:-1]):
         return "generated build/certificate directory"
     if p.name.lower() == "regs.inc":
         return "generated register constants contain the private scalar"
