@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - audit/test_clienthello_framing.py
+      - audit/test_tls_record_rejection.py
       - audit/run_qemu_framing.sh
       - .github/workflows/differential-framing.yml
 
