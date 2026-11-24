@@ -50,3 +50,23 @@ time component with current/previous bucket acceptance. The pinned current
 source still has no time component. For the consolidated threat-model
 classification and limits, see
 [`syn-cookie-replay-observation.md`](syn-cookie-replay-observation.md).
+
+
+## Cookie-width note (2026-11-24)
+
+A separate read of the pinned `src/tcp.asm` SYN encoding and `src/conn.asm`
+`ckx` check clarifies the cookie's effective keyed-check width. Six low bits
+of the 32-bit server ISN carry negotiated metadata (MSS class and window
+scale); the comparison masks those six bits with `and eax, -64`. The
+remaining 26 bits are the keyed cookie check, with the client's initial
+sequence number mixed into the upper portion. This is consistent with the
+source's stated layout; it is not a 32-bit unpredictable authenticator.
+
+This is recorded as a design boundary, not a new vulnerability. A 26-bit
+online guess has probability 1/2^26 per independent attempt under the ideal
+PRF model, but this audit has not demonstrated a practical blind-guess path,
+useful acceptance oracle, or production rate that makes guessing feasible.
+Do not infer key recovery, cross-tuple forgery, or bypass of TLS from this
+width alone. Any future test must stay on synthetic QEMU images and measure
+the full end-to-end acceptance condition rather than merely observing a
+response to an arbitrary ACK.
