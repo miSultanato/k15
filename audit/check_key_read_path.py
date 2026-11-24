@@ -46,12 +46,16 @@ def main() -> None:
     require(len(r_d_refs) == 2 and "equ" in r_d_refs[0][1] and "mov edi, R_D" in r_d_refs[1][1],
             f"unexpected direct R_D references: {r_d_refs}")
 
+    current_select = "mov dl, 16" in asm and "movdqa xmm4, [r8]" in asm
     regs_ops = [line.strip().split(";", 1)[0].strip()
                 for line in asm.splitlines()
                 if re.search(r"\bREGS\b", line)
                 and "equ" not in line
                 and not line.lstrip().startswith((";", "global "))]
-    require(regs_ops == ["select: mov edi, REGS", "mov edi, REGS", "add eax, REGS"],
+    expected_regs_ops = (["select: mov edi, REGS", "add eax, REGS"]
+                         if current_select else
+                         ["select: mov edi, REGS", "mov edi, REGS", "add eax, REGS"])
+    require(regs_ops == expected_regs_ops,
             f"unexpected direct register-bank address operations: {regs_ops}")
 
     init = section(asm, "mov edi, R_D", "mov edi, TABE")
@@ -62,16 +66,29 @@ def main() -> None:
     for fragment in ("and eax, 15", "shl eax, 5", "add eax, REGS", "stosd"):
         require(fragment in reg, f"register decoder lost bound/mapping: {fragment}")
 
-    vm = section(asm, "vm:     mov edi, [rsi]", "HOT 0xF9FFC3FE")
+    vm_end = "HOT 0x0001F7CF" if current_select else "HOT 0xF9FFC3FE"
+    vm = section(asm, "vm:     mov edi, [rsi]", vm_end)
     for fragment in ("mov ebx, [rsi+8]", "mov ecx, [rsi+12]", "mov esi, [rsi+4]",
                      "add rsi, 16", "jmp vm"):
         require(fragment in vm, f"VM instruction decoding changed: {fragment}")
 
-    select = section(asm, "select: mov edi, REGS", "HOT 0x40F70000")
-    for fragment in ("movdqa xmm4, [rsi]", "por xmm4, [rdi+rax]",
-                     "movdqa [rdi+rax], xmm4", "add eax, 16",
-                     "cmp eax, ecx", "jb .c"):
-        require(fragment in select, f"table selection access changed: {fragment}")
+    select_end = "HOT 0x03000000" if current_select else "HOT 0x40F70000"
+    select = section(asm, "select: mov edi, REGS", select_end)
+    if current_select:
+        for fragment in ("movd xmm0, edx", "mov dl, 16", "movdqa xmm4, [r8]",
+                         "pand xmm4, xmm3", "por xmm5, xmm4",
+                         "pand xmm3, [r8+16]", "por xmm6, xmm3",
+                         "add r8, rcx", "dec dl", "jnz .e",
+                         "movdqa [rdi+rax], xmm5", "movdqa [rdi+rax+16], xmm6",
+                         "add eax, 32", "cmp eax, ecx", "jb .u"):
+            require(fragment in select, f"constant-time table selection changed: {fragment}")
+        require(re.search(r"\[[^\]]*\b(?:edx|rdx)\b[^\]]*\]", select) is None,
+                "table selection uses secret data in a memory address")
+    else:
+        for fragment in ("movdqa xmm4, [rsi]", "por xmm4, [rdi+rax]",
+                         "movdqa [rdi+rax], xmm4", "add eax, 16",
+                         "cmp eax, ecx", "jb .c"):
+            require(fragment in select, f"table selection access changed: {fragment}")
 
     # The only select path is through comb. Its callers use fixed entry widths:
     # 96 bytes for Edwards25519 and 64 bytes for P-256, both far below R_D at +448.
