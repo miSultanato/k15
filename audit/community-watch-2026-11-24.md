@@ -135,10 +135,11 @@ property, not evidence that Intel/AMD RDRAND emits such a stream.
    scripts become available. Ask for exact CPU model, QEMU accelerator
    (TCG/KVM), guest CPU flags, host kernel, number of boots, raw nonce export
    format and scripts. Do not treat an assertion without artifacts as proof.
-4. Study RDRAND behavior from public CPU documentation and known errata,
-   especially whether the production virtual CPU exposes hardware RDRAND,
-   how migration/snapshot semantics apply, and whether any documented
-   failure can produce a non-constant repeating sequence.
+4. Completed the source/vendor/QEMU comparison in
+   `rdrand-virtualization-review.md`: Intel DRNG is a shared hardware resource,
+   this repository's nonce workflow uses TCG guest randomness rather than
+   native RDRAND, and full guest-RAM rollback could duplicate a pending nonce
+   pool conditionally. Production hypervisor and snapshot policy remain unknown.
 5. Completed the static processor-affinity trace in
    `processor-affinity-review.md`: a fixed tuple maps to one stable but unknown
    processor; no CPU-selection oracle or target-CPU steering is established.
@@ -1355,3 +1356,52 @@ This resolves the static-source portion of the affinity question. It does not
 show that a remote client can select a particular CPU, identify the selected
 CPU, or induce an RNG anomaly. No production traffic or load testing was
 performed.
+
+
+## RDRAND virtualization and guest-memory rollback (2026-11-24)
+
+The new `audit/rdrand-virtualization-review.md` separates three paths that
+must not be conflated:
+
+- Intel documents DRNG as a shared hardware resource across cores/threads,
+  not a set of independent per-vCPU random streams. The target CPU vendor and
+  model remain unknown.
+- The repository's `run_qemu_nonce.sh` sets `KVM=0`; `tools/vm.sh` selects
+  QEMU TCG. QEMU's TCG RDRAND helper uses `qemu_guest_getrandom`, backed by
+  host crypto-random routines in normal non-deterministic mode (or deterministic
+  and replay sources when those modes are enabled). Thus the local QEMU nonce
+  test does not measure native RDRAND.
+- The separate native RDRAND probe samples the GitHub Actions runner, not the
+  production host.
+- The BSP generates the HKS PRF key and then copies its full 2 MiB BSS image
+  to AP-private BSS. Each AP therefore begins with a copy of the BSP's last
+  `RLAST` value, after which each processor's local `RLAST` evolves
+  independently. There is no global cross-processor duplicate set.
+- The pending nonce pool (`POOLR`, `POOLK`, `POOLN`, `POOLFILL`) and the
+  private key are in guest memory. A full RAM snapshot/restore or clone taken
+  with unused nonce entries could duplicate pending signing material and,
+  if two branches sign different messages with the same entry, create the
+  usual ECDSA nonce-reuse condition. This does not require RDRAND to repeat
+  after restore.
+
+The QEMU `-drive ... snapshot=on` option used by the local harness is a disk
+overlay, not a full guest RAM snapshot. No production snapshot, clone,
+migration or rollback behavior has been established. The conditional RAM
+rollback scenario is an infrastructure risk hypothesis, not a confirmed
+remote bounty vulnerability.
+
+Intel references:
+- DRNG Software Implementation Guide:
+  https://www.intel.com/content/www/us/en/developer/articles/guide/intel-digital-random-number-generator-drng-software-implementation-guide.html
+- Intel SDM, VMX RDRAND-exiting control:
+  https://cdrdv2-public.intel.com/789585/326019-sdm-vol-3c.pdf
+
+QEMU references:
+- TCG RDRAND helper:
+  https://github.com/qemu/qemu/blob/master/target/i386/tcg/int_helper.c
+- Guest-visible random source:
+  https://github.com/qemu/qemu/blob/master/util/guest-random.c
+- CPU model / host-passthrough guidance:
+  https://qemu-project.gitlab.io/qemu/system/qemu-cpu-models.html
+
+No production traffic, host access, snapshot or migration test was performed.
