@@ -245,11 +245,12 @@ def test_delayed_syn_cookie() -> None:
 
 
 def exchange_and_reset(sport: int, client_seq: int, server_seq: int, request: bytes = HTTP):
-    # Materialize the cookie-backed slot, send one HTTP request, then reset it
-    # with the exact next client sequence number. The RST path frees the slot.
+    # Materialize the cookie-backed slot, send one HTTP request, then close it
+    # with a sequence-valid FIN. Fall back to RST if the peer does not FIN back.
     sock.send(make_frame(sport, client_seq, server_seq, 0x10))
     sock.send(make_frame(sport, client_seq, server_seq, 0x18, request))
     client_after_request = (client_seq + len(request)) & 0xFFFFFFFF
+    client_ack = client_after_request
     response = bytearray()
     server_next = server_seq
     deadline = time.monotonic() + 4.0
@@ -262,20 +263,48 @@ def exchange_and_reset(sport: int, client_seq: int, server_seq: int, request: by
         if item["seq"] != server_next:
             continue
         client_ack = item["ack"]
-        response.extend(item["payload"])
         payload = item["payload"]
+        response.extend(payload)
         server_next = (server_next + len(payload)) & 0xFFFFFFFF
         if item["flags"] & 0x01:
             server_next = (server_next + 1) & 0xFFFFFFFF
         if payload or item["flags"] & 0x01:
             sock.send(make_frame(sport, client_ack, server_next, 0x10))
 
-    reset_sent = response.startswith(b"HTTP/1.")
-    if reset_sent:
-        # A sequence-valid RST reaches the server's slot-freeing path.
-        sock.send(make_frame(sport, client_ack, server_next, 0x14))
-        time.sleep(0.2)
-    return bytes(response), reset_sent
+    if not response.startswith(b"HTTP/1."):
+        return bytes(response), False
+
+    # A client FIN advances C_NXT once and asks the server to close its side too.
+    sock.send(make_frame(sport, client_ack, server_next, 0x11))
+    client_after_fin = (client_ack + 1) & 0xFFFFFFFF
+    fin_seen = False
+    deadline = time.monotonic() + 2.0
+    while time.monotonic() < deadline:
+        item = receive(sport, min(0.5, max(0.01, deadline - time.monotonic())))
+        if item is None:
+            continue
+        if item["seq"] != server_next:
+            continue
+        payload = item["payload"]
+        server_next = (server_next + len(payload)) & 0xFFFFFFFF
+        if item["flags"] & 0x01:
+            server_next = (server_next + 1) & 0xFFFFFFFF
+            fin_seen = True
+        if payload or fin_seen:
+            sock.send(make_frame(sport, client_after_fin, server_next, 0x10))
+        if fin_seen:
+            break
+
+    if not fin_seen:
+        # If the peer does not finish the close, reset at its current expected sequence.
+        sock.send(make_frame(sport, client_after_fin, server_next, 0x14))
+    time.sleep(0.2)
+    print(
+        f"OBSERVED: teardown request={request[:4]!r}, peer_ack=0x{client_ack:08x}, "
+        f"client_next=0x{client_after_request:08x}, fin_seen={fin_seen}, "
+        f"reset_fallback={not fin_seen}"
+    )
+    return bytes(response), True
 
 
 def test_cookie_replay_after_teardown() -> None:
