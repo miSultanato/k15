@@ -131,10 +131,7 @@ func main() {
 	if err := client.Handshake(); err != nil {
 		fmt.Printf("TLS handshake error: %v\n", err)
 	} else {
-		_, _ = client.Write([]byte("GET / HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n"))
-		response := make([]byte, 4096)
-		n, readErr := client.Read(response)
-		fmt.Printf("HTTP response: %t (%d bytes, read_error=%v)\n", bytes.Contains(response[:n], []byte("HTTP/1.")), n, readErr)
+		fmt.Println("HRR probe: TLS handshake completed; application data intentionally not sent")
 	}
 	outRecords := parseRecords(capture.out.Bytes())
 	inRecords := parseRecords(capture.in.Bytes())
