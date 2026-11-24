@@ -178,7 +178,7 @@ def make_client_hello(variant: str) -> tuple[bytes, x25519.X25519PrivateKey, byt
     if variant == "outer-short":
         # Unknown extension after the complete key share. Its one data byte is
         # placed outside the declared TLS record, leaving a parseable prefix.
-        extensions += extension(0xFFFF, b"\xA5")
+        extensions += extension(0xFFFF, b"\x17")
     body = (
         b"\x03\x03"
         + bytes.fromhex("00112233445566778899aabbccddeeff") * 2
@@ -462,7 +462,16 @@ def run_case(target: Path, expected: str, variant: str) -> None:
             client_finished_key, transcript_after_finished, hashlib.sha256
         ).digest()
         client_finished = b"\x14\x00\x00\x20" + client_finished_verify
-        sock.sendall(encrypt_record(client_hs_secret, 0, client_finished, 22))
+        client_finished_record = encrypt_record(client_hs_secret, 0, client_finished, 22)
+        if variant == "outer-short":
+            # The byte excluded from the ClientHello record is 0x17, so it
+            # becomes the content-type byte of this next TLS record. Send the
+            # rest of the record header/body without duplicating that byte.
+            if wire[-1] != 0x17:
+                fail("outer-short trailing byte is not the next record content type")
+            sock.sendall(client_finished_record[1:])
+        else:
+            sock.sendall(client_finished_record)
         time.sleep(0.02)
         sock.sendall(encrypt_record(client_app_secret, 0, REQUEST, 23))
 
