@@ -71,3 +71,17 @@ Runtime nonce uniqueness and controlled race tests strengthen the negative
 evidence, but finite samples and selected interleavings are not mathematical
 proofs of all hardware behavior or every possible SMP schedule. See
 `community-watch-2026-11-24.md` for results, links, and third-party reports.
+
+
+## Latest successful runs (2026-11-24)
+
+| Evidence | Run |
+| --- | --- |
+| Differential framing: five malformed cases accepted by bounty, rejected by fix | [45381737629](https://github.com/miSultanato/k15/actions/runs/45381737629) |
+| Upstream hostile-client regression suite | [45382026675](https://github.com/miSultanato/k15/actions/runs/45382026675) |
+| Controlled SMP slot races, RACE=1/2/3 | [45382612903](https://github.com/miSultanato/k15/actions/runs/45382612903) |
+| 10,240 nonce sample plus 1,024 second-boot comparison | [45383575122](https://github.com/miSultanato/k15/actions/runs/45383575122) |
+| 20,000 ClientHello fuzz cases on both source revisions | [45383690499](https://github.com/miSultanato/k15/actions/runs/45383690499) |
+| Synthetic scalar guest-RAM snapshot | [45384777117](https://github.com/miSultanato/k15/actions/runs/45384777117) |
+
+See the community watch report for exact observations and limitations.
