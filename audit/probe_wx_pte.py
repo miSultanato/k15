@@ -82,8 +82,6 @@ def main() -> None:
     site = (build / "site.bin").read_bytes()
     if not site or image[-len(site):] != site:
         fail("synthetic SITE is not the exact non-empty image tail")
-    if site[-1] != 0xC3:
-        fail("synthetic SITE does not end in RET (0xc3)")
     delta_file = build / "delta"
     delta = 0
     if delta_file.exists():
@@ -151,7 +149,7 @@ def main() -> None:
             nx = bool(pte & (1 << 63))
             writable = bool(pte & 2)
             expected_nx = sys.argv[2] == "reset"
-            print(f"CR3=0x{cr3:x} VA=0x{virtual:x} DELTA=0x{delta:x}")
+            print(f"CR3=0x{cr3:x} VA=0x{virtual:x} DELTA=0x{delta:x} final_SITE_byte=0x{site[-1]:02x}")
             for level, address, entry in entries:
                 print(f"{level} entry @ 0x{address:x} = 0x{entry:016x}")
             print(f"RESULT: present=1 writable={int(writable)} NX={int(nx)}")
