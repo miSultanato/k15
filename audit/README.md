@@ -25,7 +25,7 @@ revision offered by the k15 bounty.
 | `crypto-revision-check.yml` | Compares P-256 nonce boundaries, RNG source invariants, scalar-read paths and constant-time checks across all three source revisions |
 | `race-audit.yml` | Project's controlled cross-processor slot handover tests, `RACE=1,2,3` |
 | `parser-fuzz.yml` | Same deterministic 60,000-case ClientHello fuzzer (three seeds) plus raw Ethernet/IP/TCP frame fuzz against bounty, first fix and current main |
-| `memory-scan.yml` | Local synthetic-key CertificateVerify capture and one guest-RAM snapshot scan |
+| `memory-scan.yml` | Local synthetic-key CertificateVerify capture and one guest-RAM snapshot scan |\n| `ip-arp-boundaries.yml` | Deterministic IPv4 checksum, malformed ARP, short-ARP stale-buffer, TCP ACK-window and peer-MSS probes across pinned images |\n| `boot-hardening-differential.yml` | Static source comparison of AP counter alignment, GDT Accessed bits, E820 SMAP signature validation and Makefile NAME/hostname guard |
 
 All are runnable from GitHub Actions. The race workflow uses a privileged,
 isolated network namespace because GitHub-hosted runners disallow unprivileged
@@ -70,7 +70,7 @@ user namespaces.
   checks whether a 24-byte ARP request discloses stale bytes.
 - `test_tcp_ack_mss.py`: sends a data-bearing segment with an out-of-window ACK
   and tests whether a peer MSS of 100 is respected.
-- `check_current_rand_path.py`: checks the refactored current-main RDRAND-to-nonce path.
+- `check_current_rand_path.py`: checks the refactored current-main RDRAND-to-nonce path.\n- `check_boot_hardening.py`: compares four source-level boot/build hardening changes between the frozen bounty, first upstream fix and pinned current main. This is a static check, not a malformed-BIOS or built-image test.
 - `run_qemu_abuse.sh`: runs the upstream hostile-client regression suite against
   the first upstream fix and current main, not against the frozen bounty image.
 - `tools/racetest.sh`: exercises the project's deliberately synchronized
