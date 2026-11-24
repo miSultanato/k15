@@ -89,4 +89,4 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | 60,000 ClientHello cases plus 3,191 raw frames on both source revisions | [45385140473](https://github.com/miSultanato/k15/actions/runs/45385140473) |
 | Synthetic scalar guest-RAM snapshot | [45384777117](https://github.com/miSultanato/k15/actions/runs/45384777117) |
 
-Start with `findings-summary.md` for the executive status, then see `community-watch-2026-11-24.md` for exact observations and third-party context.
+Start with `findings-summary.md` for the executive status, then see `community-watch-2026-11-24.md` for exact observations and third-party context. The remaining end-to-end ClientHello/Finished experiment is specified in `framing-handshake-followup.md`.
