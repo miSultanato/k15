@@ -1,0 +1,83 @@
+name: k15 crypto revision differential
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - audit/test_ecdsa_nonce_boundaries.py
+      - audit/check_rand_path.py
+      - audit/check_key_read_path.py
+      - audit/run_ct.sh
+      - .github/workflows/crypto-revision-check.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k15-crypto-revision-check
+  cancel-in-progress: false
+
+jobs:
+  crypto:
+    name: P-256 nonce and scalar-path checks — ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: frozen-bounty
+            directory: bounty
+            ref: ab93479ebc7c85274c722b16897148286d1cfca3
+          - variant: first-upstream-fix
+            directory: fixed
+            ref: a2d8893261b2be15b44c86d6f4483d65820e943a
+          - variant: current-upstream-main
+            directory: current
+            ref: cb9f76a5a100c418bfcaeddcd4f137d30ab489d2
+
+    steps:
+      - name: Check out audit harness
+        uses: actions/checkout@v4
+
+      - name: Check out exact source revision
+        uses: actions/checkout@v4
+        with:
+          repository: FileSherlock/k15
+          ref: ${{ matrix.ref }}
+          path: ${{ matrix.directory }}
+          persist-credentials: false
+
+      - name: Verify pinned source revision
+        working-directory: ${{ matrix.directory }}
+        run: test "$(git rev-parse HEAD)" = "${{ matrix.ref }}"
+
+      - name: Install native and Python dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends nasm gcc make valgrind
+          python3 -m pip install --disable-pip-version-check cryptography
+
+      - name: Build upstream assembly crypto test binary
+        working-directory: ${{ matrix.directory }}
+        run: make test
+
+      - name: Check RNG call-site and nonce-pool invariants
+        run: python3 audit/check_rand_path.py ${{ matrix.directory }}/src/os.asm
+
+      - name: Test deterministic P-256 nonce boundaries
+        run: python3 audit/test_ecdsa_nonce_boundaries.py ${{ matrix.directory }}
+
+      - name: Audit private-scalar read path and generated curve include
+        run: |
+          python3 audit/check_key_read_path.py ${{ matrix.directory }}/src/os.asm ${{ matrix.directory }}/tools/ec.py ${{ matrix.directory }}/tools/gen.py ${{ matrix.directory }}/build/ec.inc
+
+      - name: Run constant-time checks and negative controls
+        run: bash audit/run_ct.sh ${{ matrix.directory }}
+
+      - name: Keep all synthetic keys and binaries ephemeral
+        run: |
+          echo "No keys, binaries or test artifacts are uploaded."
+          echo "Each runner is discarded after the job."
