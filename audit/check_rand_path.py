@@ -65,7 +65,7 @@ def main() -> None:
     # The BSP creates HKS before AP startup. Each AP then receives a private
     # 2 MiB BSS copy, which includes the current RLAST and empty pool counters.
     ap_copy = re.search(
-        r"(?ms)^\s*mov esi, BSS\s*\n.*?mov ecx, 0x200000 / 8\s*\n\s*rep movsq\s*\n\s*mov \[rdi\+CPUN-STACK\], ebx",
+        r"(?m)^\s*mov esi, BSS\s*\n\s*mov edi, ebx\s*\n\s*shl edi, 21\s*\n\s*add edi, APBSS - 0x200000\s*\n\s*mov ecx, 0x200000 / 8\s*\n\s*rep movsq\s*\n\s*mov \[rdi\+CPUN-STACK\], ebx",
         source,
     )
     require(ap_copy is not None, "could not verify the per-AP 2 MiB BSS copy")
