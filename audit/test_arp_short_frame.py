@@ -84,19 +84,19 @@ if __name__ == "__main__":
     try:
         prime = prime_frame()
         short = short_arp()
-        # The device RX queue is capped at 1024 descriptors, while the
-        # per-CPU software ring can hold up to 32768 frames. Send 32768
-        # identical valid ARP requests in bounded batches so both rings wrap.
-        # Drain each batch's normal replies before continuing.
+        # run_tap_ip_arp.sh sets MEM=256. The HSMASK formula gives this
+        # guest a 2048-slot per-CPU software ring; the virtio RX queue is
+        # capped at 1024. Send 2048 identical valid ARP requests in bounded
+        # batches so both rings wrap, draining every normal reply.
         total_primed = 0
-        for batch in range(512):
-            for _ in range(64):
+        for batch in range(16):
+            for _ in range(128):
                 sock.send(prime)
             time.sleep(0.02)
-            primed = drain_prime_replies(2.0)
-            if primed != 64:
+            primed = drain_prime_replies(4.0)
+            if primed != 128:
                 raise SystemExit(
-                    f"FAIL: batch {batch + 1}/512 drained {primed} of 64 full ARP replies"
+                    f"FAIL: batch {batch + 1}/16 drained {primed} of 128 full ARP replies"
                 )
             total_primed += primed
         print(f"OBSERVED: drained {total_primed} normal replies to full ARP priming requests")
