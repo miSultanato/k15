@@ -23,7 +23,7 @@ All dynamic testing is local, offline and synthetic-key only.
 | ClientHello framing | Frozen image accepts four invalid inner lengths and one short outer-record length; fixed image rejects all five | [Differential QEMU run](https://github.com/miSultanato/k15/actions/runs/45381737629) |
 | Upstream regression suite | Hostile-client suite passes on fixed image, including 1,565 length-mutated ClientHellos | [Abuse suite](https://github.com/miSultanato/k15/actions/runs/45382026675) |
 | SMP slot races | RACE=1, RACE=2 and RACE=3 all pass on frozen image | [Race matrix](https://github.com/miSultanato/k15/actions/runs/45382612903) |
-| ECDSA/RDRAND | 10,240 + 1,024 unique QEMU nonces with zero cross-boot overlap; 1M native runner RDRAND samples with zero adjacent/lag-four repeats | [Bounded audit](https://github.com/miSultanato/k15/actions/runs/45386477988) |
+| ECDSA/RDRAND | 10,240 + 1,024 unique QEMU nonces with zero cross-boot overlap; 10M native runner RDRAND samples with zero adjacent/lag-four repeats | [Bounded audit](https://github.com/miSultanato/k15/actions/runs/45386477988) |
 | Guest memory | One 256 MiB guest-RAM snapshot after 1,024 handshakes: zero plaintext synthetic-scalar patterns, six expected Montgomery-form patterns | [Memory scan](https://github.com/miSultanato/k15/actions/runs/45384777117) |
 | ClientHello/raw-frame fuzz | 60,000 ClientHellos plus 3,191 malformed Ethernet/IP/TCP frames passed on each revision | [Expanded parser fuzz](https://github.com/miSultanato/k15/actions/runs/45385140473) |
 
