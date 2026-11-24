@@ -402,3 +402,79 @@ recovery or bounty spend. Community write-ups are detailed but self-reported;
 their raw datasets and harnesses are not public in the thread. Our additional
 static checks strengthen the finite source-level argument around the scalar,
 but do not prove the production hypervisor, CPU RNG or image contents.
+
+
+## ClientHello framing discrepancy: confirmed, not yet a key leak
+
+A community auditor and the project owner discussed a malformed-message case:
+a ClientHello whose 24-bit handshake-message length is shorter than the
+enclosing TLS record can still complete the handshake. The owner separately
+confirmed that a ClientHello split across two TLS records is intentionally
+rejected as a size/scope shortcut. These are distinct cases.
+
+Static review of the frozen source confirms the short-length behavior:
+
+- The TCP/TLS receive path assembles the record using the outer TLS record
+  length at `HS_CH+3`, bounded by `CHMAX`.
+- Once the record is complete, `.hello` calls `handshake` with
+  `ecx = record_length - 5`: the complete record payload.
+- `handshake` copies those bytes into the transcript and uses that same
+  length as the ClientHello end pointer. It does not read or validate the
+  ClientHello's own three-byte handshake length.
+- The extension walk is bounded by the actual record payload end, not by the
+  shorter handshake length declared inside the payload.
+
+This is a confirmed framing/conformance discrepancy in the frozen branch.
+It means bytes trailing the declared ClientHello can be interpreted as part
+of that ClientHello, including as extension data. It is not, by itself, a
+demonstrated out-of-bounds read or private-key disclosure: the walk is still
+bounded by the assembled record buffer, and the bytes are supplied by the
+same client. The independent auditor reports a 229-case structured
+ClientHello test without finding an oracle or key-path disclosure, but the
+raw corpus and harness were not published in the thread.
+
+Status: retain as a bounded parser robustness issue, not as a confirmed
+bounty exploit. A stronger claim would require a reproducible consequence
+beyond accepting a malformed handshake length. Do not probe the live server;
+any follow-up belongs in the local pinned-image harness.
+
+Sources:
+- Community audit discussion:
+  https://www.reddit.com/r/securityCTF/comments/1y1fjej/200_in_bitcoin_if_you_can_get_the_tls_key_out_of/
+- Frozen receive and handshake code:
+  https://github.com/FileSherlock/k15/blob/bounty/src/os.asm
+- Owner's current scope notes:
+  https://github.com/FileSherlock/k15/blob/main/CLAUDE.md
+
+## Additional community conclusions: proof and side-channel review
+
+The November 22–23 discussion adds three useful negative results, all
+self-reported and not independently reproducible from public artifacts:
+
+- A timing sweep over 36 synthetic key patterns, 512 signatures per pattern,
+  reportedly found identical minimum timings and no significant correlation
+  between the secret's bit pattern and signing time. The author calls out a
+  specification deviation and offered to send its details privately.
+- A separate proof review generated repeated cross-curve proofs with fixed
+  base-4 digits. An initial apparent bias disappeared in a larger fresh
+  sample (250 proofs per digit); the author concluded the first trend was
+  sampling noise.
+- A Bitcoin-side analysis notes that the bounty proof itself publishes the
+  secp256k1 public point, but not a signature made by the bounty scalar.
+  The receive-only P2WPKH address and its funding transactions do not supply
+  an ECDSA signature from the target key. The public point still leaves the
+  ordinary discrete-log problem; the proof does not create a known
+  cross-curve shortcut.
+
+These reports reduce the expected value of broad timing, proof-blinding and
+Bitcoin-chain speculation. They do not replace an independent proof review,
+a reproducible timing harness, or an audit of the production image.
+
+## CI scope expansion
+
+The bounded workflow now runs `make all` after `make test` against the
+same pinned bounty commit. This compiles the complete bootable disk image
+using the test-generated local identity. The runner is ephemeral; no build
+directory, certificate, private key or disk image is uploaded as an artifact.
+This adds assembly/link/packing coverage, but still does not reproduce the
+production certificate or inspect the running Hetzner image.
