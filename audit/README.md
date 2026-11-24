@@ -88,6 +88,7 @@ user namespaces.
   request from a different sender. The regression requires the frozen bounty
   to expose the stale eight-byte suffix and both upstream images to reject it.
   See `arp-short-frame-impact.md` for the exact data flow and limits.
+- `syn-cookie-replay-observation.md`: records the replayable cookie-ACK behavior after orderly FIN close, distinguishes it from the bounty-only findings, and documents the limits of the threat-model evidence.
 - `test_tcp_ack_mss.py`: sends a data-bearing segment with an out-of-window ACK,
   tests peer-MSS boundaries, delays a first SYN-cookie ACK, then replays the same
   cookie after FIN/FIN teardown. The replay probe waits 65 seconds after teardown
