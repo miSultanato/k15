@@ -28,6 +28,7 @@ The audit also reproduces TLS record-validation, TCP ACK-window and MSS defects.
 | Peer MSS=100 | Completes handshake and sends 180-byte segment; SYN-ACK advertises MSS=1460 | No SYN-ACK | No SYN-ACK | [first fix](https://github.com/miSultanato/k15/actions/runs/45397630737), [current main](https://github.com/miSultanato/k15/actions/runs/45401501930) |
 | HTTPS methods | Lowercase `get` gets no HTTP response on bounty; `FOO` returns 405 | Lowercase `get` and `FOO` return 405 | Same as first fix | [TLS differential](https://github.com/miSultanato/k15/actions/runs/45402956609) |
 | Missing Host header | GET without Host returns 200 | GET without Host returns 200 | GET without Host returns 400 | [TLS differential](https://github.com/miSultanato/k15/actions/runs/45402956609) |
+| TLSInnerPlaintext without content type | Not yet run against frozen image | Regression suite closes connection for 1/300 zero-byte inner plaintext | Same | [hostile-client suite](https://github.com/miSultanato/k15/actions/runs/45402956609) |
 | ECDSA nonce boundaries | `n+1` aliases `1`; `n-1` verifies; `n` does not | Not compared | Not compared | [frozen signer test](https://github.com/miSultanato/k15/actions/runs/45393554079) |
 
 ## Additional negative evidence
