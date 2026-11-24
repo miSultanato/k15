@@ -22,4 +22,4 @@ jobs:
       - name: Test the hygiene guard with synthetic markers
         run: python3 audit/test_public_hygiene.py
       - name: Check tracked files for generated secrets and artifacts
-        run: python3 audit/check_public_hygiene.py
+        run: python3 audit/check_public_hygiene.py --history
