@@ -59,8 +59,12 @@ jobs:
         working-directory: ${{ matrix.directory }}
         run: make all
 
-      - name: Fuzz 20,000 ClientHellos and verify service remains alive
-        run: sudo unshare -n bash audit/run_tap_hellofuzz.sh ${{ matrix.directory }} 20261124 20000
+      - name: Fuzz 60,000 ClientHellos across three reproducible seeds
+        run: |
+          for seed in 20261124 20261125 20261126; do
+            echo "=== ${{ matrix.variant }} seed $seed ==="
+            sudo unshare -n bash audit/run_tap_hellofuzz.sh ${{ matrix.directory }} "$seed" 20000
+          done
 
       - name: Confirm no generated key material or images are uploaded
         run: |
