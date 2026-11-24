@@ -344,6 +344,15 @@ def test_cookie_replay_after_teardown() -> None:
         )
         return
 
+    # The cookie is tuple-bound: replay the same ACK under a different
+    # source port before testing the original tuple's delayed replay.
+    wrong_tuple_response, _, _, _ = exchange_and_close(
+        sport + 1, client_seq, original_server_ack, REPLAY_HTTP
+    )
+    if wrong_tuple_response.startswith(b"HTTP/1."):
+        raise SystemExit("FAIL: SYN-cookie ACK replay succeeded after source-port change")
+    print("PASS: replayed SYN-cookie ACK rejected after source-port change")
+
     # Keep the exact cookie for 65 seconds after a completed FIN close, then
     # replay it and send a fresh request at the old sequence.
     drain_deadline = time.monotonic() + 0.25
