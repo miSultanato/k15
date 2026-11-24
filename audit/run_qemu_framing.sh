@@ -20,3 +20,4 @@ else
   python3 "$repo_root/test_tls_record_rejection.py" "$target" observe
   python3 "$repo_root/test_dummy_ccs.py" "$target" observe
 fi
+python3 "$repo_root/test_https_request.py" "$target"
