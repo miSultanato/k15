@@ -157,3 +157,57 @@ or contact the production server.
 The expanded periodic-stream model is a software regression test only. A
 passing result demonstrates the limitation of the adjacent-word predicate,
 not a defect in any deployed CPU or hypervisor.
+
+
+## RDRAND vendor documentation and historical failures
+
+Intel's Software Developer's Manual describes RDRAND as output from a
+cryptographically secure DRBG, reseeded from an on-chip entropy source, and
+states that the design aims for statistically uniform, non-periodic and
+non-deterministic output. It also says internal health tests should suppress
+bad output by clearing CF. Intel recommends a bounded retry loop (example:
+10 attempts), because CF=0 can occur transiently under demand and persistent
+failure should not become an unbounded software loop.
+
+Sources:
+- Intel SDM, Volume 1, §7.3.17.1:
+  https://cdrdv2-public.intel.com/843827/253665-sdm-vol-1-dec-24.pdf
+- Intel DRNG Software Implementation Guide:
+  https://www.intel.com/content/www/us/en/developer/articles/guide/intel-digital-random-number-generator-drng-software-implementation-guide.html
+
+Historical AMD incidents establish that RDRAND has not been infallible:
+
+- In 2019, Ryzen 3000 systems were reported to return 0xFFFFFFFF repeatedly
+  while reporting success; the widely discussed microcode/BIOS incident
+  caused software that expected unique values to loop or fail.
+- AMD family 15h/16h systems also had reports of RDRAND malfunction after
+  suspend/resume due to BIOS resume handling; Linux responded by hiding the
+  CPUID RDRAND feature on affected families in relevant configurations.
+
+Sources:
+- Ars Technica, October 2019:
+  https://arstechnica.com/gadgets/2019/10/how-a-months-old-amd-microcode-bug-destroyed-my-weekend/
+- Linux kernel mailing list patch, August 2019:
+  https://lore-kernel.gnuweeb.org/lkml/776cb5c2d33e7fd0d2893904724c0e52b394f24a.1565817448.git.thomas.lendacky%40amd.com/T/
+
+Relevance to k15:
+
+- The documented all-ones failure is not a nonce-recovery route in this
+  implementation: `RLAST` starts at zero, the first all-ones qword passes,
+  the second identical qword triggers `ud2`. The outcome is machine failure,
+  not a signature with a repeated nonce.
+- A sequence that alternates or cycles through distinct qwords is not the
+  historical all-ones failure. It would violate the documented RDRAND
+  contract, but the current adjacent-value check would not detect it.
+- The `jnc rand` retry is unbounded. CF=0 under transient backpressure is
+  expected to be rare; a persistent failure can pin the processor in the
+  retry loop. This is a liveness/availability observation, not a key
+  disclosure primitive and not a reason to test the live service.
+- The available historical AMD incidents concern older CPU families and
+  specific firmware/resume conditions. They do not establish that the
+  current Hetzner host, its CPU generation, or its hypervisor is affected.
+
+Assessment: known RDRAND incidents justify retaining hardware RNG behavior
+as a theoretical dependency to understand, but they do not materially
+increase the probability of the specific non-adjacent periodic sequence
+needed by our nonce-reuse hypothesis.
