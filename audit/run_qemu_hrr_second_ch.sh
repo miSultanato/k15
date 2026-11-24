@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Force a TLS 1.3 HelloRetryRequest using a Go client with P-384 first, X25519 second.
+# Force a TLS 1.3 HelloRetryRequest using OpenSSL with P-384 first, X25519 second.
 set -euo pipefail
 
 target=${1:?target directory required}
