@@ -109,6 +109,7 @@ proofs of all hardware behavior or every possible SMP schedule. See
 
 | Evidence | Run |
 | --- | --- |
+| Synthetic BIOS E820: valid SMAP accepted by all; wrong-signature success counted only by frozen bounty | [45437038597](https://github.com/miSultanato/k15/actions/runs/45437038597) |
 | HRR second ClientHello: two ClientHellos/two ServerHellos; frozen sends 0 CCS, both upstream images send 1 | [45436733972](https://github.com/miSultanato/k15/actions/runs/45436733972) |
 | Oversized legacy_session_id 33 and 255 bytes: frozen accepts both; upstream images send fatal alerts | [45436733972](https://github.com/miSultanato/k15/actions/runs/45436733972) |
 | Short-site W^X: frozen executes synthetic site byte; first-fix/current reset | [45409649945](https://github.com/miSultanato/k15/actions/runs/45409649945) |
