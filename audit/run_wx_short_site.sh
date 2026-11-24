@@ -5,6 +5,8 @@ set -euo pipefail
 
 target=${1:?target directory required}
 label=${2:?label required}
+expected=${3:?expected state required: alive or reset}
+if [[ "$expected" != alive && "$expected" != reset ]]; then echo "expected must be alive or reset" >&2; exit 2; fi
 cd "$target"
 
 export B=build-wx-short
@@ -33,7 +35,15 @@ else
   state=reset
   wait "$pid" 2>/dev/null || true
 fi
-printf '%s: short-site WXTEST=4 guest=%s\n' "$label" "$state"
+printf '%s: short-site WXTEST=4 guest=%s (expected %s)\n' "$label" "$state" "$expected"
+if [[ "$state" != "$expected" ]]; then echo "FAIL: guest state mismatch" >&2; exit 1; fi
+if [[ "$state" == alive ]]; then
+  curl -fsS --max-time 2 -o /dev/null "http://127.0.0.1:$HPORT" || { echo "FAIL: executable-page control stayed alive but did not serve HTTP" >&2; exit 1; }
+  echo "PASS: guest remained alive and served the synthetic short site"
+else
+  if curl -fsS --max-time 2 -o /dev/null "http://127.0.0.1:$HPORT"; then echo "FAIL: reset guest still served HTTP" >&2; exit 1; fi
+  echo "PASS: execution attempt faulted before the guest could serve HTTP"
+fi
 if [[ -s "$log" ]]; then
   echo "QEMU diagnostic (first 300 bytes):"
   head -c 300 "$log" | tr '\n' ' '
