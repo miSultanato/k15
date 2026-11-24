@@ -29,7 +29,7 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 | TCP ACK-window | ACK offsets +1, +63, +64, +65535 and +65536 beyond `SND.NXT` all still get HTTP responses; same when `SND.NXT=0xFFFFFFC2` and +65536 wraps to `0x0000FFC2` | No HTTP payload for all offsets, including forced wrap | Same as first fix | [expanded TAP matrix](https://github.com/miSultanato/k15/actions/runs/45412713955), [forced-wrap matrix](https://github.com/miSultanato/k15/actions/runs/45413051340) |
 | Peer MSS boundaries | Accepts MSS 0, 1, 100, 179, 180, 181, 215 and 216; sends 180-byte payloads (exceeds every peer MSS below 180) | No SYN-ACK for 0..215; accepts 216 and sends 180 | Same as first fix | [expanded MSS matrix](https://github.com/miSultanato/k15/actions/runs/45414487001) |
 | SYN cookie time component | Delayed first ACK after 65s is accepted and following HTTP request processed | Same | Same | [three-way TAP test](https://github.com/miSultanato/k15/actions/runs/45410737525) |
-| SYN cookie replay after teardown | Original cookie ACK reopens a slot after FIN/FIN close; ACK of a different-length request matches its new end sequence | Same | Same | [three-way replay differential](https://github.com/miSultanato/k15/actions/runs/45443282691) |
+| SYN cookie replay after teardown | Original cookie ACK reopens a slot after FIN/FIN close; after a further 65s the ACK of a different-length request matches its new end sequence | Same | Same | [three-way 65s replay differential](https://github.com/miSultanato/k15/actions/runs/45443936657) |
 | HTTPS methods | Lowercase `get` gets no HTTP response on bounty; `FOO` returns 405 | Lowercase `get` and `FOO` return 405 | Same as first fix | [TLS differential](https://github.com/miSultanato/k15/actions/runs/45402956609) |
 | Missing Host header | GET without Host returns 200 | GET without Host returns 200 | GET without Host returns 400 | [TLS differential](https://github.com/miSultanato/k15/actions/runs/45402956609) |
 | TLSInnerPlaintext without content type | Authenticated all-zero inner plaintext lengths 1, 2, 16, 255 and 300 are accepted; a following valid request is processed | Closes connection for all five lengths before following request | Same as first fix | [expanded three-way test](https://github.com/miSultanato/k15/actions/runs/45414676678) |
@@ -77,12 +77,10 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 ## Next work
 
-1. Finish the 65-second post-teardown cookie replay test; immediate replay after
-   a complete FIN/FIN close is now reproduced on all three revisions.
-2. Complete the malformed-ClientHello transcript experiment with a client that
+1. Complete the malformed-ClientHello transcript experiment with a client that
    hashes exactly the bytes the server processes; parser acceptance/rejection
    is covered, but a mismatched-transcript handshake is not yet demonstrated.
-3. Continue assessing the short-ARP stale-buffer disclosure only with synthetic
+2. Continue assessing the short-ARP stale-buffer disclosure only with synthetic
    data. Do not attempt to access production memory.
 
 The ACK-window and peer-MSS boundaries (including 32-bit wrap, MSS 0 and MSS 1),
