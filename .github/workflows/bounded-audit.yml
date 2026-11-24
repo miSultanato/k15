@@ -20,6 +20,7 @@ on:
       - audit/run_qemu_nonce.sh
       - audit/run_qemu_framing.sh
       - audit/check_public_proof.py
+      - audit/test_public_proof.py
       - audit/rdrand_host_probe.c
       - .github/workflows/bounded-audit.yml
 
@@ -66,6 +67,9 @@ jobs:
 
       - name: Verify public cross-curve proof offline
         run: python3 audit/check_public_proof.py target/tools target/bounty.proof
+
+      - name: Exercise proof generator with synthetic scalars only
+        run: python3 audit/test_public_proof.py target/tools
 
       - name: Install minimal native build dependency
         run: |
