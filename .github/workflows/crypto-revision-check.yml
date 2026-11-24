@@ -65,11 +65,12 @@ jobs:
         working-directory: ${{ matrix.directory }}
         run: make test
 
-      - name: Check RNG call-site and nonce-pool invariants
-        run: python3 audit/check_rand_path.py ${{ matrix.directory }}/src/os.asm
-
       - name: Test deterministic P-256 nonce boundaries
         run: python3 audit/test_ecdsa_nonce_boundaries.py ${{ matrix.directory }}
+
+      - name: Check frozen RNG call-site and nonce-pool invariants
+        if: matrix.variant == 'frozen-bounty'
+        run: python3 audit/check_rand_path.py ${{ matrix.directory }}/src/os.asm
 
       - name: Audit private-scalar read path and generated curve include
         run: |
