@@ -1122,3 +1122,32 @@ https://man7.org/linux/man-pages/man7/arp.7.html
 The test remains local, synthetic, single-processor and limited to eight
 metadata bytes. It does not establish arbitrary memory disclosure, private
 key exposure, multi-processor reliability or Internet reachability.
+
+
+## SYN-cookie ACK replay after orderly FIN close (2026-11-24)
+
+The expanded three-way TAP run
+https://github.com/miSultanato/k15/actions/runs/45468109924
+completed successfully on frozen bounty, upstream-fixed and upstream-current.
+All three accepted the exact cookie ACK again after the first connection had
+completed FIN/FIN teardown and a further 65-second delay. The replayed ACK
+materialized a new connection, and a different-length HTTP request was
+processed at the original client sequence number.
+
+The first and current upstream revisions share the same `src/conn.asm`
+blob. Its `prf`/ `ckx` logic derives and verifies the cookie from the
+client tuple, initial sequence and boot-time keyed hash; the cookie has no
+visible time bucket or single-use counter. A valid first ACK takes the
+`.miss -> .make` path when no connection slot exists. This explains the
+observed replay but does not, by itself, establish a security defect.
+
+Classification is deliberately conservative: reproducible stateless-cookie
+replay property, not yet a confirmed bounty vulnerability. It reproduces on
+all three revisions, requires the original tuple/cookie ACK or equivalent
+knowledge, and does not demonstrate off-path forgery, cross-tuple replay,
+application-auth bypass or production reachability. The test's old "RST
+teardown" log label was inaccurate; the connection closes with FIN/FIN and
+the label is corrected.
+
+See `audit/syn-cookie-replay-observation.md`. Keep this separate from the
+bounty-only ARP stale-buffer disclosure and ACK-window defects.
