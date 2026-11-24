@@ -199,6 +199,25 @@ def test_bad_ack() -> None:
 
 
 
+
+def test_mss_boundary_matrix() -> None:
+    for index, peer_mss in enumerate((179, 180, 181, 215, 216)):
+        sport = 52200 + index
+        isn = 0x56780000 + index
+        synack = handshake(sport, isn, peer_mss)
+        if synack is None:
+            print(f"OBSERVED: peer MSS={peer_mss}: no SYN-ACK")
+            continue
+        advertised = parse_mss(synack["options"])
+        payloads = fetch_after_handshake(sport, isn, synack, bad_ack=False)
+        maximum = max((len(payload) for payload in payloads), default=0)
+        print(
+            f"OBSERVED: peer MSS={peer_mss}, SYN-ACK MSS={advertised}, "
+            f"largest outbound TCP payload={maximum}"
+        )
+
+
+
 def test_delayed_syn_cookie() -> None:
     # A SYN cookie without a time bucket should remain valid after the SYN
     # retransmission cache has aged out. No ACK is sent until after the delay.
@@ -267,6 +286,7 @@ if __name__ == "__main__":
         test_ack_boundary_matrix()
         if mode != "wrap":
             test_small_mss()
+            test_mss_boundary_matrix()
             test_delayed_syn_cookie()
         print(f"RESULT: TCP ACK/MSS probes completed in mode={mode}")
     finally:
