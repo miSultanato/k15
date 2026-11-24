@@ -83,7 +83,6 @@ jobs:
 
       - name: Install NASM and isolated 16-bit emulator
         run: |
-          sudo apt-get update
           sudo apt-get install --yes --no-install-recommends nasm
           python3 -m pip install --disable-pip-version-check cryptography unicorn==2.1.3
 
