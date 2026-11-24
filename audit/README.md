@@ -7,8 +7,9 @@ revision offered by the k15 bounty.
 
 - Frozen target: `FileSherlock/k15` commit
   `ab93479ebc7c85274c722b16897148286d1cfca3` (the `bounty` branch).
-- All dynamic tests boot locally built images under QEMU TCG and connect only
-  to loopback or a private TAP network inside an ephemeral GitHub runner.
+- QEMU tests boot locally built images and connect only to loopback or a private
+  TAP network inside an ephemeral GitHub runner. The E820 boot-path test uses
+  deterministic 16-bit emulation with synthetic BIOS responses.
 - No request is sent to `15kb.org`; no production disk, certificate, key,
   wallet, account or infrastructure is accessed.
 - Generated certificates, private keys, VM images and nonce captures remain
@@ -28,7 +29,7 @@ revision offered by the k15 bounty.
 | `memory-scan.yml` | Local synthetic-key CertificateVerify capture and one guest-RAM snapshot scan |
 | `wx-short-site.yml` | Three-way QEMU differential: execute a synthetic `RET` byte at the end of a one-file site to detect executable site pages |
 | `ip-arp-boundaries.yml` | Deterministic IPv4/ARP checks, short-ARP stale-buffer probe, TCP ACK/MSS boundaries, delayed SYN-cookie ACK and forced 32-bit sequence-wrap probes |
-| `boot-hardening-differential.yml` | Source and emitted-image comparison of AP counter alignment and GDT Accessed bits, plus E820 SMAP and Makefile NAME checks |
+| `boot-hardening-differential.yml` | Source/emitted-image comparison of AP counter alignment and GDT Accessed bits, synthetic BIOS E820 signature emulation, and Makefile NAME checks |
 
 All are runnable from GitHub Actions. The race workflow uses a privileged,
 isolated network namespace because GitHub-hosted runners disallow unprivileged
@@ -76,6 +77,7 @@ user namespaces.
 - `check_current_rand_path.py`: checks the refactored current-main RDRAND-to-nonce path.
 - `check_boot_hardening.py`: compares four source-level boot/build hardening changes between the frozen bounty, first upstream fix and pinned current main.
 - `check_boot_binary.py`: checks the emitted `os.bin` and NASM listing for AP counter alignment and GDT descriptor Accessed bytes. It does not boot the image or exercise AP startup.
+- `test_e820_signature.py`: executes the unchanged 16-bit E820 loop in Unicorn with synthetic valid and wrong-signature BIOS responses; compares the frozen boot sector with both upstream fixes. This isolates the signature gate and is not a real-BIOS compatibility test.
 - `run_qemu_abuse.sh`: runs the upstream hostile-client regression suite against
   the first upstream fix and current main, not against the frozen bounty image.
 - `tools/racetest.sh`: exercises the project's deliberately synchronized
