@@ -19,7 +19,7 @@ mkdir -p "$B/one"
 python3 - "$B/one/index.html" <<'PYGEN'
 from pathlib import Path
 import sys
-Path(sys.argv[1]).write_bytes(b"<!doctype html><title>pte-probe</title>\\n\\xc3")
+Path(sys.argv[1]).write_bytes(b"<!doctype html><title>pte-probe</title>\n\xc3")
 PYGEN
 
 make -s -B B="$B" SITE="$B/one" COMPRESS=0 WXTEST=0 >/dev/null
