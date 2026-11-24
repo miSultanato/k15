@@ -28,12 +28,15 @@ jobs:
           - variant: frozen-bounty
             directory: bounty
             ref: ab93479ebc7c85274c722b16897148286d1cfca3
+            expected: alive
           - variant: first-upstream-fix
             directory: fixed
             ref: a2d8893261b2be15b44c86d6f4483d65820e943a
+            expected: reset
           - variant: current-upstream
             directory: current
             ref: cb9f76a5a100c418bfcaeddcd4f137d30ab489d2
+            expected: reset
     steps:
       - name: Check out audit harness
         uses: actions/checkout@v4
@@ -57,7 +60,7 @@ jobs:
           python3 -m pip install --disable-pip-version-check cryptography
 
       - name: Build one-file site and observe W^X behavior
-        run: bash audit/run_wx_short_site.sh ${{ matrix.directory }} ${{ matrix.variant }}
+        run: bash audit/run_wx_short_site.sh ${{ matrix.directory }} ${{ matrix.variant }} ${{ matrix.expected }}
 
       - name: Confirm no artifacts are uploaded
         run: echo "Local VM images and synthetic site remain ephemeral; no artifacts are uploaded."
