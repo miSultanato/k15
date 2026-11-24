@@ -60,16 +60,14 @@ https://github.com/FileSherlock/k15/issues/1#issuecomment-7081448356
 
 ## Next bounded work, ordered
 
-1. Add deterministic regressions for findings 8, 9 and 10. Finding 9 is the
-   most important TLS semantic gap to characterize, but it is not a key
-   extraction primitive.
-2. Add exact boundary tests for findings 2, 13 and 15.
-3. Add arithmetic boundary tests for finding 16. Do not infer range safety
-   from uniqueness sampling.
+1. Reproduce findings 9 and 10 against the fixed upstream image for a clean
+   differential baseline; keep the results separate from key disclosure.
+2. Add exact boundary tests for findings 2, 13 and 15 (ACK, MSS, ARP, IPv4).
+3. Characterize finding 8 (dummy ChangeCipherSpec) with the same instrumented
+   local TLS client.
 4. Add low-cost binary assertions for findings 17 and 18.
-5. Only then revisit the full malformed-ClientHello transcript test. A
-   purpose-built client must hash exactly the bytes the server processes;
-   mutating an OpenSSL-generated ClientHello after serialization is invalid.
+5. Only then revisit other gaps. The malformed-ClientHello transcript test
+   still requires a client that hashes exactly the bytes the server processes.
 
 ## Safety and branch discipline
 
