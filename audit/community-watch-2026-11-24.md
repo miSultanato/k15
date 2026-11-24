@@ -598,3 +598,35 @@ result: success on audit harness commit
 This closes the specific source-to-generated-VM-include comparison. It does
 not compare the resulting disk image with the production image, and it
 does not inspect runtime or hypervisor memory.
+
+
+## Local QEMU reproduction of the ClientHello framing discrepancy
+
+Run:
+https://github.com/miSultanato/k15/actions/runs/45377562293
+
+The workflow now boots the complete image built from the frozen bounty source
+under QEMU TCG (four virtual CPUs, user-mode networking, localhost-only port
+forwarding). A test client generated a normal ClientHello, changed only its
+internal 24-bit handshake length to be one byte shorter, retained the full
+outer TLS record length, and sent it to the local guest.
+
+Observed result:
+
+- The frozen bounty image returned a TLS ServerHello.
+- The malformed ClientHello was therefore accepted and parsed using the
+  enclosing record's payload length.
+- The test did not contact 15kb.org; QEMU and the client ran entirely inside
+  the GitHub runner.
+- The check establishes a reproducible protocol-framing discrepancy, not
+  memory disclosure, a private-key leak, or a way to complete a useful
+  attacker-controlled session.
+
+The workflow run passed end-to-end, including the synthetic RNG model,
+source checks, byte-for-byte generated `ec.inc` comparison, offline proof,
+70-signature crypto suite, Valgrind with six detected negative controls,
+full disk-image build, and this local QEMU test.
+
+The upstream `dev` branch contains the corresponding rejection check and
+regression tests (commit `a2d8893`); the bounty image remains frozen and
+does not contain that fix.
