@@ -338,15 +338,15 @@ def read_http_response(sock: socket.socket, server_app_secret: bytes) -> bytes:
     return bytes(response)
 
 
-def expect_rejection(records: list[bytes], variant: str) -> None:
+def expect_rejection(records: list[bytes], variant: str, target_name: str) -> None:
     if not records:
-        fail("fixed image closed without a TLS alert")
+        fail(f"{target_name} image closed without a TLS alert")
     alert = next((record for record in records if record[0] == 21), None)
     if alert is None or len(alert) < 7:
         fail("fixed image did not send a fatal TLS alert")
     if alert[5] != 2 or alert[6] != 50:
         fail(f"expected fatal decode_error (2,50), got ({alert[5]},{alert[6]})")
-    print(f"PASS: fixed image rejected {variant} with fatal decode_error")
+    print(f"PASS: {target_name} image rejected {variant} with fatal decode_error")
 
 
 def run_case(target: Path, expected: str, variant: str) -> None:
@@ -362,7 +362,7 @@ def run_case(target: Path, expected: str, variant: str) -> None:
                 lambda items: any(item[0] == 21 for item in items)
                 or any(item[0] == 22 for item in items),
             )
-            expect_rejection(records, variant)
+            expect_rejection(records, variant, target.name)
             return
 
         records = read_records(
