@@ -691,13 +691,42 @@ integrity failure, or bounty-winning exploit. Keep it separate from any
 outer-record truncation/fragmentation hypothesis.
 
 
-## Separate outer-record-length probe (pending)
+## Separate outer-record-length probe (confirmed)
 
-A second, deliberately separate local QEMU probe has been added in commit
+A second, deliberately separate local QEMU probe was added in commit
 https://github.com/miSultanato/k15/commit/1fde392f1819d55a6316c77a5c8c2ba5a2faab30.
 It keeps the complete original ClientHello bytes on the TCP stream but makes
 the enclosing TLS record length one byte shorter, leaving the final byte
-outside that record. This tests the outer-record behavior discussed by the
-community auditor, rather than the already-confirmed inner handshake-length
-mismatch. Its result is pending; no conclusion should be drawn until CI logs
-are available.
+outside that record. The frozen bounty image still replies with ServerHello.
+This was reproduced in
+https://github.com/miSultanato/k15/actions/runs/45381012445.
+
+The source path corroborates the mechanism: the receive path copies only the
+outer-record-declared number of bytes into `HS_CH`, calls `handshake` with
+`record_length - 5`, then clears the connection's pending input length. The
+extra byte in the TCP segment is not included in the ClientHello passed to
+`handshake` and is discarded when the pending input length is cleared. Thus
+the server processes a truncated ClientHello and forms its transcript from
+the truncated payload, while a conforming client constructed the full body.
+This confirms the framing/transcript discrepancy described by the community
+auditor at the ServerHello stage. It does not show that the client can finish
+the TLS handshake or exchange application data using the mismatched transcript.
+
+
+### Confirmed framing behavior: precise scope
+
+Two independent malformed-length behaviors are now reproduced in QEMU TCG:
+
+1. The ClientHello's inner 24-bit handshake length can be zero, one byte
+   short, one byte long, or 0xFFFFFF while the complete outer record/body is
+   valid; all four are accepted.
+2. The outer TLS record length can be one byte short while the complete body
+   is present on TCP; the image processes only the record-declared prefix and
+   still emits ServerHello.
+
+Both are on the exact frozen bounty source. The second path means the
+server-side transcript is constructed from a truncated ClientHello prefix.
+We have not yet demonstrated successful completion of the TLS handshake,
+a usable session, a key leak, or a memory-safety impact. These remain
+protocol-validation/transcript-consistency findings, not a bounty-winning
+key-recovery result.
