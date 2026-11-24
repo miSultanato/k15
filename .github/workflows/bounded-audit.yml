@@ -2,6 +2,12 @@ name: k15 bounded audit
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - audit/nonce_cycle_demo.py
+      - .github/workflows/bounded-audit.yml
 
 permissions:
   contents: read
