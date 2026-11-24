@@ -210,3 +210,28 @@ def test_http_methods() -> None:
         else:
             print(f"OBSERVED: HTTP request {label}: no HTTP response")
 
+
+def test_small_mss() -> None:
+    sport, isn, peer_mss = 52002, 0x23456789, 100
+    synack = handshake(sport, isn, peer_mss)
+    if synack is None:
+        report("MSS=100 test", False, "guest sent no SYN-ACK (possibly refused the MSS)")
+        return
+    advertised = parse_mss(synack["options"])
+    payloads = fetch_after_handshake(sport, isn, synack, bad_ack=False)
+    maximum = max((len(p) for p in payloads), default=0)
+    report(
+        "MSS=100 test",
+        maximum > peer_mss,
+        f"peer MSS={peer_mss}, SYN-ACK MSS={advertised}, largest outbound data segment={maximum}",
+    )
+
+
+if __name__ == "__main__":
+    try:
+        test_bad_ack()
+        test_http_methods()
+        test_small_mss()
+        print(f"RESULT: TCP ACK/MSS probes completed in mode={mode}")
+    finally:
+        sock.close()
