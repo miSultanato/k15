@@ -8,45 +8,70 @@
 ## Bottom line
 
 No private-key disclosure or practical key-recovery exploit has been found.
-The strongest confirmed issue is a TLS ClientHello framing-validation defect
-in the frozen bounty image. The same five malformed cases are rejected with
-fatal `decode_error` by upstream commit
-`a2d8893261b2be15b44c86d6f4483d65820e943a`.
 
-The bounty target branch remains unchanged and pinned to its original commit.
-All dynamic testing is local, offline and synthetic-key only.
+Several concrete defects are now reproduced against the frozen image. The most notable memory-safety-adjacent result is a **same-link stale-buffer disclosure through a 24-byte ARP request**: the frozen image returned a synthetic marker left in a previous receive buffer. The tested upstream image did not return that marker. This does not show that the disclosed bytes can be selected from private-key memory, or that the issue is reachable over the Internet.
 
-## Confirmed evidence
+The audit also reproduces TLS record-validation, TCP ACK-window and MSS defects. Some remain present in upstream framing-fix commit `a2d8893`; others are fixed there. The bounty target branch remains unchanged and pinned to its original commit.
 
-| Area | Result | Evidence |
-| --- | --- | --- |
-| ClientHello framing | Frozen image accepts four invalid inner lengths and one short outer-record length; fixed image rejects all five | [Differential QEMU run](https://github.com/miSultanato/k15/actions/runs/45381737629) |
-| Upstream regression suite | Hostile-client suite passes on fixed image, including 1,565 length-mutated ClientHellos | [Abuse suite](https://github.com/miSultanato/k15/actions/runs/45382026675) |
-| SMP slot races | RACE=1, RACE=2 and RACE=3 all pass on frozen image | [Race matrix](https://github.com/miSultanato/k15/actions/runs/45382612903) |
-| ECDSA/RDRAND | 10,240 + 1,024 unique QEMU nonces with zero cross-boot overlap; 10M native runner RDRAND samples, zero adjacent/lag-four repeats, and 0/2.5M repeated four-qword tuples | [Expanded bounded audit](https://github.com/miSultanato/k15/actions/runs/45387618913) |
-| Guest memory | One 256 MiB guest-RAM snapshot after 1,024 handshakes: zero plaintext synthetic-scalar patterns, six expected Montgomery-form patterns | [Memory scan](https://github.com/miSultanato/k15/actions/runs/45384777117) |
-| ClientHello/raw-frame fuzz | 60,000 ClientHellos plus 3,191 malformed Ethernet/IP/TCP frames passed on each revision | [Expanded parser fuzz](https://github.com/miSultanato/k15/actions/runs/45385140473) |
+## Confirmed differential evidence
 
-## Interpretation
+| Finding | Frozen bounty image | Tested upstream image `a2d8893` | Evidence |
+| --- | --- | --- | --- |
+| ClientHello framing | Accepts five malformed cases (four inner lengths, one short outer record) | Rejects all five with fatal `decode_error` | [#45381737629](https://github.com/miSultanato/k15/actions/runs/45381737629) |
+| Client Finished | Corrupted Finished followed by valid application data still gets HTTP | Same behavior | [#45394628025](https://github.com/miSultanato/k15/actions/runs/45394628025) |
+| AEAD tag failure | Corrupt record is ignored; original valid same-sequence record is processed | Same behavior | [#45394628025](https://github.com/miSultanato/k15/actions/runs/45394628025) |
+| Dummy ChangeCipherSpec | Missing after normal ServerHello with 32-byte session ID | Sent after ServerHello | [#45395033747](https://github.com/miSultanato/k15/actions/runs/45395033747) |
+| Short ARP stale buffer | 24-byte ARP request returns a synthetic marker from the previous RX buffer | No marker reply observed | [#45397011333](https://github.com/miSultanato/k15/actions/runs/45397011333) |
+| IPv4 checksum / malformed ARP fields | Invalid IPv4-checksum SYN and malformed ARP hrd/pro/hlen/plen still receive replies | Same behavior | [#45396434723](https://github.com/miSultanato/k15/actions/runs/45396434723) |
+| TCP ACK-window | HTTP request with ACK 0x10000 beyond `SND.NXT` is processed | No HTTP payload observed | [#45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
+| Peer MSS=100 | Completes handshake and sends a 180-byte data segment; SYN-ACK advertises MSS=1460 | Sends no SYN-ACK | [#45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
+| ECDSA nonce boundaries | `n+1` aliases `1`; `n-1` verifies; `n` does not | Not compared | [#45393554079](https://github.com/miSultanato/k15/actions/runs/45393554079) |
 
-- The inner handshake-length mismatch is a protocol-validation defect. With
-  the enclosing record intact, both peers can hash the same malformed bytes;
-  no key disclosure has been shown.
-- The short outer-record case makes the server process a truncated ClientHello
-  and emit ServerHello. The owner and an independent auditor publicly report
-  handshake completion under the truncated transcript; our current QEMU probe
-  has not independently reproduced beyond ServerHello acceptance.
-- The synthetic RDRAND-cycle demonstration proves only that adjacent-word
-  comparison cannot detect every periodic sequence. It does not show that
-  physical RDRAND repeats that way.
-- Finite nonce samples and one RAM snapshot are evidence, not proofs of
-  uniform randomness or absence of every transient plaintext representation.
-- Controlled race tests cover the project's intended interleavings, not every
-  possible SMP schedule.
+## Additional negative evidence
 
-## Next decision
+- The local upstream hostile-client regression suite passes, including malformed
+  ClientHello cases. [#45382026675](https://github.com/miSultanato/k15/actions/runs/45382026675)
+- Controlled SMP slot races RACE=1/2/3 pass on the frozen image.
+  [#45382612903](https://github.com/miSultanato/k15/actions/runs/45382612903)
+- 10,240 + 1,024 local QEMU nonces showed no duplicates or cross-boot overlap;
+  10M native runner RDRAND samples showed no adjacent or lag-four repeats.
+  These are finite samples, not proof of production CPU behavior.
+  [#45387618913](https://github.com/miSultanato/k15/actions/runs/45387618913)
+- One 256 MiB guest-RAM snapshot after 1,024 handshakes contained no plaintext
+  synthetic-scalar patterns and six expected Montgomery-form patterns. This
+  does not inspect CPU registers or transient states.
+  [#45384777117](https://github.com/miSultanato/k15/actions/runs/45384777117)
+- 60,000 ClientHello cases and 3,191 malformed raw frames passed on both
+  revisions. [#45396434783](https://github.com/miSultanato/k15/actions/runs/45396434783)
 
-Treat the framing issue as a reproducible protocol bug, not as a key-extraction
-bounty result. Continue only if new evidence connects a defect to practical
-recovery of the target private scalar. Do not merge upstream development fixes
-into the frozen bounty branch, and do not test the production server.
+## Interpretation and limits
+
+- The ARP result is a real, local receive-buffer disclosure using synthetic
+  marker bytes. It is not evidence of private-key disclosure, memory corruption,
+  or an Internet-reachable exploit.
+- The Finished and AEAD tests show that the guest continues processing valid
+  application data after those malformed records. They do not show that an
+  attacker without the traffic secret can forge authenticated application data.
+- Invalid IPv4 checksums and malformed full-length ARP fields are accepted, but
+  no useful consequence beyond protocol-validation weakness has been shown.
+- The ECDSA boundary test confirms the frozen P-256 assembly signer treats
+  `n+1` like `1`; it does not demonstrate that real RDRAND produces a
+  practically exploitable nonce distribution.
+- The one guest-RAM snapshot and finite nonce samples cannot prove absence of
+  all transient plaintext or all hardware RNG failures.
+
+## Next work
+
+1. Finish the post-HelloRetryRequest ServerHello/CCS differential; the current
+   probe elicits HRR but does not yet send the second ClientHello.
+2. Expand ACK-window tests around below/equal/inside/above limits and 32-bit
+   wraparound; expand MSS tests across 0..215.
+3. Keep investigating whether the short-ARP stale-buffer disclosure can expose
+   anything beyond synthetic network-buffer data. Do not attempt to access
+   production memory.
+4. Reconcile remaining independent findings #1, #3–7, #11–12 and #17–20 with
+   exact deterministic tests where they materially affect security.
+
+Do not merge upstream development fixes into the frozen bounty branch. All
+dynamic tests remain local, offline and synthetic-key only; no request is sent
+to `15kb.org`.
