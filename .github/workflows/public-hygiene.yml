@@ -1,0 +1,47 @@
+name: k15 public repository hygiene
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "audit/check_public_hygiene.py"
+      - ".github/workflows/public-hygiene.yml"
+      - "cert/**"
+      - "build/**"
+      - "build-*/**"
+      - "**/*.key"
+      - "**/*.p12"
+      - "**/*.pfx"
+      - "**/*.img"
+      - "**/*.bin"
+      - "**/*.lst"
+  pull_request:
+    paths:
+      - "audit/check_public_hygiene.py"
+      - ".github/workflows/public-hygiene.yml"
+      - "cert/**"
+      - "build/**"
+      - "build-*/**"
+      - "**/*.key"
+      - "**/*.p12"
+      - "**/*.pfx"
+      - "**/*.img"
+      - "**/*.bin"
+      - "**/*.lst"
+
+permissions:
+  contents: read
+
+jobs:
+  hygiene:
+    name: Scan tracked public repository content
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check out source without credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check tracked files for generated secrets and artifacts
+        run: python3 audit/check_public_hygiene.py
