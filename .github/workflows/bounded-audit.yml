@@ -49,9 +49,6 @@ jobs:
       - name: Check RNG call-site and nonce-pool invariants in frozen source
         run: python3 audit/check_rand_path.py target/src/os.asm
 
-      - name: Audit private-scalar read path in frozen source
-        run: python3 audit/check_key_read_path.py target/src/os.asm target/tools/ec.py
-
       - name: Verify public cross-curve proof offline
         run: python3 audit/check_public_proof.py target/tools target/bounty.proof
 
@@ -66,6 +63,9 @@ jobs:
       - name: Run upstream assembly crypto tests on the frozen commit
         working-directory: target
         run: make test
+
+      - name: Audit private-scalar read path and generated curve include
+        run: python3 audit/check_key_read_path.py target/src/os.asm target/tools/ec.py target/tools/gen.py target/build/ec.inc
 
       - name: Reproduce Valgrind constant-time check and six negative controls
         run: bash audit/run_ct.sh target
