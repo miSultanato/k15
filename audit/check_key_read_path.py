@@ -31,7 +31,7 @@ def main() -> None:
     ec = ec_path.read_text(encoding="utf-8")
     gen = gen_path.read_text(encoding="utf-8")
 
-                if re.search(r"\bREGS\b", line)
+    require(re.search(r"(?m)^REGS\s+equ\s+BSS\s*\+\s*0x0E400\b", asm) is not None,
             "curve register bank base changed")
     require(re.search(r"(?m)^R_D\s+equ\s+REGS\s*\+\s*14\s*\*\s*32\b", asm) is not None,
             "private scalar register is no longer register 14")
@@ -42,7 +42,7 @@ def main() -> None:
 
     regs_ops = [line.strip().split(";", 1)[0].strip()
                 for line in asm.splitlines()
-                if re.search(r"\\bREGS\\b", line)
+                if re.search(r"\bREGS\b", line)
                 and "equ" not in line
                 and not line.lstrip().startswith(";")]
     require(regs_ops == ["mov edi, REGS", "mov edi, REGS", "add eax, REGS"],
