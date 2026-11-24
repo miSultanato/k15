@@ -1202,3 +1202,26 @@ the source port is changed, then accept it again on the original tuple after
 the 65-second FIN/FIN replay interval. All three matrix jobs completed
 successfully. This confirms the replay is tuple-bound rather than a generic
 reusable ACK.
+
+
+## Reddit follow-up (2026-11-24)
+
+The original `r/securityCTF` bounty thread remains active:
+https://www.reddit.com/r/securityCTF/comments/1y1fjej/200_in_bitcoin_if_you_can_get_the_tls_key_out_of/
+
+Newer comments raise two points:
+
+- One commenter speculates that the RDRAND nonce path may be the most
+  interesting angle. No CPU erratum, reproducible anomalous stream, or
+  concrete exploit accompanies the comment. Keep this low priority under the
+  existing rule: do not pursue broad cycle speculation without evidence tied
+  to the actual host CPU/hypervisor.
+- A detailed participant report describes roughly 10,200 concurrent TLS
+  handshakes in a local SMP=4 guest, with unique CertificateVerify nonces,
+  and reports no key recovery or memory disclosure. This is useful independent
+  corroboration, not a formal proof and not a substitute for our instruction-
+  level read-path audit.
+
+Another brief comment asks for a larger bounty but adds no technical evidence.
+No commenter reports recovering the key or moving the bounty. The thread's
+comments are community reports, not independently verified results.
