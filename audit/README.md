@@ -25,7 +25,10 @@ revision offered by the k15 bounty.
 | `crypto-revision-check.yml` | Compares P-256 nonce boundaries, RNG source invariants, scalar-read paths and constant-time checks across all three source revisions |
 | `race-audit.yml` | Project's controlled cross-processor slot handover tests, `RACE=1,2,3` |
 | `parser-fuzz.yml` | Same deterministic 60,000-case ClientHello fuzzer (three seeds) plus raw Ethernet/IP/TCP frame fuzz against bounty, first fix and current main |
-| `memory-scan.yml` | Local synthetic-key CertificateVerify capture and one guest-RAM snapshot scan |\n| `wx-short-site.yml` | Three-way QEMU differential: execute a synthetic `RET` byte at the end of a one-file site to detect executable site pages |\n| `ip-arp-boundaries.yml` | Deterministic IPv4/ARP checks, short-ARP stale-buffer probe, TCP ACK/MSS boundaries, delayed SYN-cookie ACK and forced 32-bit sequence-wrap probes |\n| `boot-hardening-differential.yml` | Source and emitted-image comparison of AP counter alignment and GDT Accessed bits, plus E820 SMAP and Makefile NAME checks |
+| `memory-scan.yml` | Local synthetic-key CertificateVerify capture and one guest-RAM snapshot scan |
+| `wx-short-site.yml` | Three-way QEMU differential: execute a synthetic `RET` byte at the end of a one-file site to detect executable site pages |
+| `ip-arp-boundaries.yml` | Deterministic IPv4/ARP checks, short-ARP stale-buffer probe, TCP ACK/MSS boundaries, delayed SYN-cookie ACK and forced 32-bit sequence-wrap probes |
+| `boot-hardening-differential.yml` | Source and emitted-image comparison of AP counter alignment and GDT Accessed bits, plus E820 SMAP and Makefile NAME checks |
 
 All are runnable from GitHub Actions. The race workflow uses a privileged,
 isolated network namespace because GitHub-hosted runners disallow unprivileged
@@ -70,7 +73,9 @@ user namespaces.
   checks whether a 24-byte ARP request discloses stale bytes.
 - `test_tcp_ack_mss.py`: sends a data-bearing segment with an out-of-window ACK
   and tests whether a peer MSS of 100 is respected.
-- `check_current_rand_path.py`: checks the refactored current-main RDRAND-to-nonce path.\n- `check_boot_hardening.py`: compares four source-level boot/build hardening changes between the frozen bounty, first upstream fix and pinned current main.\n- `check_boot_binary.py`: checks the emitted `os.bin` and NASM listing for AP counter alignment and GDT descriptor Accessed bytes. It does not boot the image or exercise AP startup.
+- `check_current_rand_path.py`: checks the refactored current-main RDRAND-to-nonce path.
+- `check_boot_hardening.py`: compares four source-level boot/build hardening changes between the frozen bounty, first upstream fix and pinned current main.
+- `check_boot_binary.py`: checks the emitted `os.bin` and NASM listing for AP counter alignment and GDT descriptor Accessed bytes. It does not boot the image or exercise AP startup.
 - `run_qemu_abuse.sh`: runs the upstream hostile-client regression suite against
   the first upstream fix and current main, not against the frozen bounty image.
 - `tools/racetest.sh`: exercises the project's deliberately synchronized
