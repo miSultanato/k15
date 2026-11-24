@@ -60,29 +60,30 @@ https://github.com/FileSherlock/k15/issues/1#issuecomment-7081448356
 
 ## Next bounded work, ordered
 
-1. Add assembled-image/listing assertions for findings 17 and 18: actual
-   `apcount` alignment and emitted GDT descriptor Accessed bits. The current
-   successful check is source-level only.
-2. Add a synthetic BIOS E820 response with a wrong SMAP signature for finding
+1. Add a synthetic BIOS E820 response with a wrong SMAP signature for finding
    19, if the boot harness can inject it without modifying the frozen target.
-3. Extend ACK and MSS tests to boundary values and 32-bit wraparound; current
-   TAP coverage is one deliberately out-of-window ACK and MSS=100.
-4. Complete the post-HelloRetryRequest second-ClientHello and CCS differential
-   for finding 8.
-5. Extend the authenticated TLSInnerPlaintext differential to more padding
+   The emitted boot-sector instruction is already verified.
+2. Finish the MSS=0/1 probes now running in the focused TAP matrix; the prior
+   boundary matrix already established the 180-byte payload behavior and the
+   upstream refusal of MSS 179..215.
+3. Complete the post-HelloRetryRequest second-ClientHello and CCS differential
+   for finding 8. The current probe elicits HRR but does not send the second CH.
+4. Extend the authenticated TLSInnerPlaintext differential to more padding
    lengths and confirm exact fatal-alert/connection teardown semantics.
-6. For finding 20, extend the Make-level `NAME=$(hostname)` regression to an
-   ephemeral generated certificate and assert the resulting SAN.
-7. Reproduce the short-site W^X result with an emitted-image page-table/NX
-   assertion, in addition to the successful runtime `RET` probe.
-8. Test stale SYN-cookie ACK replay after connection teardown and controlled
-   delay for finding 14. The current cookie review is source-level only.
+5. Reproduce the short-site W^X result with an emitted-image page-table/NX
+   assertion, in addition to the successful runtime synthetic-RET probe.
+6. If impact merits it, replay an ACK after a synthetic connection is fully
+   torn down. The current 65-second test delays the first ACK and does not
+   demonstrate post-teardown replay.
 
-The TLS Finished/AEAD behavior (findings 9–10), HTTP Host/method behavior
-(finding 12 and part of 4), ECDSA nonce boundaries (16), short-site W^X (1),
-and authenticated TLSInnerPlaintext handling (11) already have local
-differential evidence. The malformed-ClientHello transcript experiment still
-requires a client that hashes exactly the bytes the server processes.
+The emitted-image checks for AP counter alignment and GDT Accessed bits
+(findings 17–18), E820 SMAP instruction presence (19), and the generated
+certificate SAN regression (20) now pass. The TCP ACK-window matrix (2),
+peer-MSS boundary tests (13), short-site W^X (1), authenticated
+TLSInnerPlaintext (11), TLS Finished/AEAD (9–10), HTTP Host/method behavior
+(4, 12), and ECDSA nonce boundaries (16) have local differential evidence.
+The malformed-ClientHello transcript experiment still requires a client that
+hashes exactly the bytes the server processes.
 
 ## Safety and branch discipline
 
