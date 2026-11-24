@@ -34,8 +34,11 @@ The GitHub compare lists these source changes:
   are not assumed to fix the nonce-generation questions.
 
 Other commits improve packaging, deployment, certificate handling, tests and
-documentation. The current-main matrix is intended to determine which of the
-previously reproduced behaviors persist after all these changes.
+documentation. The current-main matrix now confirms that the TLS framing, ClientHello field,
+ACK-window, MSS, short-ARP, lowercase-method and Host-header changes behave as
+expected: the first fix and current main both reject the malformed framing and
+TCP cases; only current main rejects a missing HTTPS Host header. The corrupted
+Finished and bad-AEAD behavior still persists on current main.
 
 ## Current-main comparison workflow
 
@@ -51,4 +54,6 @@ from the frozen bounty and the first upstream fix:
 
 All runs build locally in ephemeral GitHub Actions runners, use synthetic
 certificates and keys, and do not contact the production service. The bounty
-branch remains pinned and untouched.
+branch remains pinned and untouched. See [the current three-way TLS run](https://github.com/miSultanato/k15/actions/runs/45401470623),
+[the current TAP run](https://github.com/miSultanato/k15/actions/runs/45401501930)
+and [the HTTPS method/Host run](https://github.com/miSultanato/k15/actions/runs/45402956609).
