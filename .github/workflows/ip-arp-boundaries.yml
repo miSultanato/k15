@@ -76,7 +76,7 @@ jobs:
         run: make B=build-wrap ISNTOP=0xFFFFFFC0 ISNBITS=26 all
 
       - name: Probe ACK-window boundaries across 2^32
-        run: sudo unshare -n bash audit/run_tap_tcp_wrap.sh ${{ matrix.directory }}
+        run: sudo unshare -n bash audit/run_tap_tcp_wrap.sh ${{ matrix.directory }} ${{ matrix.mode }}
 
       - name: Confirm no generated key material or images are uploaded
         run: |
