@@ -1,4 +1,5 @@
 name: k15 differential ClientHello framing
+# Also checks authenticated malformed TLSInnerPlaintext records on all three pinned images.
 
 on:
   workflow_dispatch:
