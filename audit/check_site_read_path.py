@@ -116,8 +116,12 @@ def main() -> None:
             "packed response/path/blob layout changed")
     require("PT_MASK equ {slots - 1}" in pack and
             "AT_OFF equ {at}" in pack and
+            "P80_OFF equ {p80_at}" in pack and
+            "P80_LEN equ {len(p80)}" in pack and
             "%assign SITE_LEN {len(data)}" in pack,
             "packer no longer emits the table bounds consumed by os.asm")
+    require("mov esi, SITE + P80_OFF" in asm and "mov ecx, P80_LEN" in asm,
+            "port-80 response no longer uses its fixed packer-generated SITE slice")
 
     require("$(if $(WXTEST),-DWXTEST=$(WXTEST),)" in makefile,
             "Makefile no longer treats WXTEST as an optional build define")
