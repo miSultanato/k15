@@ -1008,3 +1008,24 @@ The same run repeated the 10,240 + 1,024 QEMU nonce checks and cross-boot
 fingerprint comparison (zero overlap), rebuilt the frozen image, and passed
 the ClientHello framing regression. This remains a measurement of the runner's
 exposed RDRAND implementation, not the production host CPU.
+
+
+### Clarification on the reported completed handshake
+
+The owner's Reddit reply says that a ClientHello whose stated length is shorter
+than its record can still complete the handshake. The independent auditor also
+describes a short first-record length and a transcript omitting dropped bytes.
+The public wording does not unambiguously identify whether each participant
+means the inner 24-bit handshake length or the outer TLS record length.
+
+Our harness deliberately distinguishes those two cases:
+- Inner handshake length changed, outer record and body intact.
+- Outer record length one byte short, complete bytes still present on TCP.
+
+For both cases our current QEMU regression checks confirm ServerHello
+acceptance. They do **not** independently prove that a client completes the
+handshake or exchanges application data. Treat the completed-handshake claim
+as the owner's/independent auditor's report, not as a result of our own
+current probe. A custom client that builds its transcript from the exact
+bytes processed by the server is a possible next reproduction task, but it is
+outside the private-key disclosure path.
