@@ -69,7 +69,8 @@ def main() -> None:
             source,
         ):
             fail("frozen source no longer has the expected codend-based CODEPG formula")
-        codend = label_offset(listing, "codend")
+        # TWO32 is the first emitted datum immediately after the zero-byte codend label.
+        codend = label_offset(listing, "TWO32")
         codepg = 0x100 + ((codend + 0xFFF) >> 12)
         delta = 0
     else:
