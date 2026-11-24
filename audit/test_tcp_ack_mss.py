@@ -243,19 +243,20 @@ def test_delayed_syn_cookie() -> None:
 
 
 
-def exchange_and_ack_fin(sport: int, client_seq: int, server_seq: int):
-    # The first ACK materializes the cookie-backed slot; the request asks the
-    # HTTP server to close, so its final response should carry a FIN.
+def exchange_and_reset(sport: int, client_seq: int, server_seq: int):
+    # Materialize the cookie-backed slot, send one HTTP request, then reset it
+    # with the exact next client sequence number. The RST path frees the slot.
     sock.send(make_frame(sport, client_seq, server_seq, 0x10))
     sock.send(make_frame(sport, client_seq, server_seq, 0x18, HTTP))
     client_after_request = (client_seq + len(HTTP)) & 0xFFFFFFFF
     response = bytearray()
     server_next = server_seq
-    fin_seen = False
-    deadline = time.monotonic() + 5.0
+    deadline = time.monotonic() + 4.0
     while time.monotonic() < deadline:
         item = receive(sport, min(0.5, max(0.01, deadline - time.monotonic())))
         if item is None:
+            if response:
+                break
             continue
         if item["seq"] != server_next:
             continue
@@ -264,12 +265,15 @@ def exchange_and_ack_fin(sport: int, client_seq: int, server_seq: int):
         server_next = (server_next + len(payload)) & 0xFFFFFFFF
         if item["flags"] & 0x01:
             server_next = (server_next + 1) & 0xFFFFFFFF
-            fin_seen = True
-        if payload or fin_seen:
+        if payload or item["flags"] & 0x01:
             sock.send(make_frame(sport, client_after_request, server_next, 0x10))
-        if fin_seen:
-            break
-    return bytes(response), server_next, fin_seen
+
+    reset_sent = response.startswith(b"HTTP/1.")
+    if reset_sent:
+        # A sequence-valid RST reaches the server's slot-freeing path.
+        sock.send(make_frame(sport, client_after_request, server_next, 0x14))
+        time.sleep(0.2)
+    return bytes(response), reset_sent
 
 
 def test_cookie_replay_after_teardown() -> None:
@@ -281,34 +285,32 @@ def test_cookie_replay_after_teardown() -> None:
 
     client_seq = (isn + 1) & 0xFFFFFFFF
     original_server_ack = (synack["seq"] + 1) & 0xFFFFFFFF
-    first_response, fin_ack, fin_seen = exchange_and_ack_fin(
+    first_response, first_reset = exchange_and_reset(
         sport, client_seq, original_server_ack
     )
-    if not first_response.startswith(b"HTTP/1.") or not fin_seen:
+    if not first_response.startswith(b"HTTP/1.") or not first_reset:
         print(
-            "OBSERVED: cookie replay after teardown: could not establish a clean "
-            f"HTTP FIN teardown (response={len(first_response)} bytes, fin={fin_seen})"
+            "OBSERVED: cookie replay after teardown: could not establish the "
+            f"initial HTTP exchange and reset (response={len(first_response)} bytes)"
         )
         return
 
-    # ACKing the server FIN should free the port-80 slot. Drain any delayed
-    # duplicate frames, then replay the exact ACK that completed the SYN cookie.
-    time.sleep(0.25)
+    # The RST with the correct C_NXT should free the slot. Replay the exact ACK
+    # that completed the SYN cookie, then send a fresh request at the old sequence.
     while receive(sport, timeout=0.05) is not None:
         pass
-    sock.send(make_frame(sport, client_seq, original_server_ack, 0x10))
-    time.sleep(0.1)
-    second_response, _, second_fin = exchange_and_ack_fin(
+    second_response, second_reset = exchange_and_reset(
         sport, client_seq, original_server_ack
     )
     accepted = second_response.startswith(b"HTTP/1.")
     print(
-        "OBSERVED: cookie ACK replay after server FIN teardown: "
+        "OBSERVED: cookie ACK replay after RST teardown: "
         f"first_http={first_response.startswith(b'HTTP/1.')}, "
-        f"first_fin_acked={fin_seen}, replay_http={accepted}, "
-        f"replay_response_bytes={len(second_response)}, replay_fin={second_fin}, "
+        f"first_reset_sent={first_reset}, replay_http={accepted}, "
+        f"replay_response_bytes={len(second_response)}, replay_reset_sent={second_reset}, "
         f"original_cookie_ack=0x{original_server_ack:08x}"
     )
+
 
 def test_ack_boundary_matrix() -> None:
     for index, delta in enumerate((1, 63, 64, 0xFFFF, 0x10000)):
