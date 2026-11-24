@@ -101,6 +101,8 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | TAP IPv4 checksum and ARP field matrix on bounty and upstream | [45396434723](https://github.com/miSultanato/k15/actions/runs/45396434723) |
 | Short ARP stale-buffer differential: bounty discloses synthetic marker; upstream does not | [45397011333](https://github.com/miSultanato/k15/actions/runs/45397011333) |
 | TCP ACK-window and peer-MSS differential | [45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
+| Focused IPv4/ARP/TCP boundary workflow (checksums, short ARP, ACK, MSS) | [45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
+| 60,000 ClientHello cases plus TAP raw-frame fuzz and deterministic IP/ARP probes | [45396434783](https://github.com/miSultanato/k15/actions/runs/45396434783) |
 | Differential framing: five malformed cases accepted by bounty, rejected by fix | [45381737629](https://github.com/miSultanato/k15/actions/runs/45381737629) |
 | Upstream hostile-client regression suite | [45382026675](https://github.com/miSultanato/k15/actions/runs/45382026675) |
 | Controlled SMP slot races, RACE=1/2/3 | [45382612903](https://github.com/miSultanato/k15/actions/runs/45382612903) |
