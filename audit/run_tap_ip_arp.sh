@@ -9,4 +9,6 @@ target=$(cd "$target" && pwd)
 
 cd "$target"
 export B=build SMP=1 MEM=256
-./tap.sh bash -c 'python3 "$1/test_ip_arp_validation.py" . "$2" && python3 "$1/test_arp_short_frame.py" . "$2" && python3 "$1/test_tcp_ack_mss.py" . "$2"' _ "$repo_root" "$mode"
+arp_mode=expect
+if [[ "$mode" == observe ]]; then arp_mode=reject; fi
+./tap.sh bash -c 'python3 "$1/test_ip_arp_validation.py" . "$2" && python3 "$1/test_arp_short_frame.py" . "$3" && python3 "$1/test_tcp_ack_mss.py" . "$2"' _ "$repo_root" "$mode" "$arp_mode"
