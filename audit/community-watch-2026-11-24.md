@@ -1135,11 +1135,14 @@ materialized a new connection, and a different-length HTTP request was
 processed at the original client sequence number.
 
 The first and current upstream revisions share the same `src/conn.asm`
-blob. Its `prf`/ `ckx` logic derives and verifies the cookie from the
-client tuple, initial sequence and boot-time keyed hash; the cookie has no
-visible time bucket or single-use counter. A valid first ACK takes the
-`.miss -> .make` path when no connection slot exists. This explains the
-observed replay but does not, by itself, establish a security defect.
+blob. Its `prf`/`ckx` logic derives and verifies the cookie from the client
+tuple, initial sequence and boot-time keyed hash; the cookie has no visible
+time bucket or single-use counter. The expanded probe now also changes the
+source port while replaying the same ACK: all three images reject that
+cross-tuple attempt, then accept the original tuple after the 65-second wait.
+A valid first ACK takes the `.miss -> .make` path when no connection slot
+exists. This explains the observed same-tuple replay but does not, by itself,
+establish a security defect.
 
 Classification is deliberately conservative: reproducible stateless-cookie
 replay property, not yet a confirmed bounty vulnerability. It reproduces on
