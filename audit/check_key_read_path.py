@@ -61,13 +61,13 @@ def main() -> None:
 
     # The only select path is through comb. Its callers use fixed entry widths:
     # 96 bytes for Edwards25519 and 64 bytes for P-256, both far below R_D at +448.
-    require(len(re.findall(r"(?m)^\\s*call select\\b", asm)) == 1,
+    require(len(re.findall(r"(?m)^\s*call select\b", asm)) == 1,
             "select has an unexpected additional caller")
     xdh = section(asm, "xdh:    pushad", "; sign:")
     stock = section(asm, "stock:  mov ebx", ".all:")
-    require(re.search(r"push 96\\s+pop rcx", xdh) is not None,
+    require(re.search(r"push 96\s+pop rcx", xdh) is not None,
             "X25519 table entry width is no longer fixed at 96 bytes")
-    require(re.search(r"push 64\\s+pop rcx", stock) is not None,
+    require(re.search(r"push 64\s+pop rcx", stock) is not None,
             "P-256 table entry width is no longer fixed at 64 bytes")
     require("call comb" in xdh and "call comb" in stock,
             "table selection no longer flows through the bounded comb callers")
