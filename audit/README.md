@@ -133,6 +133,7 @@ proofs of all hardware behavior or every possible SMP schedule. See
 
 | Evidence | Run |
 | --- | --- |
+| SYN-cookie boot-key rotation: reset changes cookie; old ACK rejected, fresh ACK processes HTTP on all three revisions | [45486557359](https://github.com/miSultanato/k15/actions/runs/45486557359) |
 | TLS client Finished omission, corrupted Finished and bad AEAD tag: all three revisions process the valid application record without client Finished | [45482705312](https://github.com/miSultanato/k15/actions/runs/45482705312) |
 | TCP RST sequence: exact ACK sequence resets the slot; offsets -1/+1 preserve it on all three revisions | [45484598190](https://github.com/miSultanato/k15/actions/runs/45484598190) |
 | Transcript-faithful inner-short and outer-short ClientHello: frozen completes TLS 1.3 and HTTP 200; both upstream revisions reject with fatal decode_error | [45460246415](https://github.com/miSultanato/k15/actions/runs/45460246415) |
