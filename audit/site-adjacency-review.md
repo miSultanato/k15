@@ -42,7 +42,8 @@ The `geom` routine:
 
 The `pick` routine only selects prepacked plain, compressed, or 304 forms
 using response flags and request headers. It does not parse a client-supplied
-pointer or a negative offset.
+pointer or a negative offset. Port 80 is even simpler: `respond` copies the
+fixed `SITE + P80_OFF` / `P80_LEN` slice emitted by the packer.
 
 ## Packer bounds
 
