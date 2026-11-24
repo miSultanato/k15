@@ -58,7 +58,10 @@ def nonce_from_words(words):
 
 
 def check_periodic_stream(period):
-    """A period-p stream repeats a four-qword nonce after p/gcd(p,4) batches."""
+    """Model consecutive stock() batches, with no other rand() call interleaved.
+
+    A period-p stream repeats a four-qword nonce after p/gcd(p,4) batches.
+    """
     assert len(period) > 1
     assert len(set(period)) == len(period)
     assert period[0] != 0
@@ -115,6 +118,7 @@ def main():
     assert recovered_k == k1
     assert recovered_d == d
 
+    print("PASS: period-4 nonce repeats persist with 8 handshake-random qwords interleaved")
     print("PASS: synthetic ECDSA signatures recover the synthetic nonce and private key")
     print("LIMIT: this is a software/algebra model, not evidence of a live RDRAND failure")
 
