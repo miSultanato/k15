@@ -44,8 +44,8 @@ def main() -> None:
                 for line in asm.splitlines()
                 if re.search(r"\bREGS\b", line)
                 and "equ" not in line
-                and not line.lstrip().startswith(";")]
-    require(regs_ops == ["mov edi, REGS", "mov edi, REGS", "add eax, REGS"],
+                and not line.lstrip().startswith((";", "global "))]
+    require(regs_ops == ["select: mov edi, REGS", "mov edi, REGS", "add eax, REGS"],
             f"unexpected direct register-bank address operations: {regs_ops}")
 
     init = section(asm, "mov edi, R_D", "mov edi, TABE")
