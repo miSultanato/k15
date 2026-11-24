@@ -206,6 +206,25 @@ These are deterministic local reproductions of findings #2 and #13. The
 current matrix uses one ACK delta and one MSS value; it does not yet cover
 the full ACK wraparound or all MSS thresholds.
 
+
+## 10. ClientHello session ID, compression and legacy_version fields
+
+The expanded differential probe in [run 45399706214](https://github.com/miSultanato/k15/actions/runs/45399706214)
+tested three additional ClientHello fields:
+
+- A fully present 33-byte `legacy_session_id` gets ServerHello from the frozen
+  image; the upstream image returns fatal `decode_error`.
+- A non-null compression method gets ServerHello from the frozen image; the
+  upstream image returns a fatal alert with description 47
+  (`illegal_parameter`).
+- A ClientHello `legacy_version` of 0x0301 is echoed as 0x0301 by the frozen
+  image; the upstream image responds with ServerHello legacy_version 0x0303.
+
+These reproduce findings #3, #5 and #7 against the frozen image and confirm
+that the tested upstream revision fixes them. The current tests cover one
+session-ID length, one invalid compression value and one legacy version; they
+do not exhaust all boundary combinations.
+
 ## Test status and next steps
 
 The deterministic ECDSA boundary test now runs against the frozen assembly
