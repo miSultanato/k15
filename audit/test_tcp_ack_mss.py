@@ -253,6 +253,7 @@ def exchange_and_close(sport: int, client_seq: int, server_seq: int, request: by
     client_ack = client_after_request
     response = bytearray()
     server_next = server_seq
+    fin_seen = False
     deadline = time.monotonic() + 4.0
     while time.monotonic() < deadline:
         item = receive(sport, min(0.5, max(0.01, deadline - time.monotonic())))
@@ -268,18 +269,20 @@ def exchange_and_close(sport: int, client_seq: int, server_seq: int, request: by
         server_next = (server_next + len(payload)) & 0xFFFFFFFF
         if item["flags"] & 0x01:
             server_next = (server_next + 1) & 0xFFFFFFFF
+            fin_seen = True
         if payload or item["flags"] & 0x01:
             sock.send(make_frame(sport, client_ack, server_next, 0x10))
 
     if not response.startswith(b"HTTP/1."):
         return bytes(response), False, client_ack, False
 
-    # A client FIN advances C_NXT once and asks the server to close its side too.
-    sock.send(make_frame(sport, client_ack, server_next, 0x11))
+    # If the response did not already carry FIN, a client FIN asks the server
+    # to close its side too.
     client_after_fin = (client_ack + 1) & 0xFFFFFFFF
-    fin_seen = False
     deadline = time.monotonic() + 2.0
-    while time.monotonic() < deadline:
+    if not fin_seen:
+        sock.send(make_frame(sport, client_ack, server_next, 0x11))
+    while not fin_seen and time.monotonic() < deadline:
         item = receive(sport, min(0.5, max(0.01, deadline - time.monotonic())))
         if item is None:
             continue
