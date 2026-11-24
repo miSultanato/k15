@@ -26,8 +26,10 @@ def section(source: str, start: str, end: str) -> str:
 def main() -> None:
     asm_path = Path(sys.argv[1] if len(sys.argv) > 1 else "target/src/os.asm")
     ec_path = Path(sys.argv[2] if len(sys.argv) > 2 else "target/tools/ec.py")
+    gen_path = Path(sys.argv[3] if len(sys.argv) > 3 else "target/tools/gen.py")
     asm = asm_path.read_text(encoding="utf-8")
     ec = ec_path.read_text(encoding="utf-8")
+    gen = gen_path.read_text(encoding="utf-8")
 
     require(re.search(r"(?m)^REGS\s+equ\s+BSS\s*\+\s*0x0E400\b", asm) is not None,
             "curve register bank base changed")
@@ -50,6 +52,25 @@ def main() -> None:
     for fragment in ("mov ebx, [rsi+8]", "mov ecx, [rsi+12]", "mov esi, [rsi+4]",
                      "add rsi, 16", "jmp vm"):
         require(fragment in vm, f"VM instruction decoding changed: {fragment}")
+
+    select = section(asm, "select: mov edi, REGS", "HOT 0x40F70000")
+    for fragment in ("movdqa xmm4, [rsi]", "por xmm4, [rdi+rax]",
+                     "movdqa [rdi+rax], xmm4", "add eax, 16",
+                     "cmp eax, ecx", "jb .c"):
+        require(fragment in select, f"table selection access changed: {fragment}")
+
+    # The only select path is through comb. Its callers use fixed entry widths:
+    # 96 bytes for Edwards25519 and 64 bytes for P-256, both far below R_D at +448.
+    require(len(re.findall(r"(?m)^\\s*call select\\b", asm)) == 1,
+            "select has an unexpected additional caller")
+    xdh = section(asm, "xdh:    pushad", "; sign:")
+    stock = section(asm, "stock:  mov ebx", ".all:")
+    require(re.search(r"push 96\\s+pop rcx", xdh) is not None,
+            "X25519 table entry width is no longer fixed at 96 bytes")
+    require(re.search(r"push 64\\s+pop rcx", stock) is not None,
+            "P-256 table entry width is no longer fixed at 64 bytes")
+    require("call comb" in xdh and "call comb" in stock,
+            "table selection no longer flows through the bounded comb callers")
 
     sign = section(asm, "sign:   pushad", "; rand:")
     require(re.search(r"mov esi, X_SIGN\s+call vm", sign) is not None,
@@ -83,7 +104,13 @@ def main() -> None:
     print("PASS: only one direct R_D source reference initializes the register")
     print("PASS: VM register decoding masks indices to 0..15 before address formation")
     print("PASS: sign invokes the fixed X_SIGN curve program")
+    require("for name, prog in curve.PROGRAMS.items()" in gen and
+            "db(name, prog)" in gen and "ec.inc" in gen,
+            "tools/gen.py no longer emits ec.inc from tools/ec.py program definitions")
+
     print("PASS: only the compile-time SIGN program reads D, once, as X * D")
+    print("PASS: table selection touches only fixed 64/96-byte prefixes of REGS, not D at +448")
+    print("PASS: tools/gen.py emits the VM program image from the checked tools/ec.py definitions")
     print("LIMIT: static source audit; does not inspect runtime state or prove all CPU behavior")
 
 
