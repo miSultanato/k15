@@ -38,7 +38,7 @@ https://github.com/FileSherlock/k15/issues/1#issuecomment-7081448356
 | 16 | ECDSA nonce not reduced/rejected modulo n | No fix recorded in cited notes | Frozen assembly signer: n+1 produces the same valid signature as 1; n-1 verifies; n (zero residue) does not verify. Existing self-test also covers 2^256-1 and 2^256-2 | Characterize the distribution impact of raw 256-bit RDRAND values; this boundary test does not establish practical key recovery |
 | 17 | apcount alignment | Fixed in `a2d8893` and current main | [Emitted-image run 45411656961](https://github.com/miSultanato/k15/actions/runs/45411656961) confirms `(apcount - tramp) mod 4 = 3` in bounty and `0` in both upstream images | Only AP startup/runtime validation remains optional; emitted-image alignment is asserted |
 | 18 | GDT Accessed bits | Fixed in `a2d8893` and current main | [Emitted-image run 45411656961](https://github.com/miSultanato/k15/actions/runs/45411656961) confirms frozen descriptor access bytes `0x9A/0x92` vs upstream `0x9B/0x93` | No remaining binary-byte gap; runtime descriptor mutation is not tested |
-| 19 | E820 SMAP signature unchecked | Fixed in `a2d8893` and current main | [Emitted-image run 45412245837](https://github.com/miSultanato/k15/actions/runs/45412245837) confirms the `cmp eax, 0x534D4150` instruction bytes are absent in frozen `boot.bin` and present in both upstream boot sectors | Add a synthetic BIOS return test for a wrong EAX signature and verify no memory-map entry is accepted; current evidence checks emitted instruction bytes only |
+| 19 | E820 SMAP signature unchecked | Fixed in `a2d8893` and current main | [Emitted-image run 45412245837](https://github.com/miSultanato/k15/actions/runs/45412245837) confirms the `cmp eax, 0x534D4150` instruction bytes are absent in frozen `boot.bin` and present in both upstream boot sectors. A new CI test now executes the unchanged 16-bit E820 loop under Unicorn with synthetic valid and wrong-signature BIOS returns; its first run is pending | Once CI passes, the wrong-signature behavior is covered at the boot-code path level; this remains an emulator test, not validation against physical BIOS implementations |
 | 20 | NAME environment variable collision | Fixed in `a2d8893` and current main | [Source differential run 45408396045](https://github.com/miSultanato/k15/actions/runs/45408396045) confirms the environment-origin plus hostname guard is absent in bounty and present upstream; [Make-level collision test 45408609885](https://github.com/miSultanato/k15/actions/runs/45408609885) confirms bounty writes the runner hostname into `names.conf`; [build/certificate test 45412001815](https://github.com/miSultanato/k15/actions/runs/45412001815) confirms it becomes a `DNS:` SAN in the frozen cert but not in either upstream cert | No remaining build-time gap; the SAN regression is covered on all three pinned revisions |
 
 ## Important interpretation
@@ -60,9 +60,9 @@ https://github.com/FileSherlock/k15/issues/1#issuecomment-7081448356
 
 ## Next bounded work, ordered
 
-1. Add a synthetic BIOS E820 response with a wrong SMAP signature for finding
-   19, if the boot harness can inject it without modifying the frozen target.
-   The emitted boot-sector instruction is already verified.
+1. Run and validate the new synthetic BIOS E820 response test for finding 19.
+   It executes the original boot-sector E820 loop without patching the frozen
+   target; the first CI result is pending.
 2. Finish the MSS=0/1 probes now running in the focused TAP matrix; the prior
    boundary matrix already established the 180-byte payload behavior and the
    upstream refusal of MSS 179..215.
