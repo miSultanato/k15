@@ -57,7 +57,13 @@ def main() -> None:
     require(len(re.findall(r"\bX_SIGN\b", asm)) == 1,
             "X_SIGN has unexpected additional source references")
 
-    programs = re.findall(r'(?ms)^([A-Z0-9_]+)\s*=\s*asm\("""(.*?)""")', ec)
+    programs = []
+    for match in re.finditer(r"(?m)^([A-Z0-9_]+)\\s*=\\s*asm\\(", ec):
+        opening = ec.find('"""', match.end())
+        closing = ec.find('"""', opening + 3)
+        require(opening >= 0 and closing > opening,
+                f"cannot read triple-quoted body for {match.group(1)}")
+        programs.append((match.group(1), ec[opening + 3:closing]))
     require(programs, "no compile-time curve programs found in tools/ec.py")
     d_users = []
     for name, body in programs:
