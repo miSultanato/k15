@@ -103,7 +103,7 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | Evidence | Run |
 | --- | --- |
 | Short-site W^X: frozen executes synthetic site byte; first-fix/current reset | [45409649945](https://github.com/miSultanato/k15/actions/runs/45409649945) |
-| Authenticated all-zero TLSInnerPlaintext: frozen processes following request; fixed/current close | [45409977046](https://github.com/miSultanato/k15/actions/runs/45409977046) |
+| Authenticated all-zero TLSInnerPlaintext lengths 1/2/16/255/300: frozen processes following request; fixed/current close | [45414676678](https://github.com/miSultanato/k15/actions/runs/45414676678) |
 | Delayed first SYN-cookie ACK after 65s: accepted on all three pinned images | [45410737525](https://github.com/miSultanato/k15/actions/runs/45410737525) |
 | ACK-window offsets +1, +63, +64, +65535, +65536: frozen accepts all; fixed/current reject all | [45412713955](https://github.com/miSultanato/k15/actions/runs/45412713955) |
 | Forced-wrap ACK-window: SND.NXT=0xFFFFFFC2; frozen accepts +65536 wrap, fixed/current reject | [45413051340](https://github.com/miSultanato/k15/actions/runs/45413051340) |
