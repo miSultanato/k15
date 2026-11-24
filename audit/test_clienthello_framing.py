@@ -37,6 +37,15 @@ def exchange(wire: bytes, minimum: int = 7) -> bytes:
     return bytes(response)
 
 
+def check_fatal(label: str, response: bytes) -> None:
+    ok = len(response) >= 7 and response[0] == 21 and response[5] == 2
+    if not ok:
+        raise SystemExit(
+            f"FAIL: {label}: expected fatal TLS alert, got {response[:32].hex() or 'no response'}"
+        )
+    print(f"PASS: {label}: fatal TLS alert")
+
+
 def check(label: str, response: bytes) -> None:
     if expected == "accept":
         ok = len(response) >= 6 and response[0] == 22 and response[5] == 2
@@ -94,7 +103,10 @@ def main() -> None:
 
     wrong_type = b"\x02" + body[1:]
     wrong_type_wire = bytes((22, 3, 1)) + len(wrong_type).to_bytes(2, "big") + wrong_type
-    check("handshake type is ServerHello, not ClientHello", exchange(wrong_type_wire))
+    if expected == "accept":
+        check("handshake type is ServerHello, not ClientHello", exchange(wrong_type_wire))
+    else:
+        check_fatal("handshake type is ServerHello, not ClientHello", exchange(wrong_type_wire))
     print(f"RESULT: framing cases match expected={expected}")
 
     ch = bytearray(body[4:])
