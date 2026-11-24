@@ -242,6 +242,74 @@ def test_delayed_syn_cookie() -> None:
 
 
 
+
+def exchange_and_ack_fin(sport: int, client_seq: int, server_seq: int):
+    # The first ACK materializes the cookie-backed slot; the request asks the
+    # HTTP server to close, so its final response should carry a FIN.
+    sock.send(make_frame(sport, client_seq, server_seq, 0x10))
+    sock.send(make_frame(sport, client_seq, server_seq, 0x18, HTTP))
+    client_after_request = (client_seq + len(HTTP)) & 0xFFFFFFFF
+    response = bytearray()
+    server_next = server_seq
+    fin_seen = False
+    deadline = time.monotonic() + 5.0
+    while time.monotonic() < deadline:
+        item = receive(sport, min(0.5, max(0.01, deadline - time.monotonic())))
+        if item is None:
+            continue
+        if item["seq"] != server_next:
+            continue
+        payload = item["payload"]
+        response.extend(payload)
+        server_next = (server_next + len(payload)) & 0xFFFFFFFF
+        if item["flags"] & 0x01:
+            server_next = (server_next + 1) & 0xFFFFFFFF
+            fin_seen = True
+        if payload or fin_seen:
+            sock.send(make_frame(sport, client_after_request, server_next, 0x10))
+        if fin_seen:
+            break
+    return bytes(response), server_next, fin_seen
+
+
+def test_cookie_replay_after_teardown() -> None:
+    sport, isn = 52004, 0x456789AB
+    synack = handshake(sport, isn, 536)
+    if synack is None:
+        print("OBSERVED: cookie replay after teardown: no SYN-ACK for control SYN")
+        return
+
+    client_seq = (isn + 1) & 0xFFFFFFFF
+    original_server_ack = (synack["seq"] + 1) & 0xFFFFFFFF
+    first_response, fin_ack, fin_seen = exchange_and_ack_fin(
+        sport, client_seq, original_server_ack
+    )
+    if not first_response.startswith(b"HTTP/1.") or not fin_seen:
+        print(
+            "OBSERVED: cookie replay after teardown: could not establish a clean "
+            f"HTTP FIN teardown (response={len(first_response)} bytes, fin={fin_seen})"
+        )
+        return
+
+    # ACKing the server FIN should free the port-80 slot. Drain any delayed
+    # duplicate frames, then replay the exact ACK that completed the SYN cookie.
+    time.sleep(0.25)
+    while receive(sport, timeout=0.05) is not None:
+        pass
+    sock.send(make_frame(sport, client_seq, original_server_ack, 0x10))
+    time.sleep(0.1)
+    second_response, _, second_fin = exchange_and_ack_fin(
+        sport, client_seq, original_server_ack
+    )
+    accepted = second_response.startswith(b"HTTP/1.")
+    print(
+        "OBSERVED: cookie ACK replay after server FIN teardown: "
+        f"first_http={first_response.startswith(b'HTTP/1.')}, "
+        f"first_fin_acked={fin_seen}, replay_http={accepted}, "
+        f"replay_response_bytes={len(second_response)}, replay_fin={second_fin}, "
+        f"original_cookie_ack=0x{original_server_ack:08x}"
+    )
+
 def test_ack_boundary_matrix() -> None:
     for index, delta in enumerate((1, 63, 64, 0xFFFF, 0x10000)):
         sport = 52100 + index
@@ -288,6 +356,7 @@ if __name__ == "__main__":
             test_small_mss()
             test_mss_boundary_matrix()
             test_delayed_syn_cookie()
+            test_cookie_replay_after_teardown()
         print(f"RESULT: TCP ACK/MSS probes completed in mode={mode}")
     finally:
         sock.close()
