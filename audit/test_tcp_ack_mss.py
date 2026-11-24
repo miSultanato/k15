@@ -28,7 +28,8 @@ sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x0003))
 sock.bind((TAP, 0))
 host_mac = sock.getsockname()[4]
 broadcast = b"\xff" * 6
-HTTP = b"GET / HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"\nREPLAY_HTTP = b"GET /__cookie_replay_probe__ HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"
+HTTP = b"GET / HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"
+REPLAY_HTTP = b"GET /__cookie_replay_probe__ HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"
 
 
 def checksum(data: bytes) -> int:
