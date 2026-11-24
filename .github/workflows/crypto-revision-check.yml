@@ -9,6 +9,7 @@ on:
     paths:
       - audit/test_ecdsa_nonce_boundaries.py
       - audit/check_rand_path.py
+      - audit/check_current_rand_path.py
       - audit/check_key_read_path.py
       - audit/run_ct.sh
       - .github/workflows/crypto-revision-check.yml
@@ -75,8 +76,13 @@ jobs:
             cat ${{ matrix.directory }}/src/curves.asm >> /tmp/k15-source-audit.asm
           fi
 
-      - name: Check RNG call-site and nonce-pool invariants
+      - name: Check frozen/first-fix RNG call-site and nonce-pool invariants
+        if: matrix.variant != 'current-upstream-main'
         run: python3 audit/check_rand_path.py /tmp/k15-source-audit.asm
+
+      - name: Check current upstream RNG and nonce-pool invariants
+        if: matrix.variant == 'current-upstream-main'
+        run: python3 audit/check_current_rand_path.py /tmp/k15-source-audit.asm
 
       - name: Audit private-scalar read path and generated curve include
         run: |
