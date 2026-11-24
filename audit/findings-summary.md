@@ -26,7 +26,7 @@ The audit also reproduces TLS record-validation, TCP ACK-window and MSS defects.
 | IPv4 checksum / malformed ARP fields | Invalid IPv4-checksum SYN and malformed ARP fields still receive replies | Same behavior | Same behavior | [first fix](https://github.com/miSultanato/k15/actions/runs/45396434723), [current main](https://github.com/miSultanato/k15/actions/runs/45401501930) |
 | TCP ACK-window | HTTP request with ACK 0x10000 beyond `SND.NXT` is processed | No HTTP payload | No HTTP payload | [first fix](https://github.com/miSultanato/k15/actions/runs/45397630737), [current main](https://github.com/miSultanato/k15/actions/runs/45401501930) |
 | Peer MSS=100 | Completes handshake and sends 180-byte segment; SYN-ACK advertises MSS=1460 | No SYN-ACK | No SYN-ACK | [first fix](https://github.com/miSultanato/k15/actions/runs/45397630737), [current main](https://github.com/miSultanato/k15/actions/runs/45401501930) |
-| HTTP methods | Lowercase `get` and unknown `FOO` return HTTP 200 | Same | Same | [first fix](https://github.com/miSultanato/k15/actions/runs/45400915976), [current main](https://github.com/miSultanato/k15/actions/runs/45401501930) |
+| HTTP methods | Cleartext port-80 control returned HTTP 200 for `get`/`FOO`; this does not test the audited TLS request parser | TLS parser probe pending | TLS parser probe pending | [port-80 control](https://github.com/miSultanato/k15/actions/runs/45400915976); [new HTTPS workflow](https://github.com/miSultanato/k15/actions/runs/45402956609) |
 | ECDSA nonce boundaries | `n+1` aliases `1`; `n-1` verifies; `n` does not | Not compared | Not compared | [frozen signer test](https://github.com/miSultanato/k15/actions/runs/45393554079) |
 
 ## Additional negative evidence
