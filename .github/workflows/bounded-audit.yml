@@ -10,6 +10,8 @@ on:
       - audit/check_rand_path.py
       - audit/check_key_read_path.py
       - audit/run_ct.sh
+      - audit/test_clienthello_framing.py
+      - audit/run_qemu_framing.sh
       - audit/check_public_proof.py
       - .github/workflows/bounded-audit.yml
 
@@ -55,7 +57,7 @@ jobs:
       - name: Install minimal native build dependency
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends nasm valgrind
+          sudo apt-get install --yes --no-install-recommends nasm valgrind qemu-system-x86
 
       - name: Install Python test dependency
         run: python3 -m pip install --disable-pip-version-check cryptography
@@ -73,6 +75,9 @@ jobs:
       - name: Build complete bootable image from frozen source
         working-directory: target
         run: make all
+
+      - name: Boot frozen image in QEMU TCG and reproduce ClientHello framing quirk
+        run: bash audit/run_qemu_framing.sh target
 
       - name: Report generated secret-bearing files are not uploaded
         run: |
