@@ -131,14 +131,26 @@ separate from the key-extraction objective.
 ## HRR trigger experiments (2026-11-24)
 
 A local Go TLS 1.3 client configured with P-256 first and X25519 second
-completed a normal handshake on all three pinned images in [run 45417214217](https://github.com/miSultanato/k15/actions/runs/45417214217): one ClientHello, one ServerHello, no HRR. This shows that this particular offer does not force a retry; P-256 is accepted when X25519 is also present in the supported groups list. The same trace independently confirmed the normal-path dummy CCS difference: frozen bounty sent zero server CCS records; both upstream revisions sent one after ServerHello. A stock OpenSSL attempt had the same no-HRR result.
+completed a normal handshake on all three pinned images in
+[run 45417214217](https://github.com/miSultanato/k15/actions/runs/45417214217):
+one ClientHello, one ServerHello, no HRR. This offer did not force a retry;
+P-256 was accepted when X25519 was also present in supported_groups.
 
-The next probe places P-384 first and X25519 second. If the server does not
-support P-384, this should preserve X25519 in supported_groups while omitting
-an X25519 key share from the first ClientHello, forcing HRR. The updated
-Go-based probe is local-only and captures both directions' TLS records.
-Its result must be inspected before claiming that a second ClientHello or
-HRR was exercised.
+The follow-up OpenSSL client offers P-384 first and X25519 second, preserving
+X25519 in supported_groups while omitting an X25519 key share from the first
+ClientHello. The differential run
+[45460246415](https://github.com/miSultanato/k15/actions/runs/45460246415)
+forced and completed the HRR path on all three pinned revisions:
+
+- each image captured exactly two ClientHellos and two ServerHellos;
+- OpenSSL exited successfully with TLS 1.3 negotiated;
+- frozen bounty sent zero server dummy CCS records;
+- first upstream fix and current upstream each sent one server CCS record.
+
+The relay captures both directions without modifying TLS bytes. This closes
+the earlier uncertainty about whether the second ClientHello was actually
+sent; the normal-path and HRR-path CCS difference is now independently
+reproduced.
 
 ## Safety
 

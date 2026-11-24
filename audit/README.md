@@ -78,7 +78,7 @@ user namespaces.
   elicits HelloRetryRequest. `test_hrr_second_clienthello.py` drives an OpenSSL client through a
   Go TLS 1.3 client through the second ClientHello and asserts the expected
   presence/absence of a dummy CCS on each pinned revision. The OpenSSL wire
-  capture confirms two ClientHellos/two ServerHellos on all three revisions.
+  capture confirms two ClientHellos/two ServerHellos on all three revisions in [run 45460246415](https://github.com/miSultanato/k15/actions/runs/45460246415).
 - `test_https_request.py`: probes lowercase/unknown methods and missing Host
   over the TLS listener, exercising the decrypted HTTPS request parser.
 - `test_ip_arp_validation.py`: sends synthetic IPv4 SYNs with valid/invalid
