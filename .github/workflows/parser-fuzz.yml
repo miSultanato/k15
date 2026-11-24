@@ -33,6 +33,9 @@ jobs:
           - variant: upstream-fixed
             directory: fixed
             ref: a2d8893261b2be15b44c86d6f4483d65820e943a
+          - variant: upstream-current
+            directory: current
+            ref: cb9f76a5a100c418bfcaeddcd4f137d30ab489d2
     steps:
       - name: Check out audit harness
         uses: actions/checkout@v4
