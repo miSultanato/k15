@@ -150,7 +150,7 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | Authenticated all-zero TLSInnerPlaintext lengths 1/2/16/255/300: frozen processes following request; fixed/current close | [45414676678](https://github.com/miSultanato/k15/actions/runs/45414676678) |
 | Go TLS normal-path CCS: frozen sends none; fixed/current send one after ServerHello | [45417214217](https://github.com/miSultanato/k15/actions/runs/45417214217) |
 | Delayed first SYN-cookie ACK after 65s: accepted on all three pinned images | [45410737525](https://github.com/miSultanato/k15/actions/runs/45410737525) |
-| ACK-window offsets +1, +63, +64, +65535, +65536: frozen accepts all; fixed/current reject all | [45468109924](https://github.com/miSultanato/k15/actions/runs/45412713955) |
+| ACK-window offsets +1, +63, +64, +65535, +65536: frozen accepts all; fixed/current reject all | [45468109924](https://github.com/miSultanato/k15/actions/runs/45468109924) |
 | Forced-wrap ACK-window: SND.NXT=0xFFFFFFC2; frozen accepts +65536 wrap, fixed/current reject | [45468109924](https://github.com/miSultanato/k15/actions/runs/45413051340) |
 | Peer MSS boundary: frozen sends 180-byte payload for MSS=100/179; fixed/current refuse 179..215 | [45468109924](https://github.com/miSultanato/k15/actions/runs/45413771856) |
 | Boot hardening binary checks: AP alignment, GDT bytes, E820 instruction and hostname SAN | [45412245837](https://github.com/miSultanato/k15/actions/runs/45412245837) |
