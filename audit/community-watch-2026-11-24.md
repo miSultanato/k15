@@ -878,3 +878,28 @@ equivalence metric: server scheduling and the protocol's accepted/rejected
 paths affect them. The key result is that neither image reset or stopped
 serving during the 20,000 malformed inputs. The separate five-case
 differential test remains the precise regression proof for the framing fix.
+
+
+## Synthetic scalar guest-RAM snapshot (confirmed)
+
+The isolated TAP/QEMU memory scan passed:
+https://github.com/miSultanato/k15/actions/runs/45384689679
+
+After 1,024 successful local TLS 1.3 handshakes, QEMU's monitor saved one
+256 MiB guest physical-RAM snapshot. The scan compared the generated local
+P-256 private scalar in plaintext (both 32-byte byte orders) with the expected
+Montgomery representation `d * 2^256 mod n`.
+
+Observed:
+- Guest RAM scanned: 268,435,456 bytes.
+- Plaintext synthetic scalar encodings found: 0.
+- Expected Montgomery-form encodings found: 6.
+
+This is consistent with the design: the guest image and register bank contain
+the scalar in Montgomery form, not as a plaintext 256-bit value. The snapshot
+was deleted after scanning and no memory image or key material was uploaded.
+
+Limit: this is one point-in-time guest physical-RAM snapshot after local
+synthetic-key handshakes. It does not scan CPU registers, QEMU host memory,
+all transient execution states, or the production machine. It is not a proof
+that no plaintext representation can ever exist in any execution path.
