@@ -160,6 +160,23 @@ the first two server TLS records:
 This reproduces finding #8 and confirms that the upstream image fixes it.
 The HelloRetryRequest path remains to be tested separately.
 
+
+## 8. IPv4 checksum and ARP field matrix
+
+The TAP differential test in [run 45396434723](https://github.com/miSultanato/k15/actions/runs/45396434723)
+sent synthetic raw Ethernet frames to both the frozen bounty image and the
+upstream framing-fix image:
+
+- A SYN with a valid TCP checksum but deliberately corrupted IPv4 header
+  checksum received a SYN-ACK on both images.
+- ARP requests with hardware type 2, protocol type IPv6, hardware length 1,
+  and protocol length 1 each received an ARP reply on both images.
+
+This confirms that those fields are not rejected by either tested revision.
+It does not demonstrate memory disclosure, memory corruption, or a useful
+remote attack. The test uses full-length ARP frames; the separate short-frame
+stale-buffer behavior described by the auditor is not yet reproduced here.
+
 ## Test status and next steps
 
 The deterministic ECDSA boundary test now runs against the frozen assembly
@@ -186,10 +203,9 @@ application data or recover the server's private key. The remaining items are
 source-derived test plans, not dynamically reproduced findings:
 
 1. Exercise the dummy ChangeCipherSpec behavior on the HelloRetryRequest path.
-2. Corrupted IPv4 checksum with correct TCP checksum.
-3. ARP field-by-field malformed request matrix.
-4. ACK range and wraparound state matrix.
-5. SYN MSS threshold matrix and actual outbound segment sizes.
+2. Reproduce the short-ARP-frame stale-buffer behavior with synthetic marker bytes.
+3. ACK range and wraparound state matrix.
+4. SYN MSS threshold matrix and actual outbound segment sizes.
 7. Extend nonce-distribution analysis only if a plausible attack model emerges;
    the explicit `n-1`, `n`, and `n+1` assembly boundary vectors now pass.
 
