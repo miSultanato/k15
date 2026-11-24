@@ -80,11 +80,17 @@ jobs:
           print("PASS: both upstream Makefiles clear the accidental hostname before certificate generation")
           PY
 
-      - name: Install NASM build dependency
+      - name: Install NASM and isolated 16-bit emulator
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends nasm
-          python3 -m pip install --disable-pip-version-check cryptography
+          python3 -m pip install --disable-pip-version-check cryptography unicorn==2.1.3
+
+      - name: Emulate valid and malformed BIOS E820 responses
+        run: |
+          python3 audit/test_e820_signature.py bounty frozen
+          python3 audit/test_e820_signature.py fixed fixed
+          python3 audit/test_e820_signature.py current fixed
 
       - name: Build with NAME set to the runner hostname
         run: |
