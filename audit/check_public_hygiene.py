@@ -12,10 +12,10 @@ import subprocess
 import sys
 from pathlib import PurePosixPath
 
-PEM_BEGIN = b"-----BEGIN "
 PRIVATE_KEY = re.compile(
-    PEM_BEGIN + rb"(?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"
-    + b"|" + PEM_BEGIN + rb"ENCRYPTED PRIVATE KEY-----"
+    rb"-----BEGIN (?P<label>(?:RSA |EC |DSA |OPENSSH |ENCRYPTED )?PRIVATE KEY)-----\\r?\\n"
+    rb"(?:[A-Za-z0-9+/=]+\\r?\\n)+"
+    rb"-----END (?P=label)-----"
 )
 FORBIDDEN_SUFFIXES = {".key", ".p12", ".pfx", ".img", ".bin", ".lst"}
 
@@ -96,7 +96,7 @@ def main() -> int:
             failures.append(f"working tree {path}: cannot inspect tracked file: {exc}")
             continue
         if PRIVATE_KEY.search(data):
-            failures.append(f"working tree {path}: PEM private-key marker")
+            failures.append(f"working tree {path}: complete PEM private-key block")
 
     if history:
         for sha, path, data in history_objects():
@@ -114,7 +114,7 @@ def main() -> int:
     print("PASS: working tree contains no generated build/certificate directories,")
     print("      private-key files/PEM markers, disk images, binaries or NASM listings.")
     if history:
-        print("PASS: all reachable Git history contains no forbidden paths or PEM private-key markers.")
+        print("PASS: all reachable Git history contains no forbidden paths or complete PEM private-key blocks.")
     return 0
 
 

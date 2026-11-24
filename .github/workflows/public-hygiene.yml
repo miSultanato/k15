@@ -20,7 +20,7 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Test the hygiene guard with synthetic markers
+      - name: Test the hygiene guard with synthetic PEM blocks
         run: python3 audit/test_public_hygiene.py
       - name: Check tracked files for generated secrets and artifacts
         run: python3 audit/check_public_hygiene.py --history

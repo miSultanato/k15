@@ -2,23 +2,35 @@
 """Unit tests for the public-tree hygiene guard; uses marker strings only."""
 from __future__ import annotations
 
-from check_public_hygiene import PEM_BEGIN, PRIVATE_KEY, forbidden_path
+from check_public_hygiene import PRIVATE_KEY, forbidden_path
 
 
 def main() -> None:
-    markers = [
-        PEM_BEGIN + b"PRIVATE KEY-----",
-        PEM_BEGIN + b"RSA PRIVATE KEY-----",
-        PEM_BEGIN + b"EC PRIVATE KEY-----",
-        PEM_BEGIN + b"DSA PRIVATE KEY-----",
-        PEM_BEGIN + b"OPENSSH PRIVATE KEY-----",
-        PEM_BEGIN + b"ENCRYPTED PRIVATE KEY-----",
-    ]
-    for marker in markers:
-        if not PRIVATE_KEY.search(marker):
-            raise SystemExit(f"FAIL: private-key marker was not detected: {marker!r}")
-    if PRIVATE_KEY.search(PEM_BEGIN + b"CERTIFICATE-----"):
-        raise SystemExit("FAIL: public certificate marker was treated as a private key")
+    labels = (
+        b"PRIVATE KEY",
+        b"RSA PRIVATE KEY",
+        b"EC PRIVATE KEY",
+        b"DSA PRIVATE KEY",
+        b"OPENSSH PRIVATE KEY",
+        b"ENCRYPTED PRIVATE KEY",
+    )
+    for label in labels:
+        block = (
+            b"-----BEGIN " + label + b"-----\\n"
+            + b"QUJDREVGR0hJSktMTU5PUA==\\n"
+            + b"-----END " + label + b"-----"
+        )
+        if not PRIVATE_KEY.search(block):
+            raise SystemExit(f"FAIL: complete PEM block was not detected: {label!r}")
+        if PRIVATE_KEY.search(b"-----BEGIN " + label + b"-----"):
+            raise SystemExit("FAIL: header-only marker was treated as a private key")
+    public_cert = (
+        b"-----BEGIN CERTIFICATE-----\\n"
+        + b"QUJDREVGR0hJSktMTU5PUA==\\n"
+        + b"-----END CERTIFICATE-----"
+    )
+    if PRIVATE_KEY.search(public_cert):
+        raise SystemExit("FAIL: public certificate block was treated as a private key")
 
     blocked = (
         "cert/server.key",
@@ -44,7 +56,7 @@ def main() -> None:
         if forbidden_path(path):
             raise SystemExit(f"FAIL: legitimate public source was blocked: {path}")
 
-    print("PASS: private-key marker variants, artifact paths and safe source paths")
+    print("PASS: complete private-key PEM blocks, artifact paths and safe source paths")
 
 
 if __name__ == "__main__":
