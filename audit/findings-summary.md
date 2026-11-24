@@ -37,6 +37,19 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 | E820 BIOS signature | Frozen boot sector accepts a successful INT 15h response with wrong EAX signature | Rejects wrong signature | Same as first fix | [synthetic 16-bit BIOS differential](https://github.com/miSultanato/k15/actions/runs/45437038597) |
 | Boot/build hardening | `apcount` is misaligned; GDT Accessed bytes are `0x9A/0x92`; E820 signature check and Makefile hostname guard are absent; runner hostname leaks into generated certificate SAN | Alignment and Accessed bits corrected; SMAP signature and `NAME` guard present; hostname excluded from certificate SAN | Same as first fix | [source, build, certificate and emitted-image differential](https://github.com/miSultanato/k15/actions/runs/45437038597) |
 
+## Follow-up reviews (2026-11-24)
+
+- `tcp-sequence-window-review.md` records the current-upstream modular
+  sequence admission interval and ACK advancement rules. The existing
+  three-way ACK-window and forced-wrap runs already establish the frozen
+  out-of-window ACK defect and upstream rejection. Exact client-sequence
+  edges and FIN/RST combinations remain coverage gaps, not additional
+  findings.
+- `syn-cookie-reboot-review.md` now includes a hardened local QEMU reboot
+  probe. The SYN MSS is encoded as a TCP option and queued pre-reset frames
+  are drained before the new capture. The dynamic workflow still has no
+  confirmed run result available; no pass is claimed.
+
 ## Additional negative evidence
 
 - The local upstream hostile-client regression suite passes, including malformed
