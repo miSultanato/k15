@@ -89,7 +89,7 @@ user namespaces.
   to expose the stale eight-byte suffix and both upstream images to reject it.
   See `arp-short-frame-impact.md` for the exact data flow and limits.
 - `ipv4-arp-validation-review.md`: explains why invalid IPv4 header checksums and malformed full-length ARP metadata still receive replies on all three revisions, and separates that behavior from the short-frame disclosure.
-- `syn-cookie-replay-observation.md`: records the replayable cookie-ACK behavior after orderly FIN close, distinguishes it from the bounty-only findings, and documents the limits of the threat-model evidence.
+- `cookie-time-component-review.md` and `syn-cookie-replay-observation.md`: document the source-level no-clock cookie construction, 65-second delayed/replay tests, changed-port rejection, upstream issue #1 finding 14, and conservative threat-model limits.
 - `test_tcp_ack_mss.py`: asserts bounty acceptance versus upstream rejection of
   out-of-window ACKs, checks peer-MSS safety boundaries, delays a first SYN-cookie
   ACK, rejects replay under a changed source port, then observes same-tuple
