@@ -23,6 +23,7 @@ revision offered by the k15 bounty.
 | `bounded-audit.yml` | Source invariants, assembly crypto tests, exact `ec.inc` reconstruction, Valgrind controls, QEMU framing and runtime nonce checks |
 | `differential-framing.yml` | Same malformed ClientHello cases against frozen bounty and upstream fixed images; then upstream `tools/abuse.py` |
 | `race-audit.yml` | Project's controlled cross-processor slot handover tests, `RACE=1,2,3` |
+| `parser-fuzz.yml` | Same deterministic 20,000-case ClientHello fuzzer against bounty and fixed images |
 
 All are runnable from GitHub Actions. The race workflow uses a privileged,
 isolated network namespace because GitHub-hosted runners disallow unprivileged
