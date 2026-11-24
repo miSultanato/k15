@@ -230,39 +230,20 @@ session-ID length, one invalid compression value and one legacy version; they
 do not exhaust all boundary combinations.
 
 
-## 11. Lowercase and unknown HTTP methods — negative reproduction
+## 11. HTTPS request methods and Host header
 
-The earlier test in [run 45400915976](https://github.com/miSultanato/k15/actions/runs/45400915976)
-sent lowercase `get` and unknown `FOO` over cleartext TCP port 80. Both images
-returned HTTP 200, but that does not exercise the audited parser in
-`src/request.asm`, which handles decrypted HTTPS application records. That
-result is therefore only a port-80 control, not a valid negative reproduction
-for finding #4. A dedicated TLS 1.3 test now sends these methods and a missing-
-Host request over the HTTPS listener; results are pending.
+The dedicated TLS 1.3 probe in [run 45402956609](https://github.com/miSultanato/k15/actions/runs/45402956609)
+exercises the decrypted HTTPS request parser rather than cleartext port 80:
 
+- A lowercase `get` request receives no HTTP response on the frozen bounty
+  image; both `a2d8893` and current main return 405.
+- An unknown `FOO` method returns 405 on all three images.
+- A valid GET without a Host header returns 200 on the frozen image and
+  `a2d8893`, but current main returns 400.
 
-## 12. Current upstream main comparison
-
-The current-main comparator is pinned to `cb9f76a5a100c418bfcaeddcd4f137d30ab489d2`
-(the current `main` sync commit; code parent `d335390`). It is 18 commits
-ahead of the earlier framing-fix reference `a2d8893`.
-
-The current-main differential runs show:
-
-- ClientHello framing, type, session-ID, compression and legacy-version fixes
-  remain present.
-- The normal ServerHello path sends dummy CCS (record type 20).
-- The corrupted client Finished and bad-AEAD-tag behaviors remain: the server
-  still processes the follow-up valid application record.
-- The short-ARP marker disclosure is not observed; invalid IPv4 checksums and
-  malformed full-length ARP fields still receive replies.
-- The out-of-window ACK does not produce HTTP, and MSS=100 receives no SYN-ACK.
-- Lowercase `get` and unknown `FOO` still receive HTTP 200 in the tested cases.
-
-Evidence: [TLS/current-main differential run 45401470623](https://github.com/miSultanato/k15/actions/runs/45401470623)
-and [TAP/current-main run 45401501930](https://github.com/miSultanato/k15/actions/runs/45401501930).
-The post-HRR final ServerHello flight and the HTTPS request-method/Host
-behavior are still separate follow-ups.
+This reproduces the lowercase-method hang (#4) and confirms the later current
+main Host-header check (#12). The earlier cleartext port-80 method probe was
+only a control and is not used as evidence for the TLS parser.
 
 ## Test status and next steps
 
