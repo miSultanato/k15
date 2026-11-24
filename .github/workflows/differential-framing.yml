@@ -9,6 +9,9 @@ on:
     paths:
       - audit/test_clienthello_framing.py
       - audit/test_tls_record_rejection.py
+      - audit/patch_go_tls_clienthello.py
+      - audit/malformed_clienthello_transcript.go
+      - audit/run_qemu_malformed_clienthello.sh
       - audit/test_dummy_ccs.py
       - audit/test_https_request.py
       - audit/test_tls_inner_plaintext.py
@@ -29,7 +32,7 @@ jobs:
   differential:
     name: Compare frozen bounty, first fix and current upstream
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Check out audit harness
         uses: actions/checkout@v4
@@ -72,6 +75,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends nasm qemu-system-x86
           python3 -m pip install --disable-pip-version-check cryptography
+      - name: Install Go for transcript-faithful TLS client
+        uses: actions/setup-go@v6
+        with:
+          go-version: stable
+
+      - name: Patch Go ClientHello serializer and compile test client
+        run: |
+          go version
+          python3 audit/patch_go_tls_clienthello.py
+          go build -a -o "$RUNNER_TEMP/k15-malformed-client" audit/malformed_clienthello_transcript.go
 
       - name: Build frozen bounty image
         working-directory: bounty
@@ -84,6 +97,15 @@ jobs:
       - name: Build current upstream image
         working-directory: current
         run: make all
+
+      - name: Complete malformed ClientHello handshake on frozen bounty
+        run: bash audit/run_qemu_malformed_clienthello.sh bounty accept "$RUNNER_TEMP/k15-malformed-client"
+
+      - name: Reject transcript-faithful malformed ClientHello on first upstream fix
+        run: bash audit/run_qemu_malformed_clienthello.sh fixed reject "$RUNNER_TEMP/k15-malformed-client"
+
+      - name: Reject transcript-faithful malformed ClientHello on current upstream
+        run: bash audit/run_qemu_malformed_clienthello.sh current reject "$RUNNER_TEMP/k15-malformed-client"
 
       - name: Probe authenticated empty TLSInnerPlaintext on frozen bounty
         run: bash audit/run_qemu_inner_plaintext.sh bounty
