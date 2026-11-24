@@ -229,6 +229,16 @@ that the tested upstream revision fixes them. The current tests cover one
 session-ID length, one invalid compression value and one legacy version; they
 do not exhaust all boundary combinations.
 
+
+## 11. Lowercase and unknown HTTP methods — negative reproduction
+
+The TAP test in [run 45400915976](https://github.com/miSultanato/k15/actions/runs/45400915976)
+sent correctly framed HTTP/1.1 requests using lowercase `get` and unknown
+method `FOO`. Both the frozen bounty image and upstream `a2d8893` returned
+HTTP 200. The auditor's reported hang was not reproduced with these inputs.
+This is not enough to mark the issue resolved: additional method tokens,
+request-line edge cases and repeated requests remain untested.
+
 ## Test status and next steps
 
 The deterministic ECDSA boundary test now runs against the frozen assembly
