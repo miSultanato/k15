@@ -1,0 +1,68 @@
+name: k15 ClientHello parser fuzz comparison
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - audit/run_tap_hellofuzz.sh
+      - .github/workflows/parser-fuzz.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k15-parser-fuzz
+  cancel-in-progress: false
+
+jobs:
+  fuzz:
+    name: 20,000 malformed ClientHellos — ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: frozen-bounty
+            directory: bounty
+            ref: ab93479ebc7c85274c722b16897148286d1cfca3
+          - variant: upstream-fixed
+            directory: fixed
+            ref: a2d8893261b2be15b44c86d6f4483d65820e943a
+    steps:
+      - name: Check out audit harness
+        uses: actions/checkout@v4
+
+      - name: Check out exact source revision
+        uses: actions/checkout@v4
+        with:
+          repository: FileSherlock/k15
+          ref: ${{ matrix.ref }}
+          path: ${{ matrix.directory }}
+          persist-credentials: false
+
+      - name: Verify pinned source
+        working-directory: ${{ matrix.directory }}
+        run: |
+          git rev-parse HEAD
+          test "$(git rev-parse HEAD)" = "${{ matrix.ref }}"
+
+      - name: Install QEMU and TAP dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends nasm qemu-system-x86 iproute2 gcc libssl-dev curl
+          python3 -m pip install --disable-pip-version-check cryptography
+
+      - name: Build local image with synthetic certificate
+        working-directory: ${{ matrix.directory }}
+        run: make all
+
+      - name: Fuzz 20,000 ClientHellos and verify service remains alive
+        run: sudo unshare -n bash audit/run_tap_hellofuzz.sh ${{ matrix.directory }} 20261124 20000
+
+      - name: Confirm no generated key material or images are uploaded
+        run: |
+          echo "Synthetic certificates and images remain in the ephemeral runner."
+          echo "No artifacts are uploaded."
