@@ -33,7 +33,7 @@ user namespaces.
 ## Main checks
 
 - `rdrand_host_probe.c`: samples the runner's exposed native RDRAND instruction,
-  checking adjacent repeats, lag-four repeats and repeated four-qword tuples.
+  checking adjacent repeats, lag-four repeats, any repeated qwords and repeated four-qword tuples.
   This is only a host-runner data point, not a measurement of the production CPU.
 - `nonce_cycle_demo.py`: mathematical demonstration that a periodic sequence
   can evade adjacent-equality checks and repeat ECDSA nonces. Synthetic only;
