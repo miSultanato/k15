@@ -84,15 +84,20 @@ executing the signing program (approximately lines 418-445).
 The independent audit's finding #16 should therefore not be summarized as
 "the signer definitely uses an invalid nonce". The important question is how
 the implementation's field arithmetic and inversion interpret the raw
-256-bit input. For secp256k1, a 256-bit value can be at least n; values
+256-bit input. For the implementation's NIST P-256 curve, a 256-bit value can be at least n; values
 `k >= n` have the same group scalar as `k mod n`, except the zero residue,
 and may therefore alias a lower nonce rather than immediately produce an
 invalid signature. That can affect the effective nonce distribution and
 uniqueness, but requires a deterministic check.
 
-Next test the exact values `n-1`, `n`, `n+1`, and `2^256-1` through the
-reference signer and, if possible, the assembly/VM signer with a synthetic
-key and digest. Verify each signature independently and record whether the
+The existing `tools/ec.py` self-test already exercises `k = 2^256-1` and
+`k = 2^256-2` (its first two ECDSA iterations) and verifies the resulting
+signatures with a P-256 public key. The earlier CI `make test` therefore
+provides some boundary evidence; it does not explicitly isolate `n-1`, `n`,
+or `n+1`, nor report their effective nonce residues.
+
+Next add exact vectors `n-1`, `n`, and `n+1` through the reference signer
+and, if possible, the assembly/VM signer with a synthetic key and digest. Verify each signature independently and record whether the
 operation rejects, faults, or produces a signature. For successful signatures,
 compare the recovered effective nonce modulo n. Keep this separate from
 RDRAND sampling and from the synthetic periodic-nonce demonstration.
@@ -106,8 +111,8 @@ test plans, not reproduced findings:
 2. ARP field-by-field malformed request matrix.
 3. ACK range and wraparound state matrix.
 4. SYN MSS threshold matrix and actual outbound segment sizes.
-5. ECDSA deterministic boundary vectors at `n-1`, `n`, `n+1`, and
-   `2^256-1`.
+5. ECDSA deterministic boundary vectors at `n-1`, `n`, and `n+1`; retain
+   the existing `2^256-1` and `2^256-2` reference self-test coverage.
 
 All tests remain offline against the frozen image in ephemeral QEMU. No
 production probes, load tests, or memory access are permitted.
