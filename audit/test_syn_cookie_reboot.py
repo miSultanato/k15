@@ -113,18 +113,35 @@ def syn_cookie(timeout: float = 30.0) -> int:
     raise RuntimeError("no SYN-ACK received after boot/reset")
 
 
+def read_monitor_prompt(monitor: socket.socket) -> bytes:
+    response = bytearray()
+    deadline = time.monotonic() + 3
+    while b"(qemu) " not in response:
+        if time.monotonic() >= deadline:
+            raise RuntimeError(f"QEMU monitor prompt timeout: {bytes(response)!r}")
+        try:
+            chunk = monitor.recv(4096)
+        except socket.timeout:
+            continue
+        if not chunk:
+            raise RuntimeError(f"QEMU monitor closed before prompt: {bytes(response)!r}")
+        response.extend(chunk)
+    return bytes(response)
+
+
 def reset_guest() -> None:
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
         try:
             with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as monitor:
-                monitor.settimeout(2)
+                monitor.settimeout(0.5)
                 monitor.connect(MON)
+                read_monitor_prompt(monitor)  # consume the greeting prompt first
                 monitor.sendall(b"system_reset\n")
-                try:
-                    monitor.recv(4096)
-                except socket.timeout:
-                    pass
+                response = read_monitor_prompt(monitor)  # wait for command completion
+                if b"Error" in response:
+                    raise RuntimeError(f"QEMU system_reset failed: {response!r}")
+            print("OBSERVED: QEMU monitor acknowledged system_reset")
             time.sleep(2.0)  # allow firmware, bootloader and guest initialization to finish
             return
         except (FileNotFoundError, ConnectionRefusedError):
