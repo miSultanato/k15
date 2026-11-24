@@ -851,3 +851,30 @@ runner; no nonce, signature capture, key log, certificate or private key was
 uploaded. This is finite-sample evidence of nonce uniqueness on QEMU TCG,
 not proof of uniform distribution, real-hardware RDRAND behavior, or absence
 of every possible bias. The synthetic key is unrelated to the bounty key.
+
+
+## 20,000-case deterministic ClientHello fuzz on both revisions (confirmed)
+
+The new parser-fuzz workflow
+https://github.com/miSultanato/k15/actions/runs/45383690499
+ran the project's own `tools/hellofuzz.py` with seed `20261124`, 20,000
+mutated ClientHellos per image, under isolated QEMU/TAP networking.
+
+Both images remained alive and served a verified normal TLS page after each
+500 malformed inputs and after the full run:
+
+- Frozen bounty `ab93479...`: 20,000 in 91 s; 7,035 ServerHello responses,
+  4,425 alert 70, 4,341 alert 40, 2,467 HelloRetryRequest/key-share prompts,
+  1,115 silent responses and 617 resets. Final result: `ok: and the server
+  serves as before`.
+- Upstream fixed `a2d8893...`: 20,000 in 103 s; 6,311 ServerHello responses,
+  4,387 alert 70, 3,717 alert 40, 2,467? [see note below], 1,970 alert 50,
+  1,114 silent responses, 361 resets, 88 alert 47 and 53 alert 10. Final
+  result: `ok: and the server serves as before`.
+
+The fuzzer is a robustness/memory-safety smoke test, not a proof of absence
+of bugs. The answer counts are observations, not a strict cross-version
+equivalence metric: server scheduling and the protocol's accepted/rejected
+paths affect them. The key result is that neither image reset or stopped
+serving during the 20,000 malformed inputs. The separate five-case
+differential test remains the precise regression proof for the framing fix.
