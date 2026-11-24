@@ -664,3 +664,28 @@ bounty source revision remains pinned to ab93479ebc7c85274c722b16897148286d1cfca
 No request is sent to the production host. Acceptance of inconsistent
 handshake framing is a protocol-validation/conformance finding; no memory
 corruption, key disclosure, or practical remote exploit has been established.
+
+
+### Important distinction: inner handshake length vs outer TLS record length
+
+The QEMU regression above changes the ClientHello handshake message's own
+24-bit length field while keeping the enclosing TLS record length correct.
+It establishes that this frozen implementation does not enforce equality
+between those two lengths. It does **not** reproduce the separate community
+description of a TLS record whose outer length itself is short, nor does it
+establish a transcript omitting bytes. The handshake path appears to use the
+outer record payload length when copying/parsing the message; the transcript
+question must be analyzed separately against the exact receive/reassembly
+path before making that claim.
+
+The upstream fix in
+https://github.com/FileSherlock/k15/commit/a2d8893261b2be15b44c86d6f4483d65820e943a
+adds exact handshake-length equality validation, along with type, session-ID
+and compression-method checks. This is corroborating evidence that the owner
+treated the inner-length discrepancy as a real validation defect. The fix is
+on upstream development history, not in the frozen bounty commit.
+
+Current assessment: reproducible TLS framing/conformance bug on the bounty
+image; no demonstrated key disclosure, memory-safety violation, transcript
+integrity failure, or bounty-winning exploit. Keep it separate from any
+outer-record truncation/fragmentation hypothesis.
