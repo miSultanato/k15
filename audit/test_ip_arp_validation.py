@@ -27,7 +27,7 @@ import tlsclient  # noqa: E402
 
 TAP = os.environ.get("TAP", "k2t")
 GUEST_IP = socket.inet_aton("10.0.2.15")
-HOST_IP = socket.inet_aton("10.0.2.34")
+HOST_IP = socket.inet_aton("10.64.0.1")
 sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x0003))
 sock.bind((TAP, 0))
 host_mac = sock.getsockname()[4]
