@@ -30,7 +30,7 @@ revision offered by the k15 bounty.
 | `wx-short-site.yml` | Three-way QEMU differential: execute a synthetic `RET` byte at the end of a one-file site to detect executable site pages |
 | `ip-arp-boundaries.yml` | Deterministic IPv4/ARP checks, short-ARP stale-buffer probe, TCP ACK/MSS boundaries, delayed SYN-cookie ACK and forced 32-bit sequence-wrap probes |
 | `boot-hardening-differential.yml` | Source/emitted-image comparison of AP counter alignment and GDT Accessed bits, synthetic BIOS E820 signature emulation, and Makefile NAME checks |
-| `public-hygiene.yml` | Scans tracked public content for complete PEM private-key blocks, generated certificate/build directories, private-key files, disk images, binaries and assembler listings |
+| `public-hygiene.yml` | Scans the current tree and all reachable Git history for complete PEM private-key blocks, generated certificate/build directories, private-key files, disk images, binaries and assembler listings |
 
 All are runnable from GitHub Actions. The race workflow uses a privileged,
 isolated network namespace because GitHub-hosted runners disallow unprivileged
@@ -92,7 +92,7 @@ user namespaces.
   and compares the server ACK with the new request's end sequence.
 - `check_current_rand_path.py`: checks the refactored current-main RDRAND-to-nonce path.
 - `check_boot_hardening.py`: compares four source-level boot/build hardening changes between the frozen bounty, first upstream fix and pinned current main.
-- `check_public_hygiene.py` and `test_public_hygiene.py`: narrow guardrail for this public fork; rejects tracked generated secret directories/files, private-key complete PEM blocks, disk images, binaries and NASM listings. Synthetic marker/path tests check both detection and false-positive behavior. It is not a general-purpose secret scanner.
+- `check_public_hygiene.py` and `test_public_hygiene.py`: narrow guardrail for this public fork; scans the tracked tree and all reachable Git history, rejecting generated secret directories/files, complete PEM private-key blocks, disk images, binaries and NASM listings. Synthetic PEM/path tests cover detection and false-positive behavior. It is not a general-purpose secret scanner.
 - `check_boot_binary.py`: checks the emitted `os.bin` and NASM listing for AP counter alignment and GDT descriptor Accessed bytes. It does not boot the image or exercise AP startup.
 - `test_e820_signature.py`: executes the unchanged 16-bit E820 loop in Unicorn with synthetic valid and wrong-signature BIOS responses; compares the frozen boot sector with both upstream fixes. This isolates the signature gate and is not a real-BIOS compatibility test.
 - `check_wx_layout.py`: derives the NX threshold from the emitted short-site image, NASM listing, DELTA and CODEPG source formula, then checks the final synthetic site byte's page. The three-way QEMU RET probe independently confirms runtime behavior; this check does not read live guest page-table memory.
