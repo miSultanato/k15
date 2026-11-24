@@ -153,7 +153,7 @@ def test_corrupt_client_finished() -> None:
                 "FAIL: after corrupted client Finished, no HTTP response; "
                 f"received={response[:80]!r}"
             )
-        print(("PASS" if accepted else "OBSERVED") + ": " +
+        print(("PASS" if mode == "expect" and accepted else "OBSERVED") + ": " +
               ("server processed" if accepted else "server did not process") +
               " application data after a corrupted client Finished")
     finally:
