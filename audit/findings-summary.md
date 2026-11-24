@@ -33,8 +33,9 @@ All dynamic testing is local, offline and synthetic-key only.
   the enclosing record intact, both peers can hash the same malformed bytes;
   no key disclosure has been shown.
 - The short outer-record case makes the server process a truncated ClientHello
-  and emit ServerHello. We have not shown a client completing TLS or exchanging
-  application data with the mismatched transcript.
+  and emit ServerHello. The owner and an independent auditor publicly report
+  handshake completion under the truncated transcript; our current QEMU probe
+  has not independently reproduced beyond ServerHello acceptance.
 - The synthetic RDRAND-cycle demonstration proves only that adjacent-word
   comparison cannot detect every periodic sequence. It does not show that
   physical RDRAND repeats that way.
