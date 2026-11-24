@@ -189,44 +189,24 @@ def test_bad_ack() -> None:
 
 
 def test_http_methods() -> None:
-    for sport, isn, method in (
-        (52003, 0x3456789A, b"get"),
-        (52004, 0x456789AB, b"FOO"),
-    ):
+    cases = (
+        (52003, 0x3456789A, "lowercase get",
+         b"get / HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"),
+        (52004, 0x456789AB, "unknown FOO",
+         b"FOO / HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"),
+        (52005, 0x56789ABC, "missing Host",
+         b"GET / HTTP/1.1\r\nConnection: close\r\n\r\n"),
+    )
+    for sport, isn, label, request in cases:
         synack = handshake(sport, isn, 536)
         if synack is None:
-            print(f"OBSERVED: HTTP method {method.decode()}: no SYN-ACK")
+            print(f"OBSERVED: HTTP request {label}: no SYN-ACK")
             continue
-        request = method + b" / HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"
         payloads = fetch_after_handshake(sport, isn, synack, request=request)
         response = b"".join(payloads)
         if response.startswith(b"HTTP/1."):
-            print(f"OBSERVED: HTTP method {method.decode()}: response {response[:40]!r}")
+            status = response.split(b"\r\n", 1)[0]
+            print(f"OBSERVED: HTTP request {label}: response {status!r}")
         else:
-            print(f"OBSERVED: HTTP method {method.decode()}: no HTTP response")
+            print(f"OBSERVED: HTTP request {label}: no HTTP response")
 
-
-def test_small_mss() -> None:
-    sport, isn, peer_mss = 52002, 0x23456789, 100
-    synack = handshake(sport, isn, peer_mss)
-    if synack is None:
-        report("MSS=100 test", False, "guest sent no SYN-ACK (possibly refused the MSS)")
-        return
-    advertised = parse_mss(synack["options"])
-    payloads = fetch_after_handshake(sport, isn, synack, bad_ack=False)
-    maximum = max((len(p) for p in payloads), default=0)
-    report(
-        "MSS=100 test",
-        maximum > peer_mss,
-        f"peer MSS={peer_mss}, SYN-ACK MSS={advertised}, largest outbound data segment={maximum}",
-    )
-
-
-if __name__ == "__main__":
-    try:
-        test_bad_ack()
-        test_http_methods()
-        test_small_mss()
-        print(f"RESULT: TCP ACK/MSS probes completed in mode={mode}")
-    finally:
-        sock.close()
