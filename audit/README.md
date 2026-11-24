@@ -93,6 +93,7 @@ user namespaces.
 - `public-cross-curve-proof-review.md` and `test_public_proof.py`: review the public DLEQ proof’s serialized fields and intentional `flip` bit, then test both synthetic proof paths, tamper rejection and key-binding checks.
 - `cookie-time-component-review.md` and `syn-cookie-replay-observation.md`: document the source-level no-clock cookie construction, 26-bit keyed-check width, 65-second delayed/replay tests, changed-port rejection, upstream issue #1 finding 14, and conservative threat-model limits. `syn-cookie-reboot-review.md` documents the boot-time HKS/RDRAND path and the new QEMU reset/replay differential; runtime result is pending.
 - `test_syn_cookie_reboot.py` and `run_tap_syn_cookie_reboot.sh`: capture a synthetic SYN cookie, issue QEMU monitor `system_reset` while keeping the TAP interface and tuple, then replay the old ACK and verify a fresh post-reset cookie still works. This is a local reboot/key-rotation regression probe; it uploads no artifacts.
+- `tcp-sequence-window-review.md`: records the exact modular client-sequence admission interval, ACK advancement rules, existing forced-wrap evidence, and remaining FIN/RST edge-coverage gaps. It does not promote untested combinations to findings.
 - `test_tcp_ack_mss.py`: asserts bounty acceptance versus upstream rejection of
   out-of-window ACKs, checks peer-MSS safety boundaries, delays a first SYN-cookie
   ACK, rejects replay under a changed source port, then observes same-tuple
