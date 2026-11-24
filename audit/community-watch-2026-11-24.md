@@ -1189,3 +1189,12 @@ negative controls. The run also completed the finite two-boot nonce sample
 (10,240 + 1,024 unique fingerprints) and the frozen-source TLS framing
 probes. These are bounded CI results, not formal proofs or evidence of
 private-key recovery.
+
+
+The tuple-binding extension is now validated by the three-way run
+https://github.com/miSultanato/k15/actions/runs/45469926754. Frozen bounty,
+first upstream fix and current upstream all reject the same cookie ACK when
+the source port is changed, then accept it again on the original tuple after
+the 65-second FIN/FIN replay interval. All three matrix jobs completed
+successfully. This confirms the replay is tuple-bound rather than a generic
+reusable ACK.
