@@ -69,6 +69,9 @@ jobs:
       - name: Verify fixed upstream image rejects the same malformed framing
         run: bash audit/run_qemu_framing.sh fixed reject
 
+      - name: Run upstream hostile-client regression suite against the fixed image
+        run: bash audit/run_qemu_abuse.sh fixed
+
       - name: Confirm no generated key material or images are uploaded
         run: |
           echo "Both images and generated certificates remain in the ephemeral runner."
