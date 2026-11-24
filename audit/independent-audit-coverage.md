@@ -60,14 +60,29 @@ https://github.com/FileSherlock/k15/issues/1#issuecomment-7081448356
 
 ## Next bounded work, ordered
 
-1. Reproduce findings 9 and 10 against the fixed upstream image for a clean
-   differential baseline; keep the results separate from key disclosure.
-2. Add exact boundary tests for findings 2, 13 and 15 (ACK, MSS, ARP, IPv4).
-3. Characterize finding 8 (dummy ChangeCipherSpec) with the same instrumented
-   local TLS client.
-4. Add low-cost binary assertions for findings 17 and 18.
-5. Only then revisit other gaps. The malformed-ClientHello transcript test
-   still requires a client that hashes exactly the bytes the server processes.
+1. Add assembled-image/listing assertions for findings 17 and 18: actual
+   `apcount` alignment and emitted GDT descriptor Accessed bits. The current
+   successful check is source-level only.
+2. Add a synthetic BIOS E820 response with a wrong SMAP signature for finding
+   19, if the boot harness can inject it without modifying the frozen target.
+3. Extend ACK and MSS tests to boundary values and 32-bit wraparound; current
+   TAP coverage is one deliberately out-of-window ACK and MSS=100.
+4. Complete the post-HelloRetryRequest second-ClientHello and CCS differential
+   for finding 8.
+5. Extend the authenticated TLSInnerPlaintext differential to more padding
+   lengths and confirm exact fatal-alert/connection teardown semantics.
+6. For finding 20, extend the Make-level `NAME=$(hostname)` regression to an
+   ephemeral generated certificate and assert the resulting SAN.
+7. Reproduce the short-site W^X result with an emitted-image page-table/NX
+   assertion, in addition to the successful runtime `RET` probe.
+8. Test stale SYN-cookie ACK replay after connection teardown and controlled
+   delay for finding 14. The current cookie review is source-level only.
+
+The TLS Finished/AEAD behavior (findings 9–10), HTTP Host/method behavior
+(finding 12 and part of 4), ECDSA nonce boundaries (16), short-site W^X (1),
+and authenticated TLSInnerPlaintext handling (11) already have local
+differential evidence. The malformed-ClientHello transcript experiment still
+requires a client that hashes exactly the bytes the server processes.
 
 ## Safety and branch discipline
 
