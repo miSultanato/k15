@@ -12,9 +12,12 @@ import ssl
 import sys
 from pathlib import Path
 
-if len(sys.argv) != 2:
-    raise SystemExit("usage: test_tls_record_rejection.py TARGET")
+if len(sys.argv) not in (2, 3):
+    raise SystemExit("usage: test_tls_record_rejection.py TARGET [expect|observe]")
 
+mode = sys.argv[2] if len(sys.argv) == 3 else "expect"
+if mode not in {"expect", "observe"}:
+    raise SystemExit("mode must be expect or observe")
 target = Path(sys.argv[1]).resolve()
 sys.path.insert(0, str(target / "tools"))
 import tlsclient  # noqa: E402
@@ -111,6 +114,8 @@ def read_http(sock: socket.socket, inc: ssl.MemoryBIO, tls: ssl.SSLObject) -> by
             inc.write(incoming)
         except ssl.SSLZeroReturnError:
             break
+        except ssl.SSLError:
+            break
     return bytes(response)
 
 
@@ -129,12 +134,15 @@ def test_corrupt_client_finished() -> None:
         app = send_application(tls, out, sock)
         sock.sendall(app)
         response = read_http(sock, inc, tls)
-        if not response.startswith(b"HTTP/1."):
+        accepted = response.startswith(b"HTTP/1.")
+        if mode == "expect" and not accepted:
             raise SystemExit(
                 "FAIL: after corrupted client Finished, no HTTP response; "
                 f"received={response[:80]!r}"
             )
-        print("PASS: server processed application data after a corrupted client Finished")
+        print(("PASS" if accepted else "OBSERVED") + ": " +
+              ("server processed" if accepted else "server did not process") +
+              " application data after a corrupted client Finished")
     finally:
         sock.close()
 
@@ -150,12 +158,15 @@ def test_bad_application_tag() -> None:
         sock.sendall(mutate_last_application_record(app))
         sock.sendall(app)
         response = read_http(sock, inc, tls)
-        if not response.startswith(b"HTTP/1."):
+        accepted = response.startswith(b"HTTP/1.")
+        if mode == "expect" and not accepted:
             raise SystemExit(
                 "FAIL: valid same-sequence app record after bad tag was not processed; "
                 f"received={response[:80]!r}"
             )
-        print("PASS: server ignored a bad AEAD tag and processed the valid same-sequence record")
+        print(("PASS" if accepted else "OBSERVED") + ": " +
+              ("server ignored the bad AEAD tag and processed" if accepted else
+               "server did not process") + " the valid same-sequence record")
     finally:
         sock.close()
 
@@ -163,4 +174,4 @@ def test_bad_application_tag() -> None:
 if __name__ == "__main__":
     test_corrupt_client_finished()
     test_bad_application_tag()
-    print("RESULT: TLS Finished / AEAD rejection probes passed against local QEMU guest")
+    print(f"RESULT: TLS Finished / AEAD rejection probes completed in mode={mode}")
