@@ -630,3 +630,12 @@ full disk-image build, and this local QEMU test.
 The upstream `dev` branch contains the corresponding rejection check and
 regression tests (commit `a2d8893`); the bounty image remains frozen and
 does not contain that fix.
+
+
+## Unavailable third-party artefact
+
+The Reddit thread also links an overnight Fable attempt at
+https://pastebin.com/izRBKd02 and says it found no exploit. The Pastebin
+page and its raw endpoint were inaccessible during this review, and search
+did not surface a mirror. We therefore record only that the link was posted;
+we have not read, validated or relied on its contents.
