@@ -23,12 +23,12 @@ if len(sys.argv) != 2:
 
 target = Path(sys.argv[1]).resolve()
 sys.path.insert(0, str(target / "tools"))
-from tlsclient import B as BUILD, BioClient, context  # noqa: E402
+from tlsclient import BioClient, context  # noqa: E402
 
 HOST = "127.0.0.1"
 PORT = 8443
 EXPECT = (target / "www" / "index.html").read_bytes()
-REQUEST = b"GET / HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n"
+REQUEST = b"GET / HTTP/1.1\r\nHost: x\r\n\r\n"
 
 
 class Client(BioClient):
