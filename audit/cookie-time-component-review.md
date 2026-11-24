@@ -25,7 +25,7 @@ A local TAP test now holds a synthetic SYN-ACK for 65 seconds before sending its
 
 [Run 45443282691](https://github.com/miSultanato/k15/actions/runs/45443282691) completes a local port-80 exchange and a full client-FIN/server-FIN close on all three pinned images. It then replays the original cookie ACK and sends a request with a different length. The server ACK equals the new request's end sequence on all three, proving that the replay created a fresh slot and the new payload was consumed.
 
-That response alone is **not conclusive**: the port-80 handler serves one fixed response and does not distinguish request methods or paths. A retransmission of the old response could look identical to a newly allocated connection. The current follow-up adds a 65-second wait after the completed teardown before replaying that same cookie, to measure whether the replay remains valid after a further interval.
+That response alone is **not conclusive**: the port-80 handler serves one fixed response and does not distinguish request methods or paths. A retransmission of the old response could look identical to a newly allocated connection. [Three-way run 45443936657](https://github.com/miSultanato/k15/actions/runs/45443936657) adds a 65-second wait after the completed teardown before replaying that same cookie. All three images accept the replay and acknowledge the longer second request at its exact end sequence. The cookie therefore remains replayable for at least 65 seconds after teardown in these local tests.
 
 ## Safe scope
 
