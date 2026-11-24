@@ -1030,8 +1030,10 @@ For both cases our QEMU regression checks confirm ServerHello acceptance.
 A purpose-built Python TLS 1.3 client is now committed in
 `audit/test_malformed_clienthello_handshake.py`. It constructs both variants
 before hashing: the complete malformed inner-length message, and the
-outer-record prefix actually processed by the server (with the final byte
-sent outside the record). It then verifies CertificateVerify and Finished,
+outer-record prefix actually processed by the server. The excluded final
+`0x17` byte is stitched into the next client Finished record as its TLS
+content-type byte, preserving a valid TCP/TLS stream. It then verifies
+CertificateVerify and Finished,
 sends an encrypted HTTP request, and expects HTTP 200 on the frozen image;
 the fixed images must reject both with fatal decode_error. A separate patched
 Go `crypto/tls` client independently cross-checks the inner-short case and
