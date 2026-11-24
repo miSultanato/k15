@@ -17,7 +17,7 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 | Finding | Frozen bounty | First fix `a2d8893` | Current upstream main `cb9f76a` | Evidence |
 | --- | --- | --- | --- | --- |
-| Short-site W^X | Executes a synthetic `RET` at the end of a one-file site and continues serving | Execution faults before service | Same as first fix | [three-way QEMU test](https://github.com/miSultanato/k15/actions/runs/45409649945) |
+| Short-site W^X | Emitted final site byte is executable (`site_page=0x103 < CODEPG=0x104`); synthetic `RET` executes and guest continues serving | Emitted site page is NX (`site_page=0x104 = CODEPG=0x104`); guest faults before service | Same as first fix | [emitted-layout + three-way QEMU test](https://github.com/miSultanato/k15/actions/runs/45439460997) |
 | ClientHello framing | Accepts five malformed cases | Rejects all five with fatal `decode_error` | Same rejection | [initial](https://github.com/miSultanato/k15/actions/runs/45381737629), [current comparison](https://github.com/miSultanato/k15/actions/runs/45401470623) |
 | ClientHello fields | Accepts 33-byte and 255-byte session IDs, non-null compression and wrong handshake type; echoes legacy_version 0x0301 | Rejects both oversized session IDs and non-null compression; rejects wrong type; responds with legacy_version 0x0303 | Same as first fix | [three-way framing/HRR run](https://github.com/miSultanato/k15/actions/runs/45436733972) |
 | Client Finished | Corrupted Finished followed by valid application data still gets HTTP | Same behavior | Same behavior | [first fix](https://github.com/miSultanato/k15/actions/runs/45394628025), [current main](https://github.com/miSultanato/k15/actions/runs/45401470623) |
@@ -75,11 +75,12 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 ## Next work
 
-1. Add an emitted page-table/NX assertion for the short-site W^X layout; the
-   runtime synthetic-RET differential is already reproduced.
-2. If useful, test a stale SYN-cookie ACK after a synthetic connection is fully
+1. If useful, test a stale SYN-cookie ACK after a synthetic connection is fully
    torn down. The existing 65-second delayed-first-ACK test passes on all three
    revisions and does not prove post-teardown replay.
+2. Complete the malformed-ClientHello transcript experiment with a client that
+   hashes exactly the bytes the server processes; parser acceptance/rejection
+   is covered, but a mismatched-transcript handshake is not yet demonstrated.
 3. Continue assessing the short-ARP stale-buffer disclosure only with synthetic
    data. Do not attempt to access production memory.
 
