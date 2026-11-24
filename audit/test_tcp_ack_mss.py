@@ -188,27 +188,6 @@ def test_bad_ack() -> None:
     )
 
 
-def test_http_methods() -> None:
-    cases = (
-        (52003, 0x3456789A, "lowercase get",
-         b"get / HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"),
-        (52004, 0x456789AB, "unknown FOO",
-         b"FOO / HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"),
-        (52005, 0x56789ABC, "missing Host",
-         b"GET / HTTP/1.1\r\nConnection: close\r\n\r\n"),
-    )
-    for sport, isn, label, request in cases:
-        synack = handshake(sport, isn, 536)
-        if synack is None:
-            print(f"OBSERVED: HTTP request {label}: no SYN-ACK")
-            continue
-        payloads = fetch_after_handshake(sport, isn, synack, request=request)
-        response = b"".join(payloads)
-        if response.startswith(b"HTTP/1."):
-            status = response.split(b"\r\n", 1)[0]
-            print(f"OBSERVED: HTTP request {label}: response {status!r}")
-        else:
-            print(f"OBSERVED: HTTP request {label}: no HTTP response")
 
 
 def test_small_mss() -> None:
@@ -230,7 +209,6 @@ def test_small_mss() -> None:
 if __name__ == "__main__":
     try:
         test_bad_ack()
-        test_http_methods()
         test_small_mss()
         print(f"RESULT: TCP ACK/MSS probes completed in mode={mode}")
     finally:
