@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 
 if len(sys.argv) not in (2, 3):
-    raise SystemExit("usage: test_arp_short_frame.py TARGET [expect|observe]")
+    raise SystemExit("usage: test_arp_short_frame.py TARGET [expect|reject]")
 
 mode = sys.argv[2] if len(sys.argv) == 3 else "expect"
 if mode not in {"expect", "reject"}:
