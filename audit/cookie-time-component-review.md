@@ -11,7 +11,7 @@ This is a source-level review, not a demonstrated remote replay exploit.
 
 - At `src/os.asm:828-831`, the eleven AES round keys for `prf` are filled once at boot by `rand` into `HKS`.
 - At `src/os.asm:2960-2974`, `prf` hashes the client's and server's address/port tuple with those boot-random round keys. Its four output words include `HKO+8`, which the TCP code uses as the cookie secret.
-- In the SYN path (around `src/os.asm:2320-2360`), the server sequence/cookie is formed from the client's initial sequence number, `HKO+8`, and the negotiated MSS/window-scale bits.
+- In the SYN path (around `src/os.asm:1498-1520`), the server sequence/cookie is formed from the client's initial sequence number, `HKO+8`, and the negotiated MSS/window-scale bits.
 - At `src/os.asm:2975-2990`, `ckx` recomputes the cookie from the packet's sequence number and `HKO+8`, then compares it with the ACK. The check contains no read of `TNOW`, `NOW`, `BORN`, or any timestamp bucket.
 - `tnote`/`tidle` (around `src/os.asm:2725-2795`) timestamp cached SYNs for retransmission. That is a separate retransmission cache; it does not add an age term to `ckx`.
 
