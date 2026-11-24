@@ -63,10 +63,11 @@ https://github.com/FileSherlock/k15/issues/1#issuecomment-7081448356
 1. If stronger W^X evidence is needed, add a QEMU live page-table read for the
    short-site mapping. The emitted-image CODEPG calculation and synthetic-RET
    runtime differential already agree; neither reads the live PTE directly.
-2. Run and inspect the valid-ARP priming regression in
-   `test_arp_short_frame.py`. The earlier synthetic-marker probe passed, but
-   the new test uses 512 full synthetic ARP requests and drains their ordinary
-   replies before sending the 24-byte frame. Its three-way TAP run is pending.
+2. Inspect the valid-ARP priming regression in `test_arp_short_frame.py`.
+   Run 45463654039 confirmed the stale marker on the frozen bounty and no
+   marker on the first upstream fix; the current-upstream leg lost packets
+   during the old 512-frame burst. A paced rerun using 512 batches of 64
+   requests is running as 45464009546.
 3. Expand the one-byte inner/outer ClientHello truncation vectors only if
    additional offsets materially clarify the parser boundary. Both current
    vectors already complete TLS 1.3 on bounty and are rejected upstream.
