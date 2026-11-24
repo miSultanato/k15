@@ -1175,3 +1175,17 @@ gate prevents.
 
 See `audit/ipv4-arp-validation-review.md`. Keep these observations
 low-priority and do not overstate them as confirmed vulnerabilities.
+
+
+## Bounded audit CI result (2026-11-24)
+
+The complete `k15 bounded audit` workflow passed:
+https://github.com/miSultanato/k15/actions/runs/45460761523
+
+The log confirms the expanded private-scalar path checks, byte-for-byte
+reconstruction of the 14 VM programs / 1,816-byte generated include, the
+packed-SITE read-path guard, the normal Valgrind run and all six deliberate
+negative controls. The run also completed the finite two-boot nonce sample
+(10,240 + 1,024 unique fingerprints) and the frozen-source TLS framing
+probes. These are bounded CI results, not formal proofs or evidence of
+private-key recovery.
