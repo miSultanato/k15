@@ -1,0 +1,56 @@
+name: k15 synthetic scalar guest-memory scan
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - audit/qemu_memory_scan.py
+      - audit/run_tap_memory_scan.sh
+      - .github/workflows/memory-scan.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k15-synthetic-memory-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Check out audit harness
+        uses: actions/checkout@v4
+
+      - name: Check out frozen bounty source
+        uses: actions/checkout@v4
+        with:
+          repository: FileSherlock/k15
+          ref: ab93479ebc7c85274c722b16897148286d1cfca3
+          path: target
+          persist-credentials: false
+
+      - name: Verify exact bounty revision
+        working-directory: target
+        run: test "$(git rev-parse HEAD)" = "ab93479ebc7c85274c722b16897148286d1cfca3"
+
+      - name: Install QEMU and TAP dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends nasm qemu-system-x86 iproute2 gcc libssl-dev curl
+          python3 -m pip install --disable-pip-version-check cryptography
+
+      - name: Build image with runner-generated synthetic certificate
+        working-directory: target
+        run: make all
+
+      - name: Verify CertificateVerify nonces and scan guest RAM
+        run: sudo unshare -n bash audit/run_tap_memory_scan.sh target 1024
+
+      - name: Confirm memory snapshot is not uploaded
+        run: |
+          echo "Guest RAM snapshot is deleted after scanning."
+          echo "No key material, memory image or other artifact is uploaded."
