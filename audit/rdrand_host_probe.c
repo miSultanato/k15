@@ -8,6 +8,12 @@ struct tuple {
     uint64_t q[4];
 };
 
+static int u64_cmp(const void *aa, const void *bb) {
+    uint64_t a = *(const uint64_t *)aa;
+    uint64_t b = *(const uint64_t *)bb;
+    return a < b ? -1 : a > b ? 1 : 0;
+}
+
 static int tuple_cmp(const void *aa, const void *bb) {
     const struct tuple *a = aa;
     const struct tuple *b = bb;
@@ -74,12 +80,19 @@ int main(int argc, char **argv) {
         if (tuple_cmp(&tuples[i - 1], &tuples[i]) == 0) ++repeated_tuples;
     }
 
+    qsort(values, (size_t)count, sizeof(*values), u64_cmp);
+    unsigned long long repeated_qwords = 0;
+    for (unsigned long long i = 1; i < count; ++i) {
+        if (values[i - 1] == values[i]) ++repeated_qwords;
+    }
+
     printf("Native runner RDRAND samples: %llu\n", count);
     printf("Adjacent equal qwords: %llu\n", adjacent);
     printf("Equal qwords at distance four: %llu\n", lag4);
+    printf("Repeated qwords anywhere: %llu\n", repeated_qwords);
     printf("Repeated four-qword nonce tuples: %llu / %zu\n", repeated_tuples, tuple_count);
     puts("LIMIT: this is the runner's exposed RDRAND, not the production host CPU");
     free(tuples);
     free(values);
-    return (adjacent || lag4 || repeated_tuples || failures) ? 1 : 0;
+    return (adjacent || lag4 || repeated_qwords || repeated_tuples || failures) ? 1 : 0;
 }
