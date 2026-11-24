@@ -1277,3 +1277,18 @@ formal zero-knowledge proof or a cryptanalytic reduction. The only
 intentionally exposed predicate remains the `flip` bit, which is zero in
 the committed proof because `--gen` constrains the generated scalar below
 `2^255`.
+
+
+## Follow-up check — 2026-11-24, evening
+
+A fresh GitHub check found upstream Issue #1 closed, last updated 2026-11-22,
+with the maintainer's two existing response comments and no pull requests in
+`FileSherlock/k15`. No newer maintainer response or public PR was visible in
+that check. This is a repository-state observation, not evidence that every
+listed item is resolved in the frozen bounty image.
+
+The new SYN-cookie reboot review also traced the full static initialization
+path: `start.asm` clears BSS on boot, `HKS` is allocated inside BSS, and
+`setup.asm` repopulates it with RDRAND. The QEMU `system_reset` differential
+workflow is committed in the audit fork, but its runtime result remains
+unverified; no pass is claimed. See `syn-cookie-reboot-review.md`.
