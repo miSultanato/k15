@@ -76,8 +76,8 @@ user namespaces.
   over the TLS listener, exercising the decrypted HTTPS request parser.
 - `test_ip_arp_validation.py`: sends synthetic IPv4 SYNs with valid/invalid
   header checksums and ARP requests with malformed hardware/protocol fields over TAP.
-- `test_arp_short_frame.py`: primes RX buffers with a synthetic marker, then
-  checks whether a 24-byte ARP request discloses stale bytes. See
+- `test_arp_short_frame.py`: primes RX buffers with full synthetic ARP requests,
+  drains their normal replies, then checks whether a 24-byte ARP request discloses stale bytes. See
   `arp-short-frame-impact.md` for the exact eight-byte disclosure and threat-model limits.
 - `test_tcp_ack_mss.py`: sends a data-bearing segment with an out-of-window ACK,
   tests peer-MSS boundaries, delays a first SYN-cookie ACK, then replays the same
