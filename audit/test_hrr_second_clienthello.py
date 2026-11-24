@@ -32,3 +32,6 @@ print(
 )
 if not trace.strip():
     raise SystemExit("FAIL: OpenSSL produced an empty trace")
+if not hrr_present or len(client_hellos) < 2:
+    print("TRACE TAIL:")
+    print("\\n".join(trace.splitlines()[-18:]))
