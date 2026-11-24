@@ -243,3 +243,88 @@ The boot-time 22-qword draw changes the starting phase, not the period-4
 property: any four consecutive outputs in a period-4 stream form the same
 four-word block. The expanded script now models the 22-qword boot prefix
 and the 8 extra handshake qwords for this period-4 case.
+
+
+## Community status update (reviewed 2026-11-24)
+
+The Reddit bounty thread has attracted several substantive independent
+write-ups, not merely casual speculation:
+
+- One auditor reports approximately 10,200 TLS 1.3 handshakes against a
+  local SMP=4 QEMU image, 4,096 recovered nonces, two boots and 2,048
+  signatures across boots, no repeated nonce or useful statistical bias,
+  plus a 229-case ClientHello parser exercise. The author says the private
+  scalar was absent from a 256 MiB guest-memory dump while the masked form
+  appeared six times. This is a detailed self-report; no public harness,
+  raw nonce corpus or independently reproducible artifact was linked in
+  the comment.
+- Another write-up maps the scalar to register D in the curve VM and says
+  only the SIGN multiplication reads it. It describes the TLS record parser,
+  table lookups and Valgrind constant-time checks as dead ends.
+- A separate proof-focused review reports no usable leakage from the
+  cross-curve Pedersen/DLEQ proof after follow-up sampling; the apparent
+  first-run signal disappeared in a larger second sample.
+- The project owner confirmed that several low-severity findings from
+  Issue #1 were fixed on main, while the bounty branch remains the frozen
+  deployment target. The owner also clarified that split ClientHello
+  rejection is an intentional size/scope shortcut.
+
+The bounty announcement is also being reposted by Hacker News aggregators
+and AI/developer use-case sites, so visibility is increasing. Those
+reposts are summaries, not additional security research or independent
+findings.
+
+Sources:
+- Reddit bounty thread and auditor reports:
+  https://www.reddit.com/r/securityCTF/comments/1y1fjej/200_in_bitcoin_if_you_can_get_the_tls_key_out_of/
+- GitHub security/conformance audit:
+  https://github.com/FileSherlock/k15/issues/1
+- Project's current operating rules and bounty boundary:
+  https://github.com/FileSherlock/k15/blob/main/CLAUDE.md
+- Hacker News aggregator mention:
+  https://geezer.io/p/3511
+
+## Private-scalar read-path review (our static pass)
+
+The pinned bounty source at ab93479 gives a more precise, finite
+read-path question than the generic memory-disclosure search:
+
+1. REGS is a processor-local BSS bank. R_D is register 14
+   (REGS + 14*32), and the source has one declaration plus one explicit
+   initialization copy into it.
+2. Boot copies eight qwords from the generated constants into R_D.
+   The generated value is the masked scalar d·R mod n, not plaintext d.
+3. tools/ec.py defines the curve programs at build time. Of all the
+   program bodies, only SIGN names register D, in the single operation
+   T0 = X * D.
+4. sign selects the fixed X_SIGN program. ecinit expands the compile-time
+   bytecode into XP; .reg maps a register index with and eax, 15,
+   then multiplies by 32 and adds REGS. This bounds a decoded register
+   address to one of the 16 registers in the bank.
+5. The packet-derived hash and nonce influence arithmetic inputs, but the
+   inspected source does not use either as a VM program pointer or as a
+   register index for the SIGN program.
+
+This is a promising negative result, not a proof that the entire binary has
+no secret-dependent read path. Remaining work is to connect the static
+program-generation checks to the exact assembled ec.inc and to review
+the VM's callers and all indirect address formation, including the table
+selection paths. The source audit does not inspect the production image,
+runtime register contents, or the hypervisor's memory.
+
+The new CI checker is intended to make the core invariants reproducible:
+audit/check_key_read_path.py runs against the pinned source and
+tools/ec.py. Its result is pending at the time this note is written.
+
+## Revised priority
+
+1. Finish and independently inspect the static read-site audit around
+   R_D / D, X_SIGN, XP, and vm.
+2. Compare generated curve-program bytes in the frozen image with the
+   source-level tools/ec.py definitions. Do not attempt to recover or
+   reconstruct the private scalar.
+3. Deprioritize broad RDRAND cycle speculation unless a public hardware or
+   hypervisor erratum matches the actual host model, or a reproducible local
+   experiment produces a concrete anomalous stream.
+4. Keep all dynamic testing local and bounded. No load, fuzzing, malformed
+   handshake campaign, or denial-of-service testing against 15kb.org.
