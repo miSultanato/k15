@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Local TAP tests for ACK-window handling and peer-MSS enforcement.
 
-Usage: test_tcp_ack_mss.py TARGET [expect|observe]
+Usage: test_tcp_ack_mss.py TARGET [expect|reject|wrap-expect|wrap-reject]
 The tests use raw synthetic TCP segments to the QEMU guest only.
 """
 from __future__ import annotations
@@ -18,8 +18,11 @@ if len(sys.argv) not in (2, 3):
     raise SystemExit("usage: test_tcp_ack_mss.py TARGET [expect|observe]")
 
 mode = sys.argv[2] if len(sys.argv) == 3 else "expect"
-if mode not in {"expect", "observe", "wrap"}:
-    raise SystemExit("mode must be expect or observe")
+if mode not in {"expect", "reject", "wrap-expect", "wrap-reject"}:
+    raise SystemExit("mode must be expect, reject, wrap-expect or wrap-reject")
+
+WRAP_MODE = mode.startswith("wrap-")
+EXPECT_ACCEPT = mode in {"expect", "wrap-expect"}
 
 GUEST_IP = socket.inet_aton("10.0.2.15")
 HOST_IP = socket.inet_aton("10.64.0.1")
@@ -168,21 +171,20 @@ def fetch_after_handshake(
     return payloads
 
 
-def report(label: str, success: bool, detail: str) -> None:
-    if mode == "expect" and not success:
-        raise SystemExit(f"FAIL: {label}: {detail}")
-    prefix = "PASS" if mode == "expect" and success else "OBSERVED"
-    print(f"{prefix}: {label}: {detail}")
+def report(label: str, observed: bool, detail: str, expected: bool = True) -> None:
+    if observed != expected:
+        expectation = "accept" if expected else "reject"
+        raise SystemExit(f"FAIL: {label}: expected {expectation}; {detail}")
+    print(f"PASS: {label}: {detail}")
 
 
 def test_bad_ack() -> None:
     sport, isn = 52001, 0x12345678
     synack = handshake(sport, isn, 536)
     if synack is None:
-        report("ACK-window test", False, "no SYN-ACK for control connection")
-        return
+        raise SystemExit("FAIL: no SYN-ACK for ACK-window control connection")
     server_next = (synack["seq"] + 1) & 0xFFFFFFFF
-    if mode == "wrap":
+    if WRAP_MODE:
         print(f"OBSERVED: forced-wrap server ISS=0x{synack['seq']:08x}, SND.NXT=0x{server_next:08x}")
         if server_next < 0xFFFF0000:
             raise SystemExit(f"FAIL: forced-wrap image did not place SND.NXT near 2^32: 0x{server_next:08x}")
@@ -194,6 +196,7 @@ def test_bad_ack() -> None:
         "HTTP response received after an ACK beyond server SND.NXT"
         if response.startswith(b"HTTP/1.")
         else f"no HTTP response; captured {len(response)} payload bytes",
+        expected=EXPECT_ACCEPT,
     )
 
 
@@ -206,17 +209,31 @@ def test_mss_boundary_matrix() -> None:
         sport = 52200 + index
         isn = 0x56780000 + index
         synack = handshake(sport, isn, peer_mss)
-        if synack is None:
-            print(f"OBSERVED: peer MSS={peer_mss}: no SYN-ACK")
+        accepted = synack is not None and (synack["flags"] & 0x12) == 0x12
+        expected_synack = EXPECT_ACCEPT or peer_mss >= 216
+        if accepted != expected_synack:
+            raise SystemExit(
+                f"FAIL: peer MSS={peer_mss}: SYN-ACK observed={accepted}, "
+                f"expected={expected_synack}"
+            )
+        if not accepted:
+            print(f"PASS: peer MSS={peer_mss}: SYN rejected below the 216-byte minimum")
             continue
         advertised = parse_mss(synack["options"])
         payloads = fetch_after_handshake(sport, isn, synack, bad_ack=False)
         maximum = max((len(payload) for payload in payloads), default=0)
+        if EXPECT_ACCEPT and peer_mss < 180 and maximum <= peer_mss:
+            raise SystemExit(
+                f"FAIL: bounty no longer emits a segment larger than peer MSS={peer_mss}"
+            )
+        if not EXPECT_ACCEPT and maximum > peer_mss:
+            raise SystemExit(
+                f"FAIL: fixed image emitted {maximum} bytes above peer MSS={peer_mss}"
+            )
         print(
-            f"OBSERVED: peer MSS={peer_mss}, SYN-ACK MSS={advertised}, "
+            f"PASS: peer MSS={peer_mss}, SYN-ACK MSS={advertised}, "
             f"largest outbound TCP payload={maximum}"
         )
-
 
 
 def test_delayed_syn_cookie() -> None:
@@ -225,8 +242,7 @@ def test_delayed_syn_cookie() -> None:
     sport, isn = 52003, 0x3456789A
     synack = handshake(sport, isn, 536)
     if synack is None:
-        report("delayed SYN-cookie test", False, "no SYN-ACK for synthetic SYN")
-        return
+        raise SystemExit("FAIL: no SYN-ACK for delayed SYN-cookie control SYN")
     delay = 65
     print(f"OBSERVED: holding the synthetic SYN-ACK for {delay}s before its first ACK")
     time.sleep(delay)
@@ -238,6 +254,7 @@ def test_delayed_syn_cookie() -> None:
         f"the ACK was accepted after {delay}s and the HTTP request was processed"
         if response.startswith(b"HTTP/1.")
         else f"no HTTP response after {delay}s; captured {len(response)} payload bytes",
+        expected=True,
     )
 
 
@@ -361,10 +378,9 @@ def test_ack_boundary_matrix() -> None:
         isn = 0x45670000 + index
         synack = handshake(sport, isn, 536)
         if synack is None:
-            print(f"OBSERVED: ACK delta +{delta}: no SYN-ACK for control connection")
-            continue
+            raise SystemExit(f"FAIL: no SYN-ACK for ACK delta +{delta} control connection")
         server_next = (synack["seq"] + 1) & 0xFFFFFFFF
-        if mode == "wrap":
+        if WRAP_MODE:
             print(f"OBSERVED: ACK boundary server SND.NXT=0x{server_next:08x}")
             if server_next < 0xFFFF0000:
                 raise SystemExit(f"FAIL: forced-wrap SND.NXT not near 2^32: 0x{server_next:08x}")
@@ -372,8 +388,14 @@ def test_ack_boundary_matrix() -> None:
             sport, isn, synack, bad_ack=False, ack_delta=delta
         )
         response = b"".join(payloads)
-        result = "HTTP processed" if response.startswith(b"HTTP/1.") else "no HTTP payload"
-        print(f"OBSERVED: ACK delta +{delta} beyond SND.NXT: {result}")
+        observed = response.startswith(b"HTTP/1.")
+        result = "HTTP processed" if observed else "no HTTP payload"
+        if observed != EXPECT_ACCEPT:
+            raise SystemExit(
+                f"FAIL: ACK delta +{delta} beyond SND.NXT: {result}; "
+                f"expected accept={EXPECT_ACCEPT}"
+            )
+        print(f"PASS: ACK delta +{delta} beyond SND.NXT: {result}")
 
 
 
@@ -381,7 +403,7 @@ def test_small_mss() -> None:
     sport, isn, peer_mss = 52002, 0x23456789, 100
     synack = handshake(sport, isn, peer_mss)
     if synack is None:
-        report("MSS=100 test", False, "guest sent no SYN-ACK (possibly refused the MSS)")
+        report("MSS=100 test", False, "guest sent no SYN-ACK", expected=EXPECT_ACCEPT)
         return
     advertised = parse_mss(synack["options"])
     payloads = fetch_after_handshake(sport, isn, synack, bad_ack=False)
@@ -390,6 +412,7 @@ def test_small_mss() -> None:
         "MSS=100 test",
         maximum > peer_mss,
         f"peer MSS={peer_mss}, SYN-ACK MSS={advertised}, largest outbound data segment={maximum}",
+        expected=EXPECT_ACCEPT,
     )
 
 
@@ -397,7 +420,7 @@ if __name__ == "__main__":
     try:
         test_bad_ack()
         test_ack_boundary_matrix()
-        if mode != "wrap":
+        if not WRAP_MODE:
             test_small_mss()
             test_mss_boundary_matrix()
             test_delayed_syn_cookie()
