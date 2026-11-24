@@ -9,8 +9,10 @@ Target: frozen `FileSherlock/k15` bounty image
 
 The local TAP differential in run
 [45443936657](https://github.com/miSultanato/k15/actions/runs/45443936657)
-primes a receive buffer with synthetic bytes, sends a 24-byte ARP request,
-and observes the reply:
+primed a receive buffer with a synthetic marker frame, sent a 24-byte ARP
+request, and observed the marker in the reply. That run used a non-IP
+Ethernet frame as the primer; it demonstrated stale-buffer reuse, not a
+natural victim packet.
 
 - Frozen bounty: the reply contains the synthetic stale-buffer marker.
 - First upstream fix and current upstream main: no marker reply is observed.
@@ -92,8 +94,9 @@ three-way synthetic differential confirms the guard's observed effect.
 
 ## Safe follow-up
 
-If further validation is useful, extend only the local TAP test with a
-synthetic full ARP request as the preceding frame (rather than only the
-0x88b5 marker frame), then send the 24-byte short request and assert the
-eight-byte stale suffix in the reply. Keep the test on the local guest,
-use synthetic MAC/IP values, and upload no packet captures or artifacts.
+The follow-up is implemented in `test_arp_short_frame.py`: it primes the
+single-queue RX ring with full synthetic ARP requests, drains their ordinary
+replies, then sends 24-byte short requests and checks for the stale suffix.
+The next step is to run the existing three-way TAP workflow and inspect its
+logs. Keep all traffic on the local guest, use synthetic MAC/IP values, and
+upload no packet captures or artifacts.
