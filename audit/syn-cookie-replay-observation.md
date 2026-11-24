@@ -52,8 +52,16 @@ expanded test now replays the same ACK under a different source port before
 the 65-second same-tuple replay; all three images reject the changed-port
 attempt and accept the original tuple. This is direct evidence of tuple
 binding in the tested IPv4 path. The observed 65-second replay shows that the
-cookie remains valid beyond the short SYN retransmission-cache interval; it
-does not establish validity across reboots or key rotation.
+cookie remains valid beyond the short SYN retransmission-cache interval.
+
+The separate reboot differential now confirms the other side of that
+lifecycle: after a local QEMU `system_reset`, all three images issue a
+different cookie for the same tuple and client ISN, reject the pre-reset ACK,
+and accept a fresh post-reset ACK. See
+[run 45486557359](https://github.com/miSultanato/k15/actions/runs/45486557359)
+and `syn-cookie-reboot-review.md`. Thus the tested cookie is replayable
+within one boot, but the tested boot-time key regeneration invalidates it
+across a full guest reset.
 
 ## Interpretation
 
@@ -63,9 +71,12 @@ impact not yet established.**
 This is distinct from the confirmed stale-buffer ARP disclosure and the
 frozen-only ACK-window acceptance defect:
 
-- It reproduces on the frozen bounty and both upstream revisions.
+- It reproduces on the frozen bounty and both upstream revisions within one
+  boot.
+- A separate three-way reset test confirms that the same cookie does not
+  survive the tested full guest reset/key regeneration.
 - It does not distinguish the vulnerable frozen image from the fixed/current
-  images in this test.
+  images in the same-boot replay test.
 - It requires the original cookie ACK (or equivalent knowledge of the
   authenticated tuple, client sequence and cookie); the same ACK under a
   different source port is rejected by all three tested images.
