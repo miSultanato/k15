@@ -730,3 +730,34 @@ We have not yet demonstrated successful completion of the TLS handshake,
 a usable session, a key leak, or a memory-safety impact. These remain
 protocol-validation/transcript-consistency findings, not a bounty-winning
 key-recovery result.
+
+
+## Differential QEMU validation of the upstream fix (confirmed)
+
+The new workflow
+https://github.com/miSultanato/k15/actions/runs/45381737629
+builds and boots both source revisions independently under QEMU TCG:
+
+- Frozen bounty: `ab93479ebc7c85274c722b16897148286d1cfca3`
+- Upstream fix: `a2d8893261b2be15b44c86d6f4483d65820e943a`
+
+It sends the exact same five malformed ClientHello framing cases to each
+image, using localhost only. Results:
+
+| Case | Frozen bounty | Upstream fix |
+| --- | --- | --- |
+| Inner length zero | ServerHello | fatal decode_error |
+| Inner length one byte short | ServerHello | fatal decode_error |
+| Inner length one byte long | ServerHello | fatal decode_error |
+| Inner length 0xFFFFFF | ServerHello | fatal decode_error |
+| Outer record length one byte short | ServerHello | fatal decode_error |
+
+All ten assertions passed. Both images were built in the ephemeral runner;
+no image, certificate, private key or build artifact was uploaded.
+
+This is strong differential evidence that the upstream patch fixes the
+specific framing-validation discrepancy on the tested source revisions.
+It confirms rejection at the ClientHello parser, not a successful exploit
+against the bounty version. It does not demonstrate private-key recovery,
+memory corruption, or successful application-data exchange using a
+mismatched transcript.
