@@ -22,6 +22,8 @@ def main() -> None:
 
     blocked = (
         "cert/server.key",
+        "cert-15kb.org/server.key",
+        "nested/cert-15kb.org/bounty-server.pem",
         "build/os.bin",
         "build-example.org/disk.img",
         "audit/regs.inc",
