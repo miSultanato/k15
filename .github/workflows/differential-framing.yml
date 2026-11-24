@@ -9,6 +9,7 @@ on:
       - audit/test_clienthello_framing.py
       - audit/test_tls_record_rejection.py
       - audit/test_dummy_ccs.py
+      - audit/test_https_request.py
       - audit/run_qemu_framing.sh
       - .github/workflows/differential-framing.yml
 
