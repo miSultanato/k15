@@ -169,32 +169,32 @@ def make_client_hello(variant: str) -> tuple[bytes, x25519.X25519PrivateKey, byt
 
     extensions = b"".join(
         (
-            extension(43, b"\\x02\\x03\\x04"),                 # TLS 1.3
-            extension(10, b"\\x00\\x02\\x00\\x1d"),           # X25519
-            extension(13, b"\\x00\\x02\\x04\\x03"),           # ecdsa_secp256r1_sha256
-            extension(51, b"\\x00\\x24\\x00\\x1d\\x00\\x20" + public),
+            extension(43, b"\x02\x03\x04"),                 # TLS 1.3
+            extension(10, b"\x00\x02\x00\x1d"),           # X25519
+            extension(13, b"\x00\x02\x04\x03"),           # ecdsa_secp256r1_sha256
+            extension(51, b"\x00\x24\x00\x1d\x00\x20" + public),
         )
     )
     if variant == "outer-short":
         # Unknown extension after the complete key share. Its one data byte is
         # placed outside the declared TLS record, leaving a parseable prefix.
-        extensions += extension(0xFFFF, b"\\xA5")
+        extensions += extension(0xFFFF, b"\xA5")
     body = (
-        b"\\x03\\x03"
+        b"\x03\x03"
         + bytes.fromhex("00112233445566778899aabbccddeeff") * 2
         + bytes((len(session_id),))
         + session_id
-        + b"\\x00\\x02\\x13\\x01"
-        + b"\\x01\\x00"
+        + b"\x00\x02\x13\x01"
+        + b"\x01\x00"
         + len(extensions).to_bytes(2, "big")
         + extensions
     )
     if variant == "inner-short":
-        handshake = b"\\x01" + (len(body) - 1).to_bytes(3, "big") + body
+        handshake = b"\x01" + (len(body) - 1).to_bytes(3, "big") + body
         record_length = len(handshake)
         transcript_handshake = handshake
     elif variant == "outer-short":
-        handshake = b"\\x01" + len(body).to_bytes(3, "big") + body
+        handshake = b"\x01" + len(body).to_bytes(3, "big") + body
         record_length = len(handshake) - 1
         transcript_handshake = handshake[:record_length]
     else:
@@ -202,7 +202,7 @@ def make_client_hello(variant: str) -> tuple[bytes, x25519.X25519PrivateKey, byt
     # For outer-short, the final byte is still sent on TCP but is not part of
     # the TLS record or the server's transcript. The client deliberately hashes
     # only the record payload the server processes.
-    record = b"\\x16\\x03\\x01" + record_length.to_bytes(2, "big") + handshake
+    record = b"\x16\x03\x01" + record_length.to_bytes(2, "big") + handshake
     return record, private, session_id, transcript_handshake
 
 def parse_server_hello(raw: bytes, session_id: bytes) -> bytes:
@@ -337,7 +337,7 @@ def read_http_response(sock: socket.socket, server_app_secret: bytes) -> bytes:
     return bytes(response)
 
 
-def expect_rejection(records: list[bytes]) -> None:
+def expect_rejection(records: list[bytes], variant: str) -> None:
     if not records:
         fail("fixed image closed without a TLS alert")
     alert = next((record for record in records if record[0] == 21), None)
@@ -345,7 +345,7 @@ def expect_rejection(records: list[bytes]) -> None:
         fail("fixed image did not send a fatal TLS alert")
     if alert[5] != 2 or alert[6] != 50:
         fail(f"expected fatal decode_error (2,50), got ({alert[5]},{alert[6]})")
-    print("PASS: fixed image rejected the short inner handshake length with fatal decode_error")
+    print(f"PASS: fixed image rejected {variant} with fatal decode_error")
 
 
 def run_case(target: Path, expected: str, variant: str) -> None:
@@ -361,7 +361,7 @@ def run_case(target: Path, expected: str, variant: str) -> None:
                 lambda items: any(item[0] == 21 for item in items)
                 or any(item[0] == 22 for item in items),
             )
-            expect_rejection(records)
+            expect_rejection(records, variant)
             print(f"PASS: fixed image rejected {variant}")
             return
 
@@ -417,7 +417,7 @@ def run_case(target: Path, expected: str, variant: str) -> None:
         cert_body, cert_raw = by_type[11]
         cv_body, cv_raw = by_type[15]
         finished_body, finished_raw = by_type[20]
-        if len(cv_body) < 4 or cv_body[:2] != b"\\x04\\x03":
+        if len(cv_body) < 4 or cv_body[:2] != b"\x04\x03":
             fail("server CertificateVerify did not use ecdsa_secp256r1_sha256")
         sig_len = int.from_bytes(cv_body[2:4], "big")
         signature = cv_body[4 : 4 + sig_len]
@@ -461,7 +461,7 @@ def run_case(target: Path, expected: str, variant: str) -> None:
         client_finished_verify = hmac.new(
             client_finished_key, transcript_after_finished, hashlib.sha256
         ).digest()
-        client_finished = b"\\x14\\x00\\x00\\x20" + client_finished_verify
+        client_finished = b"\x14\x00\x00\x20" + client_finished_verify
         sock.sendall(encrypt_record(client_hs_secret, 0, client_finished, 22))
         time.sleep(0.02)
         sock.sendall(encrypt_record(client_app_secret, 0, REQUEST, 23))
