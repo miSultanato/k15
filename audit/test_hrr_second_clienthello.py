@@ -14,7 +14,7 @@ flat = re.sub(r"[^0-9a-f]", "", trace.lower())
 hrr_random = "cf21ad74e59a6111be1d8c021e65b891c2a211167abb8c5e079e09e2c8a8339c"
 client_hellos = [m.start() for m in re.finditer("ClientHello", trace)]
 server_hellos = [m.start() for m in re.finditer("ServerHello", trace)]
-hrr_match = re.search(r"cf[\\s:]+21[\\s:]+ad[\\s:]+74[\\s:]+e5[\\s:]+9a[\\s:]+61[\\s:]+11", trace.lower())
+hrr_match = re.search(r"cf[\s:]+21[\s:]+ad[\s:]+74[\s:]+e5[\s:]+9a[\s:]+61[\s:]+11", trace.lower())
 hrr_present = hrr_random in flat
 second_client_hello = len(client_hellos) >= 2 and hrr_match is not None and client_hellos[1] > hrr_match.start()
 server_ccs = [m.start() for m in re.finditer(r"<<<[^\n]*ChangeCipherSpec", trace)]
