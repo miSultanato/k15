@@ -145,7 +145,8 @@ def parse_mss(options: bytes):
 
 
 def fetch_after_handshake(
-    sport: int, client_isn: int, synack, bad_ack: bool = False, request: bytes = HTTP
+    sport: int, client_isn: int, synack, bad_ack: bool = False,
+    request: bytes = HTTP, ack_delta: int | None = None
 ):
     server_next = (synack["seq"] + 1) & 0xFFFFFFFF
     client_next = (client_isn + 1) & 0xFFFFFFFF
