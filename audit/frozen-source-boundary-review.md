@@ -210,7 +210,7 @@ the full ACK wraparound or all MSS thresholds.
 ## 10. ClientHello session ID, compression and legacy_version fields
 
 The expanded differential probes in [run 45399706214](https://github.com/miSultanato/k15/actions/runs/45399706214)
-and [run 45400182802](https://github.com/miSultanato/k15/actions/runs/45400182802)
+and [run 45400449845](https://github.com/miSultanato/k15/actions/runs/45400449845)
 tested additional ClientHello fields:
 
 - A fully present 33-byte `legacy_session_id` gets ServerHello from the frozen
