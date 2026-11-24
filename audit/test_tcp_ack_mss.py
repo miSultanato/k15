@@ -197,7 +197,7 @@ def test_http_methods() -> None:
         if synack is None:
             print(f"OBSERVED: HTTP method {method.decode()}: no SYN-ACK")
             continue
-        request = method + b" / HTTP/1.1\\r\\nHost: k15\\r\\nConnection: close\\r\\n\\r\\n"
+        request = method + b" / HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"
         payloads = fetch_after_handshake(sport, isn, synack, request=request)
         response = b"".join(payloads)
         if response.startswith(b"HTTP/1."):
