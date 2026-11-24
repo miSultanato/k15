@@ -28,7 +28,7 @@ sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x0003))
 sock.bind((TAP, 0))
 host_mac = sock.getsockname()[4]
 broadcast = b"\xff" * 6
-HTTP = b"GET / HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"
+HTTP = b"GET / HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"\nREPLAY_HTTP = b"GET /__cookie_replay_probe__ HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"
 
 
 def checksum(data: bytes) -> int:
@@ -243,7 +243,7 @@ def test_delayed_syn_cookie() -> None:
 
 
 
-def exchange_and_reset(sport: int, client_seq: int, server_seq: int):
+def exchange_and_reset(sport: int, client_seq: int, server_seq: int, request: bytes = HTTP):
     # Materialize the cookie-backed slot, send one HTTP request, then reset it
     # with the exact next client sequence number. The RST path frees the slot.
     sock.send(make_frame(sport, client_seq, server_seq, 0x10))
@@ -297,18 +297,20 @@ def test_cookie_replay_after_teardown() -> None:
 
     # The RST with the correct C_NXT should free the slot. Replay the exact ACK
     # that completed the SYN cookie, then send a fresh request at the old sequence.
-    while receive(sport, timeout=0.05) is not None:
-        pass
+    drain_deadline = time.monotonic() + 0.25
+    while time.monotonic() < drain_deadline:
+        receive(sport, timeout=min(0.05, drain_deadline - time.monotonic()))
     second_response, second_reset = exchange_and_reset(
-        sport, client_seq, original_server_ack
+        sport, client_seq, original_server_ack, REPLAY_HTTP
     )
     accepted = second_response.startswith(b"HTTP/1.")
+    distinct_request = accepted and b"404" in second_response[:96]
     print(
         "OBSERVED: cookie ACK replay after RST teardown: "
         f"first_http={first_response.startswith(b'HTTP/1.')}, "
         f"first_reset_sent={first_reset}, replay_http={accepted}, "
-        f"replay_response_bytes={len(second_response)}, replay_reset_sent={second_reset}, "
-        f"original_cookie_ack=0x{original_server_ack:08x}"
+        f"replay_404={distinct_request}, replay_response_bytes={len(second_response)}, "
+        f"replay_reset_sent={second_reset}, original_cookie_ack=0x{original_server_ack:08x}"
     )
 
 
