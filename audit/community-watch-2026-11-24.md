@@ -1057,7 +1057,9 @@ caps response entries at 32,767 and the site at 768 MiB. I found no request-
 controlled negative offset or read-before-`SITE` path.
 
 The new `audit/site-adjacency-review.md` records the source reasoning and
-limits. This is a bounded static review, not a formal proof. The optional
+limits, and `audit/check_site_read_path.py` adds a CI guard for the request
+lookup, response index, SITE-relative blob pointer and packer bounds. This is
+a bounded static review, not a formal proof. The optional
 `WXTEST` write/execute probe is a separate compile-time page-permission test;
 the default `make all` path does not set `WXTEST`. This comment is therefore
 an adjacency concern worth checking, not evidence of key disclosure.
