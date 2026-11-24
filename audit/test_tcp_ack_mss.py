@@ -29,7 +29,7 @@ sock.bind((TAP, 0))
 host_mac = sock.getsockname()[4]
 broadcast = b"\xff" * 6
 HTTP = b"GET / HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"
-REPLAY_HTTP = b"HEAD / HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"
+REPLAY_HTTP = b"FOO / HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"
 
 
 def checksum(data: bytes) -> int:
@@ -261,18 +261,19 @@ def exchange_and_reset(sport: int, client_seq: int, server_seq: int, request: by
             continue
         if item["seq"] != server_next:
             continue
+        client_ack = item["ack"]
+        response.extend(item["payload"])
         payload = item["payload"]
-        response.extend(payload)
         server_next = (server_next + len(payload)) & 0xFFFFFFFF
         if item["flags"] & 0x01:
             server_next = (server_next + 1) & 0xFFFFFFFF
         if payload or item["flags"] & 0x01:
-            sock.send(make_frame(sport, client_after_request, server_next, 0x10))
+            sock.send(make_frame(sport, client_ack, server_next, 0x10))
 
     reset_sent = response.startswith(b"HTTP/1.")
     if reset_sent:
         # A sequence-valid RST reaches the server's slot-freeing path.
-        sock.send(make_frame(sport, client_after_request, server_next, 0x14))
+        sock.send(make_frame(sport, client_ack, server_next, 0x14))
         time.sleep(0.2)
     return bytes(response), reset_sent
 
@@ -305,13 +306,13 @@ def test_cookie_replay_after_teardown() -> None:
         sport, client_seq, original_server_ack, REPLAY_HTTP
     )
     accepted = second_response.startswith(b"HTTP/1.")
-    distinct_request = accepted and len(second_response) < len(first_response)
+    distinct_request = accepted and b"405" in second_response[:96]
     replay_status = second_response.split(b"\r\n", 1)[0].decode("ascii", errors="replace")
     print(
         "OBSERVED: cookie ACK replay after RST teardown: "
         f"first_http={first_response.startswith(b'HTTP/1.')}, "
         f"first_reset_sent={first_reset}, replay_http={accepted}, "
-        f"replay_head_only={distinct_request}, replay_status={replay_status!r}, replay_response_bytes={len(second_response)}, "
+        f"replay_405={distinct_request}, replay_status={replay_status!r}, replay_response_bytes={len(second_response)}, "
         f"replay_reset_sent={second_reset}, original_cookie_ack=0x{original_server_ack:08x}"
     )
 
