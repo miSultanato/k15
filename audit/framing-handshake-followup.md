@@ -73,13 +73,23 @@ runner invokes it against the frozen bounty and both pinned upstream images.
 The code and workflow trigger are committed; the next Actions run must validate
 the crypto/transcript implementation before this finding is considered closed.
 
-The current implementation covers the **inner handshake-length mismatch** only.
-The outer TLS-record-length mismatch remains a separate follow-up and must not
-be described as covered by this test.
+The implementation now covers both framing variants independently:
 
-## Required end-to-end assertions
+1. **Inner-short:** the handshake header declares one byte less than the full
+   body; the outer TLS record carries the complete malformed handshake, and
+   the client hashes that complete malformed message.
+2. **Outer-short:** the handshake header declares the full body, but the TLS
+   record length is one byte short. A final byte in an unknown extension is
+   still sent on TCP outside the record; the client hashes only the record
+   payload prefix that the server processes.
 
-A future local-only test should:
+The outer-short case deliberately uses a non-conforming client that mirrors
+the server's truncated transcript. It does not claim that an ordinary,
+standards-compliant TLS client will complete the handshake.
+
+## Assertions implemented; pending differential execution
+
+The local-only test now:
 
 1. Build the exact frozen bounty image and the exact fixed upstream image.
 2. Use a purpose-built or instrumented TLS 1.3 client that controls the
@@ -96,23 +106,10 @@ A future local-only test should:
 8. Keep all key logs, certificates, private keys, images and packet captures
    inside the ephemeral runner; upload no artifacts.
 
-Test the inner-length and outer-record-length cases independently. A passing
-inner-length test must not be presented as proof for the outer-record case.
-
-## Implementation options
-
-Preferred: instrument a small TLS 1.3 client implementation so the malformed
-ClientHello is the byte sequence written to the transcript hash and the
-network. A patched Go `crypto/tls` client is one candidate, provided the
-patch is narrow, reviewed, and the test confirms the emitted wire bytes.
-
-Alternative: implement only the required TLS 1.3 client flight using audited
-cryptographic primitives. This is more work and creates additional code that
-must itself be reviewed; avoid implementing cryptography from scratch merely
-to make the test convenient.
-
-Do not attempt to coerce stock OpenSSL by rewriting its already-emitted
-ClientHello: that does not update its internal transcript.
+The same assertions run separately for both inner-short and outer-short.
+The test is committed and wired into the differential runner, but it is not
+closed until a new Actions run passes on the frozen bounty and both pinned
+upstream images.
 
 ## Interpretation boundary
 
