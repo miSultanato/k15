@@ -29,7 +29,7 @@ sock.bind((TAP, 0))
 host_mac = sock.getsockname()[4]
 broadcast = b"\xff" * 6
 HTTP = b"GET / HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"
-REPLAY_HTTP = b"GET /__cookie_replay_probe__ HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"
+REPLAY_HTTP = b"HEAD / HTTP/1.1\r\nHost: k15\r\nConnection: close\r\n\r\n"
 
 
 def checksum(data: bytes) -> int:
@@ -305,12 +305,12 @@ def test_cookie_replay_after_teardown() -> None:
         sport, client_seq, original_server_ack, REPLAY_HTTP
     )
     accepted = second_response.startswith(b"HTTP/1.")
-    distinct_request = accepted and b"404" in second_response[:96]
+    distinct_request = accepted and len(second_response) < len(first_response)
     print(
         "OBSERVED: cookie ACK replay after RST teardown: "
         f"first_http={first_response.startswith(b'HTTP/1.')}, "
         f"first_reset_sent={first_reset}, replay_http={accepted}, "
-        f"replay_404={distinct_request}, replay_response_bytes={len(second_response)}, "
+        f"replay_head_only={distinct_request}, replay_response_bytes={len(second_response)}, "
         f"replay_reset_sent={second_reset}, original_cookie_ack=0x{original_server_ack:08x}"
     )
 
