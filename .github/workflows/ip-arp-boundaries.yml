@@ -9,6 +9,7 @@ on:
     paths:
       - audit/test_ip_arp_validation.py
       - audit/test_arp_short_frame.py
+      - audit/test_tcp_ack_mss.py
       - audit/run_tap_ip_arp.sh
       - .github/workflows/ip-arp-boundaries.yml
 
