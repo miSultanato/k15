@@ -78,8 +78,22 @@ jobs:
         working-directory: target
         run: make all
 
-      - name: Boot frozen image in QEMU TCG and check synthetic ECDSA nonce uniqueness
-        run: bash audit/run_qemu_nonce.sh target 512
+      - name: Measure 10,240 synthetic ECDSA nonces on one QEMU boot
+        run: bash audit/run_qemu_nonce.sh target 10240 "$RUNNER_TEMP/k15-nonces-a.txt"
+
+      - name: Compare 1,024 synthetic ECDSA nonces across a second QEMU boot
+        run: |
+          bash audit/run_qemu_nonce.sh target 1024 "$RUNNER_TEMP/k15-nonces-b.txt"
+          python3 - "$RUNNER_TEMP/k15-nonces-a.txt" "$RUNNER_TEMP/k15-nonces-b.txt" <<'PY'
+          import sys
+          a = set(open(sys.argv[1], encoding="ascii").read().splitlines())
+          b = set(open(sys.argv[2], encoding="ascii").read().splitlines())
+          overlap = a & b
+          print(f"Cross-boot nonce fingerprint overlap: {len(overlap)}")
+          if overlap:
+              raise SystemExit("FAIL: an ECDSA nonce fingerprint repeated across boots")
+          print(f"PASS: {len(a)} + {len(b)} sampled nonce fingerprints have no cross-boot overlap")
+          PY
 
       - name: Boot frozen image in QEMU TCG and reproduce ClientHello framing quirk
         run: bash audit/run_qemu_framing.sh target
