@@ -68,7 +68,7 @@ print("relative factor:", (2 * delta / R) / (delta / n))
 
 NIST FIPS 186-5 §A.3 describes generation of ECDSA per-message secret numbers in ([1,n-1]). Its two specified approaches are rejection sampling or conversion using at least 64 additional random bits so that reduction bias is negligible. The frozen implementation uses a 256-bit candidate for a 256-bit order and neither rejects (K\ge n) nor obtains those extra bits.
 
-RFC 6979 §3.2 also describes the randomized ECDSA nonce as a uniform selection from the modular range. The project does not claim FIPS validation; this is a cryptographic-hygiene/conformance observation, not a claim of certification failure.
+RFC 6979 §2.4 describes the standard randomized ECDSA nonce as a uniform selection from the modular range and specifies that the point's x-coordinate is reduced modulo the subgroup order. The project does not claim FIPS validation; this is a cryptographic-hygiene/conformance observation, not a claim of certification failure.
 
 References:
 
