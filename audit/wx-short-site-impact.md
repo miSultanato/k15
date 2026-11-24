@@ -31,6 +31,27 @@ the source formula and NASM output. It verifies the final site byte's actual
 virtual page relative to `CODEPG`; the QEMU self-test then checks runtime
 behavior. The check does not read live page-table memory.
 
+## Live page-table confirmation
+
+The independent QMP probe in
+[run 45484886594](https://github.com/miSultanato/k15/actions/runs/45484886594)
+stopped each local guest after it installed the expected CR3, then walked the
+live PML4, PDPT, PD and PT entries using physical-memory reads. In all three
+images, the synthetic SITE final byte was `0xC3`, the PTE was present and
+read-only (`RW=0`), and the live NX bit matched the expected revision:
+
+| Revision | Final SITE VA | Live PTE address | Live PTE value | Present | Writable | NX |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Frozen bounty | `0x103915` | `0x423818` | `0x0000000000103061` | 1 | 0 | 0 |
+| First upstream fix | `0x1046E5` | `0x423820` | `0x8000000000104021` | 1 | 0 | 1 |
+| Current upstream | `0x104726` | `0x423820` | `0x8000000000104021` | 1 | 0 | 1 |
+
+Each guest reported `CR3=0x420000`; the walk confirmed the hierarchy entries
+were present before reading the final PTE. This is direct runtime evidence of
+the effective page permissions, independent of the emitted-layout assertion
+and the `WXTEST=4` execution test. The probe stops the local VM and only reads
+guest physical memory through QEMU's monitor; it does not alter guest memory.
+
 ## Why the test is meaningful
 
 The project's documented memory model says image code is executable and
