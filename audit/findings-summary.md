@@ -17,6 +17,7 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 | Finding | Frozen bounty | First fix `a2d8893` | Current upstream main `cb9f76a` | Evidence |
 | --- | --- | --- | --- | --- |
+| Short-site W^X | Executes a synthetic `RET` at the end of a one-file site and continues serving | Execution faults before service | Same as first fix | [three-way QEMU test](https://github.com/miSultanato/k15/actions/runs/45409649945) |
 | ClientHello framing | Accepts five malformed cases | Rejects all five with fatal `decode_error` | Same rejection | [initial](https://github.com/miSultanato/k15/actions/runs/45381737629), [current comparison](https://github.com/miSultanato/k15/actions/runs/45401470623) |
 | ClientHello fields | Accepts 33-byte session ID, non-null compression, wrong handshake type and legacy_version 0x0301 | Rejects or normalizes all four | Same as first fix | [field tests](https://github.com/miSultanato/k15/actions/runs/45399706214), [handshake type](https://github.com/miSultanato/k15/actions/runs/45400449845), [current comparison](https://github.com/miSultanato/k15/actions/runs/45401470623) |
 | Client Finished | Corrupted Finished followed by valid application data still gets HTTP | Same behavior | Same behavior | [first fix](https://github.com/miSultanato/k15/actions/runs/45394628025), [current main](https://github.com/miSultanato/k15/actions/runs/45401470623) |
