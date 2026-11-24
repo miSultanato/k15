@@ -37,8 +37,9 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 - The local upstream hostile-client regression suite passes, including malformed
   ClientHello cases. [#45382026675](https://github.com/miSultanato/k15/actions/runs/45382026675)
-- Lowercase `get` and unknown `FOO` HTTP methods both returned HTTP 200 on all three
-  tested images; the reported method hang was not reproduced.
+- On plain HTTP port 80, lowercase `get` and unknown `FOO` HTTP methods both returned
+  HTTP 200 on all three tested images; this is distinct from the HTTPS parser. The
+  reported method hang was not reproduced.
   [first fix](https://github.com/miSultanato/k15/actions/runs/45400915976),
   [current main](https://github.com/miSultanato/k15/actions/runs/45401501930)
 - Controlled SMP slot races RACE=1/2/3 pass on the frozen image.
@@ -72,15 +73,23 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 ## Next work
 
-1. Finish the post-HelloRetryRequest ServerHello/CCS differential; the current
-   probe elicits HRR but does not yet send the second ClientHello.
-2. Expand ACK-window tests around below/equal/inside/above limits and 32-bit
-   wraparound; expand MSS tests across 0..215.
-3. Keep investigating whether the short-ARP stale-buffer disclosure can expose
-   anything beyond synthetic network-buffer data. Do not attempt to access
-   production memory.
-4. Reconcile remaining independent findings #1, #4, #6, #11–12 and #17–20 with
-   exact deterministic tests where they materially affect security.
+1. Inspect the HRR/second-ClientHello trace from the current local QEMU run and
+   assert the CCS placement only if the trace confirms a complete HRR flight.
+2. Add an emitted page-table/NX assertion for the short-site W^X layout; the
+   runtime synthetic-RET differential is already reproduced.
+3. If useful, test a stale SYN-cookie ACK after a synthetic connection is fully
+   torn down. The existing 65-second delayed-first-ACK test passes on all three
+   revisions and does not prove post-teardown replay.
+4. Add a synthetic BIOS E820 response with an invalid SMAP signature; the
+   emitted boot-sector compare instruction is already verified.
+5. Continue assessing the short-ARP stale-buffer disclosure only with synthetic
+   data. Do not attempt to access production memory.
+
+The ACK-window and peer-MSS boundaries (including 32-bit wrap, MSS 0 and MSS 1),
+the TLSInnerPlaintext lengths 1/2/16/255/300, and the emitted boot hardening
+checks have already been exercised locally. No private TLS key or scalar
+recovery has been demonstrated.
+
 
 Do not merge upstream development fixes into the frozen bounty branch. All
 dynamic tests remain local, offline and synthetic-key only; no request is sent
