@@ -65,6 +65,8 @@ user namespaces.
   header checksums and ARP requests with malformed hardware/protocol fields over TAP.
 - `test_arp_short_frame.py`: primes RX buffers with a synthetic marker, then
   checks whether a 24-byte ARP request discloses stale bytes.
+- `test_tcp_ack_mss.py`: sends a data-bearing segment with an out-of-window ACK
+  and tests whether a peer MSS of 100 is respected.
 - `run_qemu_abuse.sh`: runs the upstream hostile-client suite against the
   fixed development image, not the bounty image.
 - `tools/racetest.sh`: exercises the project's deliberately synchronized
@@ -97,6 +99,7 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | Differential dummy CCS: bounty omits it; upstream framing fix sends it | [45395033747](https://github.com/miSultanato/k15/actions/runs/45395033747) |
 | TAP IPv4 checksum and ARP field matrix on bounty and upstream | [45396434723](https://github.com/miSultanato/k15/actions/runs/45396434723) |
 | Short ARP stale-buffer differential: bounty discloses synthetic marker; upstream does not | [45397011333](https://github.com/miSultanato/k15/actions/runs/45397011333) |
+| TCP ACK-window and peer-MSS differential | [45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
 | Differential framing: five malformed cases accepted by bounty, rejected by fix | [45381737629](https://github.com/miSultanato/k15/actions/runs/45381737629) |
 | Upstream hostile-client regression suite | [45382026675](https://github.com/miSultanato/k15/actions/runs/45382026675) |
 | Controlled SMP slot races, RACE=1/2/3 | [45382612903](https://github.com/miSultanato/k15/actions/runs/45382612903) |
