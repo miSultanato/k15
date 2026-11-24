@@ -903,3 +903,18 @@ Limit: this is one point-in-time guest physical-RAM snapshot after local
 synthetic-key handshakes. It does not scan CPU registers, QEMU host memory,
 all transient execution states, or the production machine. It is not a proof
 that no plaintext representation can ever exist in any execution path.
+
+
+## Expanded 60,000-case ClientHello fuzz comparison (confirmed)
+
+The three-seed fuzz run completed successfully on both source revisions:
+https://github.com/miSultanato/k15/actions/runs/45385013034
+
+For each image, the project fuzzer sent 20,000 mutated ClientHellos for each
+of seeds `20261124`, `20261125`, and `20261126` (60,000 total per image).
+After each batch the harness verified the QEMU guest remained alive and
+served a normal TLS page. All six 20,000-case batches passed.
+
+This broadens the earlier single-seed run. It is still a bounded parser
+robustness test, not proof that every possible input is safe or that the
+server has no key-disclosure path.
