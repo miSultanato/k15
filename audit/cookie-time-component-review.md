@@ -21,8 +21,14 @@ The frozen cookie is keyed and bound to the address/port tuple and the client's 
 
 A local TAP test now holds a synthetic SYN-ACK for 65 seconds before sending its first ACK. The frozen bounty and first upstream fix both accept that delayed ACK and process a following HTTP request; the current-upstream image also accepts the delayed ACK. This demonstrates no 64-second cookie expiry in the tested revisions. It is **not** a replay after connection teardown and does not show that an off-path attacker can learn or forge a cookie, bypass TCP sequence checks, hijack an established connection, or obtain TLS secrets.
 
-## Safe next test
+## Local teardown/replay experiment
 
-If this merits further testing, build only local images under QEMU/TAP. First complete and close a synthetic connection, then replay its old ACK after a controlled delay and observe whether the server allocates a new slot. Keep all traffic local and compare the frozen image with the pinned upstream revisions.
+[Run 45442801633](https://github.com/miSultanato/k15/actions/runs/45442801633) now completes a local port-80 exchange and a full client-FIN/server-FIN close on all three pinned images. It then replays the original cookie ACK and receives another 180-byte HTTP response on all three.
+
+That response alone is **not conclusive**: the port-80 handler serves one fixed response and does not distinguish request methods or paths. A retransmission of the old response could look identical to a newly allocated connection. The current follow-up probe therefore sends a replay request with a longer, unique header and compares the server's ACK number with the exact new request end sequence. A matching ACK would show that the replayed cookie created a fresh slot and the new payload was consumed; a stale ACK would indicate an old connection/retransmission instead. The differential run is pending.
+
+## Safe scope
+
+Run only local images under QEMU/TAP. Compare the frozen image with the two pinned upstream revisions. Do not send stale ACKs to `15kb.org`, spoof third-party addresses, or use production infrastructure.
 
 Do not send stale ACKs to `15kb.org`, do not spoof third-party addresses, and do not use production infrastructure.
