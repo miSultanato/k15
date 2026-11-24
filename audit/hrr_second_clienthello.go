@@ -113,6 +113,7 @@ func inspectServer(records []record) (hrr bool, serverHellos, serverCCS int, ccs
 }
 
 func main() {
+	fmt.Println("HRR probe: dialing local QEMU guest")
 	raw, err := net.DialTimeout("tcp", "127.0.0.1:8443", 5*time.Second)
 	if err != nil {
 		panic(err)
@@ -120,6 +121,7 @@ func main() {
 	defer raw.Close()
 	_ = raw.SetDeadline(time.Now().Add(12 * time.Second))
 	capture := &captureConn{Conn: raw}
+	fmt.Println("HRR probe: TCP connected; starting TLS 1.3 handshake with P-256 first")
 	client := tls.Client(capture, &tls.Config{
 		ServerName:         "localhost",
 		InsecureSkipVerify: true, // local synthetic test certificate only
