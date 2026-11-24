@@ -21,9 +21,9 @@ revision offered by the k15 bounty.
 | Workflow | Purpose |
 | --- | --- |
 | `bounded-audit.yml` | Native runner RDRAND probe, source invariants, assembly crypto tests, exact `ec.inc` reconstruction, Valgrind controls, QEMU framing and runtime nonce checks |
-| `differential-framing.yml` | Same malformed ClientHello cases against frozen bounty and upstream fixed images; then upstream `tools/abuse.py` |
+| `differential-framing.yml` | Compares frozen bounty, first upstream fix and current upstream main for TLS framing, record handling and HTTPS requests; runs each upstream hostile-client suite |
 | `race-audit.yml` | Project's controlled cross-processor slot handover tests, `RACE=1,2,3` |
-| `parser-fuzz.yml` | Same deterministic 60,000-case ClientHello fuzzer (three seeds) plus raw Ethernet/IP/TCP frame fuzz against bounty and fixed images |
+| `parser-fuzz.yml` | Same deterministic 60,000-case ClientHello fuzzer (three seeds) plus raw Ethernet/IP/TCP frame fuzz against bounty, first fix and current main |
 | `memory-scan.yml` | Local synthetic-key CertificateVerify capture and one guest-RAM snapshot scan |
 
 All are runnable from GitHub Actions. The race workflow uses a privileged,
@@ -69,8 +69,8 @@ user namespaces.
   checks whether a 24-byte ARP request discloses stale bytes.
 - `test_tcp_ack_mss.py`: sends a data-bearing segment with an out-of-window ACK
   and tests whether a peer MSS of 100 is respected.
-- `run_qemu_abuse.sh`: runs the upstream hostile-client suite against the
-  fixed development image, not the bounty image.
+- `run_qemu_abuse.sh`: runs the upstream hostile-client regression suite against
+  the first upstream fix and current main, not against the frozen bounty image.
 - `tools/racetest.sh`: exercises the project's deliberately synchronized
   RACE=1/2 timer-vs-slot ownership interleavings and RACE=3 bucket-boundary
   condition.
@@ -78,8 +78,9 @@ user namespaces.
 ## Interpretation
 
 A reproduced protocol-validation defect is not automatically a key disclosure.
-The ClientHello framing discrepancy is confirmed on the frozen image, and the
-upstream fix rejects the same five malformed cases with fatal `decode_error`.
+The ClientHello framing discrepancy is confirmed on the frozen image; both the
+first upstream fix and current main reject the same five malformed cases with
+fatal `decode_error`.
 We have not demonstrated successful TLS application-data exchange under a
 mismatched transcript, memory corruption, private-key disclosure, or a
 practical key-recovery exploit.
@@ -103,11 +104,14 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | ClientHello session ID, compression and legacy_version differential | [45399706214](https://github.com/miSultanato/k15/actions/runs/45399706214) |
 | Wrong handshake message type: bounty accepts; fixed image sends fatal `unexpected_message` | [45400449845](https://github.com/miSultanato/k15/actions/runs/45400449845) |
 | HTTPS lowercase-method and missing-Host differential across all three revisions | [45402956609](https://github.com/miSultanato/k15/actions/runs/45402956609) |
+| Three-way TLS comparison: bounty, first fix and current main | [45401470623](https://github.com/miSultanato/k15/actions/runs/45401470623) |
+| Three-way TAP comparison: IPv4/ARP/TCP behavior on current main | [45401501930](https://github.com/miSultanato/k15/actions/runs/45401501930) |
+| Three-way parser fuzz: bounty, first fix and current main | [45401525691](https://github.com/miSultanato/k15/actions/runs/45401525691) |
 | TAP IPv4 checksum and ARP field matrix on bounty and upstream | [45396434723](https://github.com/miSultanato/k15/actions/runs/45396434723) |
 | Short ARP stale-buffer differential: bounty discloses synthetic marker; upstream does not | [45397011333](https://github.com/miSultanato/k15/actions/runs/45397011333) |
 | TCP ACK-window and peer-MSS differential | [45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
 | Focused IPv4/ARP/TCP boundary workflow (checksums, short ARP, ACK, MSS) | [45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
-| Lowercase/unknown HTTP methods: both images return HTTP 200 in tested cases | [45400915976](https://github.com/miSultanato/k15/actions/runs/45400915976) |
+| Cleartext port-80 method control (not the audited HTTPS parser) | [45400915976](https://github.com/miSultanato/k15/actions/runs/45400915976) |
 | 60,000 ClientHello cases plus TAP raw-frame fuzz and deterministic IP/ARP probes | [45396434783](https://github.com/miSultanato/k15/actions/runs/45396434783) |
 | Differential framing: five malformed cases accepted by bounty, rejected by fix | [45381737629](https://github.com/miSultanato/k15/actions/runs/45381737629) |
 | Upstream hostile-client regression suite | [45382026675](https://github.com/miSultanato/k15/actions/runs/45382026675) |
