@@ -1154,3 +1154,24 @@ the label is corrected.
 
 See `audit/syn-cookie-replay-observation.md`. Keep this separate from the
 bounty-only ARP stale-buffer disclosure and ACK-window defects.
+
+
+## IPv4 checksum and full-length ARP parser boundaries (2026-11-24)
+
+The three-way TAP matrix also confirms that all revisions answer a SYN whose
+IPv4 header checksum is intentionally invalid while its TCP pseudo-header
+checksum remains valid. Full-length ARP requests with non-Ethernet hardware
+type, IPv6 protocol type, and mismatched hardware/protocol lengths also get
+replies on all three images.
+
+The source explains the distinction. The IPv4 receive path enforces fixed
+version/IHL, fragment, protocol, destination and length checks, then validates
+the TCP checksum; it does not calculate the IPv4 header checksum. The ARP
+path enforces the minimum 42-byte frame, request opcode and target address,
+but does not validate every ARP metadata field. No security consequence was
+shown for these full-length malformed requests. This is separate from the
+frozen-only short-frame stale-buffer disclosure, which the upstream length
+gate prevents.
+
+See `audit/ipv4-arp-validation-review.md`. Keep these observations
+low-priority and do not overstate them as confirmed vulnerabilities.
