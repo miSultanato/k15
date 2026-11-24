@@ -50,7 +50,7 @@ def main() -> None:
     require(re.search(r"(?s)push 4\s+pop rcx\s+call rand", stock_body) is not None,
             "stock no longer consumes four qwords per nonce")
 
-    boot = re.search(r"(?s)mov edi, HKS\s+push 22\s+pop rcx\s+call rand", source)
+    boot = re.search(r"(?m)^\s*mov edi, HKS\b.*\n\s*push 22\s*\n\s*pop rcx\s*\n\s*call rand\b", source)
     require(boot is not None, "boot-time 22-qword HKS draw changed")
 
     handshake = re.search(r"(?ms)^handshake:.*?(?=^[A-Za-z_][A-Za-z0-9_]*:)", source)
