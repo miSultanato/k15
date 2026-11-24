@@ -58,7 +58,20 @@ def main() -> None:
             detail = f"unexpected response {response[:32].hex()}"
         raise SystemExit(f"FAIL: rejected inner length {label}: {detail}")
 
-    print("LIMIT: confirms inner handshake length is not enforced; not a key disclosure or memory-safety exploit")
+    # Separate case: the outer TLS record length is one byte short, but the
+    # complete original body is still sent on the TCP stream. The last byte
+    # therefore remains outside the first record. Keep this distinct from the
+    # inner-handshake-length matrix above.
+    outer_short = bytes((22, 3, 1)) + (len(body) - 1).to_bytes(2, "big") + body
+    response = exchange(outer_short)
+    if len(response) >= 6 and response[0] == 22 and response[5] == 2:
+        print("PASS: accepts a ClientHello when the outer TLS record length is one byte short")
+    elif len(response) >= 7 and response[0] == 21:
+        raise SystemExit(f"FAIL: rejected outer record length one byte short: TLS alert {response[6]}")
+    else:
+        raise SystemExit(f"FAIL: unexpected response to short outer record length: {response[:32].hex()}")
+
+    print("LIMIT: confirms framing acceptance only; no key disclosure or memory-safety exploit")
 
 
 if __name__ == "__main__":
