@@ -91,6 +91,8 @@ def main() -> None:
         if not match:
             fail("could not parse DELTA build definition")
         delta = int(match.group(1))
+    low = (((0x110000 + len(site) + 0x1FFFFF) >> 21) << 21) - 0x200000
+    expected_cr3 = 0x420000 + low  # PML4 = VQ + 0x20000; VQ = 0x400000 + LOW
     virtual = 0x100000 + delta + len(image) - 1
     if virtual >= 0x200000:
         fail(f"target 0x{virtual:x} is outside PT0's first 2 MiB mapping")
@@ -121,11 +123,11 @@ def main() -> None:
                     fail("QEMU exited before page tables could be inspected")
                 registers = qmp.hmp("info registers")
                 match = re.search(r"CR3=([0-9a-fA-F]+)", registers)
-                if match and int(match.group(1), 16) != 0:
+                if match and (int(match.group(1), 16) & MASK) == expected_cr3:
                     break
                 time.sleep(0.1)
             else:
-                fail("guest did not install a nonzero CR3 within 20 seconds")
+                fail(f"guest did not install expected CR3 0x{expected_cr3:x} within 20 seconds")
             qmp.command("stop")
             cr3_match = re.search(r"CR3=([0-9a-fA-F]+)", qmp.hmp("info registers"))
             if not cr3_match:
@@ -155,7 +157,9 @@ def main() -> None:
             print(f"RESULT: present=1 writable={int(writable)} NX={int(nx)}")
             print("PASS: live PTE matches expected NX state" if nx == expected_nx
                   else "FAIL: live PTE NX state differs from expected")
-            if nx != expected_nx:
+            if nx != expected_nx or writable:
+                if writable:
+                    print("FAIL: SITE PTE is writable; expected read-only")
                 raise SystemExit(1)
         finally:
             if qmp is not None:
