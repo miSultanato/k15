@@ -68,16 +68,18 @@ jobs:
       - name: Test deterministic P-256 nonce boundaries
         run: python3 audit/test_ecdsa_nonce_boundaries.py ${{ matrix.directory }}
 
-      - name: Check frozen RNG call-site and nonce-pool invariants
-        if: matrix.variant == 'frozen-bounty'
-        run: python3 audit/check_rand_path.py ${{ matrix.directory }}/src/os.asm
-
-      - name: Audit private-scalar read path and generated curve include
+      - name Build combined assembly source for static checks
         run: |
           cat ${{ matrix.directory }}/src/os.asm > /tmp/k15-source-audit.asm
           if [ -f ${{ matrix.directory }}/src/curves.asm ]; then
             cat ${{ matrix.directory }}/src/curves.asm >> /tmp/k15-source-audit.asm
           fi
+
+      - name Check RNG call-site and nonce-pool invariants
+        run: python3 audit/check_rand_path.py /tmp/k15-source-audit.asm
+
+      - name Audit private-scalar read path and generated curve include
+        run: |
           python3 audit/check_key_read_path.py /tmp/k15-source-audit.asm ${{ matrix.directory }}/tools/ec.py ${{ matrix.directory }}/tools/gen.py ${{ matrix.directory }}/build/ec.inc
 
       - name: Run constant-time checks and negative controls
