@@ -73,8 +73,9 @@ user namespaces.
   The outer-short vector reuses its out-of-record `0x17` byte as the next
   record's content-type byte. `run_qemu_malformed_clienthello.sh` also runs a
   patched Go `crypto/tls` inner-short cross-check with CA and body validation.
-- `test_tls_record_rejection.py`: corrupts a client Finished and an AEAD tag,
-  then checks whether the local QEMU guest still processes valid app data.
+- `test_tls_record_rejection.py`: separately omits or corrupts the client's
+  Finished, then corrupts an application AEAD tag before replaying the valid
+  same-sequence record; checks whether the local QEMU guest still processes app data.
 - `test_dummy_ccs.py`: compares the normal ServerHello record sequence and
   elicits HelloRetryRequest. `test_hrr_second_clienthello.py` drives an OpenSSL client through a
   Go TLS 1.3 client through the second ClientHello and asserts the expected
