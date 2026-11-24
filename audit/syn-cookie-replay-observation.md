@@ -46,9 +46,12 @@ a new slot.
 
 The boot-time secret means the cookie is not transferable to a different
 address/port tuple and should change after a reboot/key regeneration. The
-observed 65-second replay shows that the cookie remains valid beyond the
-short SYN retransmission-cache interval; it does not establish validity across
-reboots or key rotation.
+expanded test now replays the same ACK under a different source port before
+the 65-second same-tuple replay; all three images reject the changed-port
+attempt and accept the original tuple. This is direct evidence of tuple
+binding in the tested IPv4 path. The observed 65-second replay shows that the
+cookie remains valid beyond the short SYN retransmission-cache interval; it
+does not establish validity across reboots or key rotation.
 
 ## Interpretation
 
@@ -62,7 +65,8 @@ frozen-only ACK-window acceptance defect:
 - It does not distinguish the vulnerable frozen image from the fixed/current
   images in this test.
 - It requires the original cookie ACK (or equivalent knowledge of the
-  authenticated tuple, client sequence and cookie) to be replayed.
+  authenticated tuple, client sequence and cookie); the same ACK under a
+  different source port is rejected by all three tested images.
 - The test uses a synthetic client and raw packets on an isolated TAP network.
   It does not demonstrate an off-path attacker forging a cookie, crossing
   address/port tuples, bypassing application authentication, or reaching a
