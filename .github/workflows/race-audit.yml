@@ -11,12 +11,11 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: k15-race-audit-${{ matrix.race }}
-  cancel-in-progress: false
-
 jobs:
   race:
+    concurrency:
+      group: k15-race-audit-${{ matrix.race }}
+      cancel-in-progress: false
     name: Frozen bounty slot race RACE=${{ matrix.race }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
