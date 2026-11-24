@@ -89,14 +89,14 @@ if __name__ == "__main__":
         # identical valid ARP requests in bounded batches so both rings wrap.
         # Drain each batch's normal replies before continuing.
         total_primed = 0
-        for batch in range(64):
-            for _ in range(512):
+        for batch in range(512):
+            for _ in range(64):
                 sock.send(prime)
             time.sleep(0.02)
-            primed = drain_prime_replies(4.0)
-            if primed != 512:
+            primed = drain_prime_replies(2.0)
+            if primed != 64:
                 raise SystemExit(
-                    f"FAIL: batch {batch + 1}/64 drained {primed} of 512 full ARP replies"
+                    f"FAIL: batch {batch + 1}/512 drained {primed} of 64 full ARP replies"
                 )
             total_primed += primed
         print(f"OBSERVED: drained {total_primed} normal replies to full ARP priming requests")
