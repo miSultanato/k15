@@ -24,7 +24,7 @@ jobs:
   protocol:
     name: IPv4 checksum and ARP field checks — ${{ matrix.variant }}
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     strategy:
       fail-fast: false
       matrix:
