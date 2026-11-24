@@ -19,7 +19,7 @@ This is a source-level review, not a demonstrated remote replay exploit.
 
 The frozen cookie is keyed and bound to the address/port tuple and the client's initial sequence number, but the cookie itself has no time component. The key material is initialized at boot, so a reboot changes the key; within one boot, the source does not show a time-based expiry in the cookie verification path.
 
-A local TAP test now holds a synthetic SYN-ACK for 65 seconds before sending its first ACK. The frozen bounty and first upstream fix both accept that delayed ACK and process a following HTTP request; the current-upstream matrix job is still pending in run [45410737525](https://github.com/miSultanato/k15/actions/runs/45410737525). This demonstrates no 64-second cookie expiry in the tested revisions. It is **not** a replay after connection teardown and does not show that an off-path attacker can learn or forge a cookie, bypass TCP sequence checks, hijack an established connection, or obtain TLS secrets.
+A local TAP test now holds a synthetic SYN-ACK for 65 seconds before sending its first ACK. The frozen bounty and first upstream fix both accept that delayed ACK and process a following HTTP request; the current-upstream image also accepts the delayed ACK. This demonstrates no 64-second cookie expiry in the tested revisions. It is **not** a replay after connection teardown and does not show that an off-path attacker can learn or forge a cookie, bypass TCP sequence checks, hijack an established connection, or obtain TLS secrets.
 
 ## Safe next test
 
