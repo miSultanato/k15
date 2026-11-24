@@ -12,9 +12,10 @@ import subprocess
 import sys
 from pathlib import PurePosixPath
 
+PEM_BEGIN = b"-----BEGIN "
 PRIVATE_KEY = re.compile(
-    rb"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"
-    rb"|-----BEGIN ENCRYPTED PRIVATE KEY-----"
+    PEM_BEGIN + rb"(?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"
+    + b"|" + PEM_BEGIN + rb"ENCRYPTED PRIVATE KEY-----"
 )
 FORBIDDEN_SUFFIXES = {".key", ".p12", ".pfx", ".img", ".bin", ".lst"}
 
