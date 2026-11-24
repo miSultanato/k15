@@ -16,8 +16,8 @@ def main() -> None:
     )
     for label in labels:
         block = (
-            b"-----BEGIN " + label + b"-----\\n"
-            + b"QUJDREVGR0hJSktMTU5PUA==\\n"
+            b"-----BEGIN " + label + b"-----\n"
+            + b"QUJDREVGR0hJSktMTU5PUA==\n"
             + b"-----END " + label + b"-----"
         )
         if not PRIVATE_KEY.search(block):
@@ -25,8 +25,8 @@ def main() -> None:
         if PRIVATE_KEY.search(b"-----BEGIN " + label + b"-----"):
             raise SystemExit("FAIL: header-only marker was treated as a private key")
     public_cert = (
-        b"-----BEGIN CERTIFICATE-----\\n"
-        + b"QUJDREVGR0hJSktMTU5PUA==\\n"
+        b"-----BEGIN CERTIFICATE-----\n"
+        + b"QUJDREVGR0hJSktMTU5PUA==\n"
         + b"-----END CERTIFICATE-----"
     )
     if PRIVATE_KEY.search(public_cert):

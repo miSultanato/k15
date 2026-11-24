@@ -13,8 +13,8 @@ import sys
 from pathlib import PurePosixPath
 
 PRIVATE_KEY = re.compile(
-    rb"-----BEGIN (?P<label>(?:RSA |EC |DSA |OPENSSH |ENCRYPTED )?PRIVATE KEY)-----\\r?\\n"
-    rb"(?:[A-Za-z0-9+/=]+\\r?\\n)+"
+    rb"-----BEGIN (?P<label>(?:RSA |EC |DSA |OPENSSH |ENCRYPTED )?PRIVATE KEY)-----\r?\n"
+    rb"(?:[A-Za-z0-9+/=]+\r?\n)+"
     rb"-----END (?P=label)-----"
 )
 FORBIDDEN_SUFFIXES = {".key", ".p12", ".pfx", ".img", ".bin", ".lst"}
