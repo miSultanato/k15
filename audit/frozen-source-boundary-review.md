@@ -239,6 +239,30 @@ HTTP 200. The auditor's reported hang was not reproduced with these inputs.
 This is not enough to mark the issue resolved: additional method tokens,
 request-line edge cases and repeated requests remain untested.
 
+
+## 12. Current upstream main comparison
+
+The current-main comparator is pinned to `cb9f76a5a100c418bfcaeddcd4f137d30ab489d2`
+(the current `main` sync commit; code parent `d335390`). It is 18 commits
+ahead of the earlier framing-fix reference `a2d8893`.
+
+The current-main differential runs show:
+
+- ClientHello framing, type, session-ID, compression and legacy-version fixes
+  remain present.
+- The normal ServerHello path sends dummy CCS (record type 20).
+- The corrupted client Finished and bad-AEAD-tag behaviors remain: the server
+  still processes the follow-up valid application record.
+- The short-ARP marker disclosure is not observed; invalid IPv4 checksums and
+  malformed full-length ARP fields still receive replies.
+- The out-of-window ACK does not produce HTTP, and MSS=100 receives no SYN-ACK.
+- Lowercase `get` and unknown `FOO` still receive HTTP 200 in the tested cases.
+
+Evidence: [TLS/current-main differential run 45401470623](https://github.com/miSultanato/k15/actions/runs/45401470623)
+and [TAP/current-main run 45401501930](https://github.com/miSultanato/k15/actions/runs/45401501930).
+The post-HRR final ServerHello flight and the new Host-header behavior are
+still separate follow-ups.
+
 ## Test status and next steps
 
 The deterministic ECDSA boundary test now runs against the frozen assembly
