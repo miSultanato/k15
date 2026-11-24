@@ -6,6 +6,7 @@ inspect a production image, infer the secret scalar, or contact the live host.
 """
 from __future__ import annotations
 
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -30,6 +31,10 @@ def main() -> None:
     asm = asm_path.read_text(encoding="utf-8")
     ec = ec_path.read_text(encoding="utf-8")
     gen = gen_path.read_text(encoding="utf-8")
+
+    # Importing tools/ec.py defines the bytecode but does not run its test suite.
+    sys.path.insert(0, str(ec_path.parent))
+    import ec as curve
 
     require(re.search(r"(?m)^REGS\s+equ\s+BSS\s*\+\s*0x0E400\b", asm) is not None,
             "curve register bank base changed")
@@ -114,8 +119,30 @@ def main() -> None:
     print("PASS: VM register decoding masks indices to 0..15 before address formation")
     print("PASS: sign invokes the fixed X_SIGN curve program")
     require("for name, prog in curve.PROGRAMS.items()" in gen and
-            "db(name, prog)" in gen and "ec.inc" in gen,
+            "db(name, prog)" in gen and "ec.inc" in gen and
+            "at += 8 * (len(prog) - 1) + 4" in gen,
             "tools/gen.py no longer emits ec.inc from tools/ec.py program definitions")
+
+    # Recreate the exact textual ec.inc emitted by gen.py from the imported
+    # compile-time programs. This contains code only, never regs.inc or secrets.
+    generated = []
+    offset = 0
+    for name, prog in curve.PROGRAMS.items():
+        generated.append(
+            f"global {name}\\n{name}: db {','.join(str(b) for b in prog)}\\n"
+            f"{name}_LEN equ $ - {name}\\n"
+            f"global X_{name}\\nX_{name} equ XP + {offset}\\n"
+        )
+        offset += 8 * (len(prog) - 1) + 4
+    generated.append(f"NPROG equ {len(curve.PROGRAMS)}\\n")
+    ec_image = "".join(generated).encode("ascii")
+    require(tuple(curve.PROGRAMS) == tuple(name for name, _ in programs),
+            "tools/ec.py program order differs from its PROGRAMS mapping")
+    require(curve.PROGRAMS["SIGN"][0] == 0x3E and
+            curve.PROGRAMS["SIGN"][1] == 0x37,
+            "SIGN's first bytecode operation is no longer T0 = X * D")
+    print(f"PASS: regenerated {len(curve.PROGRAMS)} VM programs / {offset} unpacked bytes")
+    print(f"INFO: deterministic ec.inc source SHA-256 {hashlib.sha256(ec_image).hexdigest()}")
 
     print("PASS: only the compile-time SIGN program reads D, once, as X * D")
     print("PASS: table selection touches only fixed 64/96-byte prefixes of REGS, not D at +448")
