@@ -25,7 +25,7 @@ revision offered by the k15 bounty.
 | `crypto-revision-check.yml` | Compares P-256 nonce boundaries, RNG source invariants, scalar-read paths and constant-time checks across all three source revisions |
 | `race-audit.yml` | Project's controlled cross-processor slot handover tests, `RACE=1,2,3` |
 | `parser-fuzz.yml` | Same deterministic 60,000-case ClientHello fuzzer (three seeds) plus raw Ethernet/IP/TCP frame fuzz against bounty, first fix and current main |
-| `memory-scan.yml` | Local synthetic-key CertificateVerify capture and one guest-RAM snapshot scan |\n| `ip-arp-boundaries.yml` | Deterministic IPv4 checksum, malformed ARP, short-ARP stale-buffer, TCP ACK-window and peer-MSS probes across pinned images |\n| `boot-hardening-differential.yml` | Static source comparison of AP counter alignment, GDT Accessed bits, E820 SMAP signature validation and Makefile NAME/hostname guard |
+| `memory-scan.yml` | Local synthetic-key CertificateVerify capture and one guest-RAM snapshot scan |\n| `wx-short-site.yml` | Three-way QEMU differential: execute a synthetic `RET` byte at the end of a one-file site to detect executable site pages |\n| `ip-arp-boundaries.yml` | Deterministic IPv4 checksum, malformed ARP, short-ARP stale-buffer, TCP ACK-window and peer-MSS probes across pinned images |\n| `boot-hardening-differential.yml` | Static source comparison of AP counter alignment, GDT Accessed bits, E820 SMAP signature validation and Makefile NAME/hostname guard |
 
 All are runnable from GitHub Actions. The race workflow uses a privileged,
 isolated network namespace because GitHub-hosted runners disallow unprivileged
