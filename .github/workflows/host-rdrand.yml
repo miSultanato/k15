@@ -1,0 +1,34 @@
+name: k15 native runner RDRAND probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - audit/rdrand_host_probe.c
+      - .github/workflows/host-rdrand.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k15-native-rdrand-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out audit harness
+        uses: actions/checkout@v4
+
+      - name: Compile native RDRAND probe
+        run: gcc -O2 -Wall -Wextra -mrdrnd audit/rdrand_host_probe.c -o "$RUNNER_TEMP/rdrand-host-probe"
+
+      - name: Sample one million native RDRAND qwords
+        run: "$RUNNER_TEMP/rdrand-host-probe" 1000000
+
+      - name: Confirm no sample values are uploaded
+        run: echo "The probe prints aggregate counts only; no RDRAND values or artifacts are uploaded."
