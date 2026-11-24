@@ -9,7 +9,7 @@
 
 No private-key disclosure or practical key-recovery exploit has been found.
 
-Several concrete defects are now reproduced against the frozen image. A new short-site QEMU differential confirms a **W^X boundary failure**: with a one-file synthetic site ending in a `RET` byte, the frozen image executes that site byte and continues serving, while both tested upstream revisions fault before serving. The most notable memory-safety-adjacent result remains a **same-link stale-buffer disclosure through a 24-byte ARP request**: the frozen image copied eight stale bytes from a previous receive buffer into the ARP reply. For a preceding full ARP request, those bytes comprise the last four bytes of the sender MAC and its IPv4 address. The original synthetic marker test reproduced the byte path; a stronger valid-ARP priming regression is now committed but awaits its next three-way Actions run. Neither tested upstream image returned the marker. This is narrow link-local metadata disclosure, not private-key disclosure or evidence of Internet reachability. See `arp-short-frame-impact.md`.
+Several concrete defects are now reproduced against the frozen image. A new short-site QEMU differential confirms a **W^X boundary failure**: with a one-file synthetic site ending in a `RET` byte, the frozen image executes that site byte and continues serving, while both tested upstream revisions fault before serving. The strongest network-memory result is a **same-link stale-buffer disclosure through a 24-byte ARP request**: the frozen image copies eight bytes from a preceding peer's receive-buffer contents into a reply addressed to a different peer. The latest test uses 2,048 valid unicast ARP requests from a synthetic victim, then a short request from a separate synthetic sender. The frozen image returns the victim's MAC suffix/IP; both tested upstream revisions reject the frame. This is narrow metadata disclosure, not private-key or arbitrary-memory disclosure, and does not establish Internet reachability. See `arp-short-frame-impact.md`.
 
 The audit also reproduces authenticated TLSInnerPlaintext validation failure, TLS record-validation, TCP ACK-window and MSS defects. Some remain present in upstream framing-fix commit `a2d8893`; others are fixed there. The bounty target branch remains unchanged and pinned to its original commit. Current upstream main is pinned separately at `cb9f76a5a100c418bfcaeddcd4f137d30ab489d2`.
 
@@ -24,7 +24,7 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 | AEAD tag failure | Bad tag ignored; original valid same-sequence record processed | Same behavior | Same behavior | [first fix](https://github.com/miSultanato/k15/actions/runs/45394628025), [current main](https://github.com/miSultanato/k15/actions/runs/45401470623) |
 | Dummy ChangeCipherSpec | Missing after normal ServerHello with 32-byte session ID | Sent after ServerHello | Sent after ServerHello | [normal path](https://github.com/miSultanato/k15/actions/runs/45417214217), [HRR path](https://github.com/miSultanato/k15/actions/runs/45436733972) |
 | HRR / second ClientHello | Completes HRR -> second ClientHello -> final ServerHello; sends 0 server CCS records | Same handshake; sends 1 server CCS record | Same as first fix | [OpenSSL wire-capture differential](https://github.com/miSultanato/k15/actions/runs/45436733972) |
-| Short ARP stale buffer | 24-byte ARP request returns synthetic marker from previous RX buffer | No marker reply observed | No marker reply observed | [first fix](https://github.com/miSultanato/k15/actions/runs/45397011333), [current main](https://github.com/miSultanato/k15/actions/runs/45401501930) |
+| Short ARP stale buffer | 24-byte unicast ARP request returns prior synthetic victim MAC/IP suffix to a different sender | Rejects stale-buffer reply | Rejects stale-buffer reply | [three-way unicast differential](https://github.com/miSultanato/k15/actions/runs/45466831548) |
 | IPv4 checksum / malformed ARP fields | Invalid IPv4-checksum SYN and malformed ARP fields still receive replies | Same behavior | Same behavior | [first fix](https://github.com/miSultanato/k15/actions/runs/45396434723), [current main](https://github.com/miSultanato/k15/actions/runs/45401501930) |
 | TCP ACK-window | ACK offsets +1, +63, +64, +65535 and +65536 beyond `SND.NXT` all still get HTTP responses; same when `SND.NXT=0xFFFFFFC2` and +65536 wraps to `0x0000FFC2` | No HTTP payload for all offsets, including forced wrap | Same as first fix | [expanded TAP matrix](https://github.com/miSultanato/k15/actions/runs/45412713955), [forced-wrap matrix](https://github.com/miSultanato/k15/actions/runs/45413051340) |
 | Peer MSS boundaries | Accepts MSS 0, 1, 100, 179, 180, 181, 215 and 216; sends 180-byte payloads (exceeds every peer MSS below 180) | No SYN-ACK for 0..215; accepts 216 and sends 180 | Same as first fix | [expanded MSS matrix](https://github.com/miSultanato/k15/actions/runs/45414487001) |
@@ -61,9 +61,10 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 ## Interpretation and limits
 
-- The ARP result is a real, local receive-buffer disclosure using synthetic
-  marker bytes. It is not evidence of private-key disclosure, memory corruption,
-  or an Internet-reachable exploit.
+- The ARP result is a real, local stale-buffer metadata disclosure using
+  synthetic victim/attacker identities and a unicast ARP primer. It is limited
+  to eight bytes and one processor-local receive buffer; it is not evidence of
+  private-key disclosure, arbitrary memory access, or Internet reachability.
 - The Finished and AEAD tests show that the guest continues processing valid
   application data after those malformed records. They do not show that an
   attacker without the traffic secret can forge authenticated application data.
@@ -81,8 +82,8 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
    and record-prefix alignments. The one-byte inner-short and outer-short cases
    are now fully reproduced end-to-end; this remains a framing defect, not a
    demonstrated key-recovery path.
-2. Continue assessing the short-ARP stale-buffer disclosure only with synthetic
-   data. Do not attempt to access production memory.
+2. The cross-sender unicast short-ARP differential is complete. Any further
+   work must remain synthetic and local; do not attempt to access production memory.
 
 The ACK-window and peer-MSS boundaries (including 32-bit wrap, MSS 0 and MSS 1),
 the TLSInnerPlaintext lengths 1/2/16/255/300, and the emitted boot hardening
