@@ -86,7 +86,7 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | Upstream hostile-client regression suite | [45382026675](https://github.com/miSultanato/k15/actions/runs/45382026675) |
 | Controlled SMP slot races, RACE=1/2/3 | [45382612903](https://github.com/miSultanato/k15/actions/runs/45382612903) |
 | 10,240 nonce sample plus 1,024 second-boot comparison | [45383575122](https://github.com/miSultanato/k15/actions/runs/45383575122) |
-| 60,000 ClientHello fuzz cases across three seeds on both source revisions | [45385013034](https://github.com/miSultanato/k15/actions/runs/45385013034) |
+| 60,000 ClientHello cases plus 3,191 raw frames on both source revisions | [45385140473](https://github.com/miSultanato/k15/actions/runs/45385140473) |
 | Synthetic scalar guest-RAM snapshot | [45384777117](https://github.com/miSultanato/k15/actions/runs/45384777117) |
 
 Start with `findings-summary.md` for the executive status, then see `community-watch-2026-11-24.md` for exact observations and third-party context.
