@@ -129,3 +129,30 @@ Priority order:
   https://libvirt.org/formatdomain.html
 
 No production traffic, host access, key access, migration, snapshot or load test was performed.
+
+
+## 7. Latest bounded regression run
+
+GitHub Actions run
+https://github.com/miSultanato/k15/actions/runs/45489595284
+completed successfully against frozen target
+`ab93479ebc7c85274c722b16897148286d1cfca3`.
+
+Observed results:
+
+- Runner-exposed RDRAND probe: 10,000,000 qwords; zero adjacent repeats,
+  zero distance-four repeats, zero duplicate qwords anywhere, and zero
+  repeated four-qword tuples. The runner may itself be virtualized and is not
+  the production host.
+- QEMU TCG boot A: 10,240/10,240 completed handshakes, unique CertificateVerify
+  r values and unique recovered nonces.
+- QEMU TCG boot B: 1,024/1,024 completed handshakes, unique r values and
+  unique recovered nonces.
+- Cross-boot nonce fingerprint overlap: zero.
+- The new static source guard passed, including the check that AP BSS copies
+  occur after the BSP's HKS draw and contain the initial local RNG/pool state.
+
+This is strong regression evidence for the frozen signer under QEMU TCG's
+guest-random path and for one runner's exposed RDRAND instruction. It does not
+measure the production CPU, production hypervisor, KVM passthrough, or full
+guest-RAM snapshot/restore behavior.
