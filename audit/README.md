@@ -24,6 +24,7 @@ revision offered by the k15 bounty.
 | `differential-framing.yml` | Same malformed ClientHello cases against frozen bounty and upstream fixed images; then upstream `tools/abuse.py` |
 | `race-audit.yml` | Project's controlled cross-processor slot handover tests, `RACE=1,2,3` |
 | `parser-fuzz.yml` | Same deterministic 20,000-case ClientHello fuzzer against bounty and fixed images |
+| `memory-scan.yml` | Local synthetic-key CertificateVerify capture and one guest-RAM snapshot scan |
 
 All are runnable from GitHub Actions. The race workflow uses a privileged,
 isolated network namespace because GitHub-hosted runners disallow unprivileged
@@ -40,6 +41,10 @@ user namespaces.
   reconstruction of generated `ec.inc`. Static audit only.
 - `run_ct.sh`: runs the project's Valgrind constant-time test and confirms
   all six intentionally leaky controls are detected.
+- `qemu_memory_scan.py`: snapshots one local QEMU guest-RAM image and searches
+  for the expected Montgomery scalar encoding and the plaintext synthetic
+  scalar in both byte orders. It does not inspect CPU registers, host memory,
+  or transient states.
 - `qemu_nonce_uniqueness.py`: captures local TLS 1.3 handshakes, decrypts the
   synthetic server's handshake flight using the client's temporary key log,
   verifies each CertificateVerify with the synthetic certificate key, and
