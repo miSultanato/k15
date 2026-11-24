@@ -102,16 +102,60 @@ operation rejects, faults, or produces a signature. For successful signatures,
 compare the recovered effective nonce modulo n. Keep this separate from
 RDRAND sampling and from the synthetic periodic-nonce demonstration.
 
+
+## 6. Client Finished and bad AEAD tags are silently ignored by the record path
+
+The frozen source makes the behavior unusually explicit:
+
+- The comment above `record` (approximately lines 2363-2370) says the
+  client's Finished uses different keys and is "nothing to us".
+- `record` accepts only outer content type 23 (application_data) at
+  lines 2372-2377, decrypts with the client's application traffic key at
+  `C_KIV+44` (2379-2384), and compares the calculated GCM tag with the
+  received tag (2385-2389).
+- A tag mismatch branches to `.no`; that shared exit clears carry, restores
+  registers, and returns at lines 2492-2495. It does not set a fatal alert or
+  mark the connection closed.
+- The handshake-record dispatcher routes post-ClientHello records to
+  `record` (approximately lines 1753-1775), so an encrypted Client Finished
+  under handshake traffic keys is not validated by this application-key
+  record handler.
+
+This is stronger than an inference from the auditor's summary: the source
+explicitly describes the client's Finished as ignored, and the bad-tag path
+returns without a fatal close. It remains a source-level observation until a
+local end-to-end test demonstrates what application traffic is accepted after
+those records.
+
+A safe local-only follow-up should use a purpose-built TLS 1.3 client and
+synthetic keys to send, in separate connections:
+
+1. A valid server handshake followed by a corrupted client Finished.
+2. A valid client Finished followed by an application record with one
+   corrupted tag byte.
+3. After each invalid record, a correctly authenticated application record
+   using the expected application traffic key and record sequence number.
+
+Record whether the guest responds, silently ignores the record, closes the
+connection, or serves the subsequent HTTP request. Do not treat silence as
+proof of successful application-data processing. The client must calculate
+the exact TLS 1.3 transcript and traffic secrets; do not mutate bytes after
+the TLS library has hashed them.
+
+These protocol behaviors may be relevant to TLS conformance or connection
+state handling, but neither is by itself evidence of private-key disclosure.
+
 ## Test status and next steps
 
 No dynamic test is claimed by this note. The following are source-derived
 test plans, not reproduced findings:
 
-1. Corrupted IPv4 checksum with correct TCP checksum.
-2. ARP field-by-field malformed request matrix.
-3. ACK range and wraparound state matrix.
-4. SYN MSS threshold matrix and actual outbound segment sizes.
-5. ECDSA deterministic boundary vectors at `n-1`, `n`, and `n+1`; retain
+1. Corrupted client Finished and bad AEAD tag followed by a valid application record.
+2. Corrupted IPv4 checksum with correct TCP checksum.
+3. ARP field-by-field malformed request matrix.
+4. ACK range and wraparound state matrix.
+5. SYN MSS threshold matrix and actual outbound segment sizes.
+6. ECDSA deterministic boundary vectors at `n-1`, `n`, and `n+1`; retain
    the existing `2^256-1` and `2^256-2` reference self-test coverage.
 
 All tests remain offline against the frozen image in ephemeral QEMU. No
