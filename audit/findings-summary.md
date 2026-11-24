@@ -34,6 +34,7 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 | TLSInnerPlaintext without content type | Authenticated all-zero inner plaintext lengths 1, 2, 16, 255 and 300 are accepted; a following valid request is processed | Closes connection for all five lengths before following request | Same as first fix | [expanded three-way test](https://github.com/miSultanato/k15/actions/runs/45414676678) |
 | ECDSA nonce boundaries | `n+1` aliases `1`; `n-1` verifies; `n` does not | Not compared | Not compared | [frozen signer test](https://github.com/miSultanato/k15/actions/runs/45393554079) |
 | E820 BIOS signature | Frozen boot sector accepts a successful INT 15h response with wrong EAX signature | Rejects wrong signature | Same as first fix | [synthetic 16-bit BIOS differential](https://github.com/miSultanato/k15/actions/runs/45437038597) |
+| Boot/build hardening | `apcount` is misaligned; GDT Accessed bytes are `0x9A/0x92`; E820 signature check and Makefile hostname guard are absent; runner hostname leaks into generated certificate SAN | Alignment and Accessed bits corrected; SMAP signature and `NAME` guard present; hostname excluded from certificate SAN | Same as first fix | [source, build, certificate and emitted-image differential](https://github.com/miSultanato/k15/actions/runs/45437038597) |
 
 ## Additional negative evidence
 
