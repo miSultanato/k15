@@ -15,7 +15,7 @@ import time
 from pathlib import Path
 
 if len(sys.argv) not in (2, 3):
-    raise SystemExit("usage: test_tcp_ack_mss.py TARGET [expect|observe]")
+    raise SystemExit("usage: test_tcp_ack_mss.py TARGET [expect|reject|wrap-expect|wrap-reject]")
 
 mode = sys.argv[2] if len(sys.argv) == 3 else "expect"
 if mode not in {"expect", "reject", "wrap-expect", "wrap-reject"}:
@@ -222,13 +222,12 @@ def test_mss_boundary_matrix() -> None:
         advertised = parse_mss(synack["options"])
         payloads = fetch_after_handshake(sport, isn, synack, bad_ack=False)
         maximum = max((len(payload) for payload in payloads), default=0)
-        if EXPECT_ACCEPT and peer_mss < 180 and maximum <= peer_mss:
+        observed_violation = maximum > peer_mss
+        expected_violation = EXPECT_ACCEPT and peer_mss < 180
+        if observed_violation != expected_violation:
             raise SystemExit(
-                f"FAIL: bounty no longer emits a segment larger than peer MSS={peer_mss}"
-            )
-        if not EXPECT_ACCEPT and maximum > peer_mss:
-            raise SystemExit(
-                f"FAIL: fixed image emitted {maximum} bytes above peer MSS={peer_mss}"
+                f"FAIL: peer MSS={peer_mss}: oversized segment observed={observed_violation}, "
+                f"expected={expected_violation} (largest={maximum})"
             )
         print(
             f"PASS: peer MSS={peer_mss}, SYN-ACK MSS={advertised}, "
