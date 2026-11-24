@@ -61,6 +61,8 @@ user namespaces.
   then checks whether the local QEMU guest still processes valid app data.
 - `test_dummy_ccs.py`: checks the record immediately after ServerHello when
   ClientHello carries a non-empty legacy session ID.
+- `test_ip_arp_validation.py`: sends synthetic IPv4 SYNs with valid/invalid
+  header checksums and ARP requests with malformed hardware/protocol fields over TAP.
 - `run_qemu_abuse.sh`: runs the upstream hostile-client suite against the
   fixed development image, not the bounty image.
 - `tools/racetest.sh`: exercises the project's deliberately synchronized
