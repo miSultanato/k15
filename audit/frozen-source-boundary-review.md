@@ -145,6 +145,21 @@ the TLS library has hashed them.
 These protocol behaviors may be relevant to TLS conformance or connection
 state handling, but neither is by itself evidence of private-key disclosure.
 
+
+## 7. Dummy ChangeCipherSpec is missing for a non-empty legacy session ID
+
+The local differential test in [run 45395033747](https://github.com/miSultanato/k15/actions/runs/45395033747)
+used an OpenSSL ClientHello with a 32-byte `legacy_session_id` and inspected
+the first two server TLS records:
+
+- Frozen bounty image: ServerHello is followed immediately by outer record
+  type 23 (encrypted handshake data), not a dummy ChangeCipherSpec (type 20).
+- Upstream framing-fix image `a2d8893261b2be15b44c86d6f4483d65820e943a`:
+  the record immediately after ServerHello is type 20, as required.
+
+This reproduces finding #8 and confirms that the upstream image fixes it.
+The HelloRetryRequest path remains to be tested separately.
+
 ## Test status and next steps
 
 The deterministic ECDSA boundary test now runs against the frozen assembly
@@ -170,12 +185,11 @@ record; it does not demonstrate a remote attacker can forge authenticated
 application data or recover the server's private key. The remaining items are
 source-derived test plans, not dynamically reproduced findings:
 
-1. Reproduce the Finished and AEAD rejection tests against the fixed upstream image.
+1. Exercise the dummy ChangeCipherSpec behavior on the HelloRetryRequest path.
 2. Corrupted IPv4 checksum with correct TCP checksum.
 3. ARP field-by-field malformed request matrix.
 4. ACK range and wraparound state matrix.
 5. SYN MSS threshold matrix and actual outbound segment sizes.
-6. Characterize the dummy ChangeCipherSpec case (finding #8).
 7. Extend nonce-distribution analysis only if a plausible attack model emerges;
    the explicit `n-1`, `n`, and `n+1` assembly boundary vectors now pass.
 
