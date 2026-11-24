@@ -144,12 +144,14 @@ def parse_mss(options: bytes):
     return None
 
 
-def fetch_after_handshake(sport: int, client_isn: int, synack, bad_ack: bool = False):
+def fetch_after_handshake(
+    sport: int, client_isn: int, synack, bad_ack: bool = False, request: bytes = HTTP
+):
     server_next = (synack["seq"] + 1) & 0xFFFFFFFF
     client_next = (client_isn + 1) & 0xFFFFFFFF
     sock.send(make_frame(sport, client_next, server_next, 0x10))
     ack = (server_next + 0x10000) & 0xFFFFFFFF if bad_ack else server_next
-    sock.send(make_frame(sport, client_next, ack, 0x18, HTTP))
+    sock.send(make_frame(sport, client_next, ack, 0x18, request))
     deadline = time.monotonic() + 2.0
     payloads = []
     while time.monotonic() < deadline:
@@ -186,6 +188,24 @@ def test_bad_ack() -> None:
     )
 
 
+def test_http_methods() -> None:
+    for sport, isn, method in (
+        (52003, 0x3456789A, b"get"),
+        (52004, 0x456789AB, b"FOO"),
+    ):
+        synack = handshake(sport, isn, 536)
+        if synack is None:
+            print(f"OBSERVED: HTTP method {method.decode()}: no SYN-ACK")
+            continue
+        request = method + b" / HTTP/1.1\\r\\nHost: k15\\r\\nConnection: close\\r\\n\\r\\n"
+        payloads = fetch_after_handshake(sport, isn, synack, request=request)
+        response = b"".join(payloads)
+        if response.startswith(b"HTTP/1."):
+            print(f"OBSERVED: HTTP method {method.decode()}: response {response[:40]!r}")
+        else:
+            print(f"OBSERVED: HTTP method {method.decode()}: no HTTP response")
+
+
 def test_small_mss() -> None:
     sport, isn, peer_mss = 52002, 0x23456789, 100
     synack = handshake(sport, isn, peer_mss)
@@ -205,6 +225,7 @@ def test_small_mss() -> None:
 if __name__ == "__main__":
     try:
         test_bad_ack()
+        test_http_methods()
         test_small_mss()
         print(f"RESULT: TCP ACK/MSS probes completed in mode={mode}")
     finally:
