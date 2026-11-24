@@ -38,7 +38,7 @@ https://www.reddit.com/r/securityCTF/comments/1y1fjej/200_in_bitcoin_if_you_can_
 
 A commenter on the same thread reports:
 
-- approximately 10,200 concurrent TLS 1.3 handshakes, up to 48 client
+- approximately 10,200 TLS 1.3 handshakes, up to 48 client
   threads against an SMP=4 guest;
 - every CertificateVerify `r` unique and every recovered nonce unique;
 - two boots and 2,048 signatures with no cross-boot repetition;
@@ -312,14 +312,23 @@ the VM's callers and all indirect address formation, including the table
 selection paths. The source audit does not inspect the production image,
 runtime register contents, or the hypervisor's memory.
 
-The CI checker now makes the core invariants reproducible. The latest
-run, 45372168669, completed successfully on 2026-11-24, using audit harness
-commit fac8568 and the frozen target commit ab93479. It passed the synthetic
-periodic-stream model, the RNG call-site guard, the private-scalar read-path
-guard (including enumeration of every direct REGS address operation,
-table-selection bounds, and the generator linkage), and the upstream
-make test suite. The ECDSA test output reports 70 signatures and 70 nonces.
-The run does not test real RDRAND hardware or the live server.
+The CI checker now makes the core invariants reproducible. Run
+45372168669 passed the synthetic periodic-stream model, RNG call-site guard,
+private-scalar read-path guard and upstream `make test` suite on the frozen
+target commit ab93479.
+
+A further run, 45373349450, reconstructed the exact textual `ec.inc` output
+from the imported `tools/ec.py` program definitions using the same
+serialization and offset rules as `tools/gen.py`. It covered 14 VM programs
+and 1,816 unpacked bytes; the deterministic generated include has SHA-256
+`02a6eb75314455ade2a5690b27ef85d7f4185a8585d96a078f1f188528a0d369`.
+This is a deterministic source-derived manifest, not a byte comparison with
+a production image or an assembled binary.
+
+The new offline proof check is being added separately: it will validate the
+committed public cross-curve proof and its address without connecting to
+15kb.org or accessing a private key. None of these checks exercise real
+RDRAND hardware, the production VM, or the live server.
 
 Earlier runs 45371790632 and 45371845295 also passed the preceding
 read-path checker revisions and make test.
@@ -336,3 +345,25 @@ read-path checker revisions and make test.
    experiment produces a concrete anomalous stream.
 4. Keep all dynamic testing local and bounded. No load, fuzzing, malformed
    handshake campaign, or denial-of-service testing against 15kb.org.
+
+
+## Offline proof verification and key-generation boundary
+
+The public `bounty.proof` is a 41,172-byte binary proof encoded as base64 in
+the repository. Its verifier checks the 128 linked Pedersen commitments,
+the aggregate commitment relation on both curves, and the Borromean ring
+responses. This is useful to validate independently because it does not need
+a TLS connection or any private material.
+
+One detail narrows the meaning of the disclosed `flip` bit: `prove_xcurve`
+supports both halves of the P-256 scalar range, but the actual `--gen` path
+derives BIP-84 scalars repeatedly until `d < 2^255`. Therefore a proof
+created by the documented bounty-generation path has `flip = 0` by
+construction. The bit is not an extra unknown about this particular key; it
+reflects a constraint already explicit in the public generator. The proof
+still reveals only the two public points and the relation between them.
+
+An offline CI verifier has been added to check the repository's exact proof
+file, compare the verified Bitcoin address with its header, and report the
+public P-256 and secp256k1 points. It must not be described as proving
+knowledge of the private scalar or as a key-recovery method.
