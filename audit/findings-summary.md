@@ -61,7 +61,7 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 ## Interpretation and limits
 
-- The SYN-cookie replay test is an observation, not a confirmed bounty finding: all three revisions accept the same cookie ACK after orderly FIN/FIN teardown. The upstream cookie is keyed to the client tuple and initial sequence with a boot-time secret, but has no visible time bucket or single-use counter. The local test does not demonstrate off-path forgery, cross-tuple replay, application-authentication bypass or production reachability. See `syn-cookie-replay-observation.md`.
+- The SYN-cookie replay test is an observation, not a confirmed bounty finding: all three revisions accept the same cookie ACK after orderly FIN/FIN teardown, while rejecting that ACK after a source-port change. The upstream cookie is keyed to the client tuple and initial sequence with a boot-time secret, but has no visible time bucket or single-use counter. The local test does not demonstrate off-path forgery, cross-tuple replay, application-authentication bypass or production reachability. See `syn-cookie-replay-observation.md`.
 
 - The ARP result is a real, local stale-buffer metadata disclosure using
   synthetic victim/attacker identities and a unicast ARP primer. It is limited
