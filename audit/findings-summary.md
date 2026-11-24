@@ -78,9 +78,10 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 ## Next work
 
 1. Run and validate the new end-to-end malformed-ClientHello client. It now
-   hashes the exact bytes sent and checks CertificateVerify, Finished and HTTP;
-   the implementation is committed but has not yet passed a new Actions run.
-   The outer-record-length mismatch remains separate.
+   covers both inner-length and outer-record-length truncation, hashes the
+   exact payload the server processes, and checks CertificateVerify, Finished
+   and HTTP. The implementation is committed but has not yet passed a new
+   Actions run.
 2. Continue assessing the short-ARP stale-buffer disclosure only with synthetic
    data. Do not attempt to access production memory.
 
