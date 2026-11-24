@@ -120,13 +120,13 @@ func main() {
 	defer raw.Close()
 	_ = raw.SetDeadline(time.Now().Add(12 * time.Second))
 	capture := &captureConn{Conn: raw}
-	fmt.Println("HRR probe: TCP connected; starting TLS 1.3 handshake with P-256 first")
+	fmt.Println("HRR probe: TCP connected; starting TLS 1.3 handshake with P-384 first")
 	client := tls.Client(capture, &tls.Config{
 		ServerName:         "localhost",
 		InsecureSkipVerify: true, // local synthetic test certificate only
 		MinVersion:         tls.VersionTLS13,
 		MaxVersion:         tls.VersionTLS13,
-		CurvePreferences:   []tls.CurveID{tls.CurveP256, tls.X25519},
+		CurvePreferences:   []tls.CurveID{tls.CurveP384, tls.X25519},
 	})
 	if err := client.Handshake(); err != nil {
 		fmt.Printf("TLS handshake error: %v\n", err)
