@@ -114,16 +114,16 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 ## Next work
 
-1. Finish the SYN-cookie reboot probe. The current harness confirms the
-   monitor acknowledges `system_reset`, but no post-reset SYN-ACK is observed
-   on any of the three images. A diagnostic rerun now captures QEMU status,
-   CPU registers and network-device state before any security conclusion.
-2. Extend TCP client-sequence coverage to exact admission-window edges and
-   FIN/RST combinations. The RST exact-match matrix now passes on all three
-   revisions; it does not reveal a defect.
-3. If useful, extend the ClientHello matrix to additional truncation offsets
+1. Extend TCP client-sequence coverage to exact admission-window edges and
+   FIN combinations. The RST exact-match matrix passes on all three revisions:
+   exact sequence resets the slot; offsets -1/+1 preserve it.
+2. If useful, extend the ClientHello matrix to additional truncation offsets
    and record-prefix alignments. The one-byte inner-short and outer-short
    cases are already reproduced end-to-end.
+3. Assess and communicate the shared client-Finished omission behavior with
+   protocol-level impact boundaries kept explicit; it is present in all three
+   tested revisions and is not yet shown to enable injection without the
+   client application traffic key.
 
 The short-site W^X regression is now confirmed at three independent levels:
 emitted layout, the QEMU RET self-test, and a live PTE walk. The frozen image's
