@@ -41,9 +41,17 @@ def checksum(data: bytes) -> int:
     return (~total) & 0xFFFF
 
 
-def frame(seq: int, ack: int, flags: int, payload: bytes = b"") -> bytes:
+def frame(
+    seq: int, ack: int, flags: int, payload: bytes = b"", options: bytes = b""
+) -> bytes:
+    if len(options) % 4:
+        options += b"\x01" * (4 - len(options) % 4)
+    tcp_header_len = 20 + len(options)
+    if tcp_header_len > 60:
+        raise ValueError("TCP options exceed the 40-byte header limit")
     tcp = struct.pack("!HHIIHHHH", SPORT, 80, seq & 0xffffffff,
-                      ack & 0xffffffff, (5 << 12) | flags, 65535, 0, 0) + payload
+                      ack & 0xffffffff, ((tcp_header_len // 4) << 12) | flags,
+                      65535, 0, 0) + options + payload
     pseudo = HOST_IP + GUEST_IP + struct.pack("!BBH", 0, 6, len(tcp))
     tcp = tcp[:16] + struct.pack("!H", checksum(pseudo + tcp)) + tcp[18:]
     ip = struct.pack("!BBHHHBBH4s4s", 0x45, 0, 20 + len(tcp),
@@ -85,10 +93,20 @@ def receive(timeout: float):
     return None
 
 
+def drain_rx() -> None:
+    """Discard queued frames so a pre-reset SYN-ACK cannot masquerade as fresh."""
+    while True:
+        ready, _, _ = select.select([sock], [], [], 0)
+        if not ready:
+            return
+        sock.recv(65536)
+
+
 def syn_cookie(timeout: float = 12.0) -> int:
+    drain_rx()
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        sock.send(frame(ISN, 0, 0x02, b"\x02\x04\x02\x18"))
+        sock.send(frame(ISN, 0, 0x02, options=b"\x02\x04\x02\x18"))
         item = receive(0.45)
         if item and (item["flags"] & 0x12) == 0x12 and item["ack"] == ((ISN + 1) & 0xffffffff):
             return item["seq"]
@@ -140,6 +158,9 @@ try:
     # resets before treating an unchanged value as a failed rotation check.
     for attempt in range(1, 4):
         reset_guest()
+        # Drop any SYN-ACK queued before or during the monitor reset before
+        # issuing the post-reset SYN with the same tuple and client ISN.
+        drain_rx()
         new_cookie = syn_cookie()
         print(f"OBSERVED: post-reset attempt {attempt} SYN cookie=0x{new_cookie:08x}")
         if new_cookie != old_cookie:
