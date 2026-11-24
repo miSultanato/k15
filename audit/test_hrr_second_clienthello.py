@@ -33,5 +33,9 @@ print(
 if not trace.strip():
     raise SystemExit("FAIL: OpenSSL produced an empty trace")
 if not hrr_present or len(client_hellos) < 2:
+    print("HANDSHAKE TRACE MARKERS:")
+    for line in trace.splitlines():
+        if any(token in line for token in ("ClientHello", "ServerHello", "ChangeCipherSpec", "Random", "Handshake")):
+            print(line[:260])
     print("TRACE TAIL:")
     print("\n".join(trace.splitlines()[-18:]))
