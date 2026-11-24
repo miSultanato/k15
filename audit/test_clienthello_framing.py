@@ -128,7 +128,7 @@ def main() -> None:
     if expected == "accept":
         observe("legacy_session_id length 255", ch255_wire)
     else:
-        check("legacy_session_id length 255", exchange(ch255_wire))
+        check_fatal("legacy_session_id length 255", exchange(ch255_wire))
 
     # Compression method 1 is invalid for TLS 1.3 (only null compression is legal).
     p = 34
