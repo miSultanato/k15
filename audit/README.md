@@ -77,8 +77,10 @@ user namespaces.
   header checksums and ARP requests with malformed hardware/protocol fields over TAP.
 - `test_arp_short_frame.py`: primes RX buffers with a synthetic marker, then
   checks whether a 24-byte ARP request discloses stale bytes.
-- `test_tcp_ack_mss.py`: sends a data-bearing segment with an out-of-window ACK
-  and tests whether a peer MSS of 100 is respected.
+- `test_tcp_ack_mss.py`: sends a data-bearing segment with an out-of-window ACK,
+  tests peer-MSS boundaries, delays a first SYN-cookie ACK, then replays the same
+  cookie after FIN/FIN teardown. The replay probe waits 65 seconds after teardown
+  and compares the server ACK with the new request's end sequence.
 - `check_current_rand_path.py`: checks the refactored current-main RDRAND-to-nonce path.
 - `check_boot_hardening.py`: compares four source-level boot/build hardening changes between the frozen bounty, first upstream fix and pinned current main.
 - `check_boot_binary.py`: checks the emitted `os.bin` and NASM listing for AP counter alignment and GDT descriptor Accessed bytes. It does not boot the image or exercise AP startup.
