@@ -86,4 +86,4 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | 20,000 ClientHello fuzz cases on both source revisions | [45383690499](https://github.com/miSultanato/k15/actions/runs/45383690499) |
 | Synthetic scalar guest-RAM snapshot | [45384777117](https://github.com/miSultanato/k15/actions/runs/45384777117) |
 
-See the community watch report for exact observations and limitations.
+Start with `findings-summary.md` for the executive status, then see `community-watch-2026-11-24.md` for exact observations and third-party context.
