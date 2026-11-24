@@ -118,7 +118,13 @@ def main() -> None:
     ch33 = bytearray(ch)
     ch33[sid_pos] = 33
     ch33[sid_pos + 1 + sid_len : sid_pos + 1 + sid_len] = b"\xaa"
-    observe("legacy_session_id length 33", rebuild(bytes(ch33)))
+    check("legacy_session_id length 33", exchange(rebuild(bytes(ch33))))
+
+    # The maximum one-byte length is a useful wrap/bounds case, not just 33.
+    ch255 = bytearray(ch)
+    ch255[sid_pos] = 255
+    ch255[sid_pos + 1 + sid_len : sid_pos + 1 + sid_len] = b"\\xaa" * (255 - sid_len)
+    check("legacy_session_id length 255", exchange(rebuild(bytes(ch255))))
 
     # Compression method 1 is invalid for TLS 1.3 (only null compression is legal).
     p = 34
@@ -131,7 +137,11 @@ def main() -> None:
     p += 1
     ch_compression = bytearray(ch)
     ch_compression[p] = 1
-    observe("non-null compression method", rebuild(bytes(ch_compression)))
+    compression_wire = rebuild(bytes(ch_compression))
+    if expected == "accept":
+        check("non-null compression method", exchange(compression_wire))
+    else:
+        check_fatal("non-null compression method", exchange(compression_wire))
 
     # TLS 1.3 ClientHello legacy_version must be 0x0303.
     ch_version = bytearray(ch)
