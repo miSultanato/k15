@@ -124,7 +124,11 @@ def main() -> None:
     ch255 = bytearray(ch)
     ch255[sid_pos] = 255
     ch255[sid_pos + 1 + sid_len : sid_pos + 1 + sid_len] = b"\xaa" * (255 - sid_len)
-    check("legacy_session_id length 255", exchange(rebuild(bytes(ch255))))
+    ch255_wire = rebuild(bytes(ch255))
+    if expected == "accept":
+        observe("legacy_session_id length 255", ch255_wire)
+    else:
+        check("legacy_session_id length 255", exchange(ch255_wire))
 
     # Compression method 1 is invalid for TLS 1.3 (only null compression is legal).
     p = 34
