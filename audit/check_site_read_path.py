@@ -112,8 +112,16 @@ def main() -> None:
     require("if len(data) > MAX_SITE:" in pack,
             "packer no longer enforces MAX_SITE")
     require("recs_at = at + 16 * len(responses)" in pack and
+            "rec_off[path] = recs_at + len(recs)" in pack and
+            'n.to_bytes(2, "little") + len(path).to_bytes(2, "little") + path' in pack and
             "blobs_at = recs_at + len(recs)" in pack,
             "packed response/path/blob layout changed")
+    require('h.to_bytes(4, "little") + off.to_bytes(4, "little")' in pack and
+            'table += (blobs_at + len(blobs)).to_bytes(4, "little")' in pack,
+            "path hash or response blob offsets are no longer packed from build-time values")
+    require('entries += [(head, data, 8), (not_modified, b"", 0)]' in pack and
+            "responses.extend(entries)" in pack,
+            "response forms are no longer stored in fixed adjacent pairs")
     require("PT_MASK equ {slots - 1}" in pack and
             "AT_OFF equ {at}" in pack and
             "P80_OFF equ {p80_at}" in pack and
@@ -134,7 +142,7 @@ def main() -> None:
     print("PASS: compression/304 selection only chooses prepacked response variants")
     print("PASS: path table is <=50% full; response IDs <=32,767; SITE <=768 MiB")
     print("PASS: SITE end-byte write/execute probe is isolated under optional WXTEST")
-    print("PASS: no request-controlled SITE-to-preceding-memory read path found")
+    print("PASS: audited HTTP response path has no request-controlled pre-SITE read")
 
 
 if __name__ == "__main__":
