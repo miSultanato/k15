@@ -109,6 +109,8 @@ proofs of all hardware behavior or every possible SMP schedule. See
 
 | Evidence | Run |
 | --- | --- |
+| HRR second ClientHello: two ClientHellos/two ServerHellos; frozen sends 0 CCS, both upstream images send 1 | [45436733972](https://github.com/miSultanato/k15/actions/runs/45436733972) |
+| Oversized legacy_session_id 33 and 255 bytes: frozen accepts both; upstream images send fatal alerts | [45436733972](https://github.com/miSultanato/k15/actions/runs/45436733972) |
 | Short-site W^X: frozen executes synthetic site byte; first-fix/current reset | [45409649945](https://github.com/miSultanato/k15/actions/runs/45409649945) |
 | Authenticated all-zero TLSInnerPlaintext lengths 1/2/16/255/300: frozen processes following request; fixed/current close | [45414676678](https://github.com/miSultanato/k15/actions/runs/45414676678) |
 | Go TLS normal-path CCS: frozen sends none; fixed/current send one after ServerHello | [45417214217](https://github.com/miSultanato/k15/actions/runs/45417214217) |
