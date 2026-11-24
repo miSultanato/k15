@@ -22,6 +22,6 @@ import sys
 Path(sys.argv[1]).write_bytes(b"<!doctype html><title>pte-probe</title>\n\xc3")
 PYGEN
 
-make -s -B B="$B" SITE="$B/one" COMPRESS=0 WXTEST=0 >/dev/null
+make -s -B B="$B" SITE="$B/one" COMPRESS=0 >/dev/null
 python3 "$repo_root/probe_wx_pte.py" "$target" "$expected"
 echo "PASS: $label live page-table inspection completed"
