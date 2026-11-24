@@ -824,3 +824,30 @@ All three harnesses passed. This materially closes the concurrency gap noted
 as not dynamically covered in the independent 2026-11-21 audit. It tests the
 specific controlled interleavings and slot-boundary condition, not every
 possible SMP schedule or all load/loss/reordering behavior.
+
+
+## Runtime ECDSA nonce sampling with synthetic key (confirmed)
+
+The expanded bounded audit run
+https://github.com/miSultanato/k15/actions/runs/45383575122
+captured and cryptographically verified local TLS 1.3 CertificateVerify
+messages from the frozen bounty image, then recovered the corresponding
+nonces using the synthetic P-256 private key generated inside the runner.
+
+Results from one QEMU boot:
+- 10,240/10,240 TLS handshakes completed.
+- 10,240/10,240 CertificateVerify signatures verified against the synthetic
+  certificate key.
+- 10,240 distinct ECDSA `r` values.
+- 10,240 distinct recovered nonces, treating `k` and `n-k` as equivalent.
+
+A second independent QEMU boot produced another 1,024/1,024 verified
+signatures and unique nonces. The test compared one-way fingerprints of
+`(r, canonicalized k)` across the two boots: overlap was zero
+(10,240 + 1,024 samples).
+
+Only aggregate counts and one-way fingerprints were retained in the ephemeral
+runner; no nonce, signature capture, key log, certificate or private key was
+uploaded. This is finite-sample evidence of nonce uniqueness on QEMU TCG,
+not proof of uniform distribution, real-hardware RDRAND behavior, or absence
+of every possible bias. The synthetic key is unrelated to the bounty key.
