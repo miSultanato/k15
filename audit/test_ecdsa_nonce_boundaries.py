@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Deterministic P-256 nonce boundary checks against the frozen reference signer.
+"""Deterministic P-256 nonce boundary checks against the frozen assembly signer.
 
 Usage: test_ecdsa_nonce_boundaries.py TARGET
-This imports only TARGET/tools/ec.py and uses a synthetic private scalar.
+Requires TARGET/build/test_asm, built by `make test`. Uses synthetic key material.
 """
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -21,16 +22,42 @@ sys.path.insert(0, str(target / "tools"))
 import ec as reference  # noqa: E402
 
 n = reference.N256
+R = reference.R
 d = 0x123456789ABCDEF123456789ABCDEF123456789ABCDEF123456789ABCDEF1234
 z = 0xA5A5A5A55A5A5A5A0123456789ABCDEF00112233445566778899AABBCCDDEEFF
 key = ec.derive_private_key(d, ec.SECP256R1())
 public_key = key.public_key()
-machine = reference.Machine()
-table = machine.table256()
+d_mont = d * R % n
+
+# test_asm's command protocol takes D and K little-endian, Z big-endian;
+# D is the Montgomery-form private scalar used by the assembly signer.
+cases = (("k=1", 1), ("k=n-1", n - 1), ("k=n", n), ("k=n+1", n + 1))
+commands = "".join(
+    f"sign {d_mont.to_bytes(32, 'little').hex()} "
+    f"{k.to_bytes(32, 'little').hex()} {z.to_bytes(32, 'big').hex()}\n"
+    for _, k in cases
+)
+binary = target / "build" / "test_asm"
+result = subprocess.run(
+    [str(binary), "commands"],
+    input=commands,
+    capture_output=True,
+    text=True,
+    check=True,
+)
+outputs = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+if len(outputs) != len(cases):
+    raise SystemExit(
+        f"FAIL: expected {len(cases)} assembly signatures, got {len(outputs)}; "
+        f"stderr={result.stderr.strip()}"
+    )
 
 
-def sign(k: int) -> tuple[int, int]:
-    return machine.sign(table, d, k, z)
+def decode(raw: str) -> tuple[int, int]:
+    data = bytes.fromhex(raw)
+    if len(data) != 64:
+        raise SystemExit(f"FAIL: assembly returned {len(data)} bytes, expected 64")
+    return int.from_bytes(data[:32], "little"), int.from_bytes(data[32:], "little")
 
 
 def verify(signature: tuple[int, int]) -> bool:
@@ -48,24 +75,19 @@ def verify(signature: tuple[int, int]) -> bool:
     return True
 
 
-sig_one = sign(1)
-sig_n_plus_one = sign(n + 1)
-if not verify(sig_one):
-    raise SystemExit("FAIL: control nonce k=1 did not verify")
-if not verify(sig_n_plus_one):
-    raise SystemExit("FAIL: nonce k=n+1 did not produce a valid P-256 signature")
-if sig_n_plus_one != sig_one:
-    raise SystemExit("FAIL: k=n+1 did not behave identically to effective nonce k=1")
-print("PASS: k=n+1 aliases k=1 in the frozen Python reference signer")
+signatures = {label: decode(raw) for (label, _), raw in zip(cases, outputs)}
+if not verify(signatures["k=1"]):
+    raise SystemExit("FAIL: assembly control nonce k=1 did not verify")
+if not verify(signatures["k=n-1"]):
+    raise SystemExit("FAIL: assembly nonce k=n-1 did not verify")
+if not verify(signatures["k=n+1"]):
+    raise SystemExit("FAIL: assembly nonce k=n+1 did not verify")
+if signatures["k=n+1"] != signatures["k=1"]:
+    raise SystemExit("FAIL: assembly k=n+1 did not alias effective nonce k=1")
+if verify(signatures["k=n"]):
+    raise SystemExit("FAIL: assembly nonce k=n (zero modulo n) unexpectedly verified")
 
-sig_n_minus_one = sign(n - 1)
-if not verify(sig_n_minus_one):
-    raise SystemExit("FAIL: k=n-1 did not produce a valid P-256 signature")
-print("PASS: k=n-1 produces a valid, deterministic signature")
-
-sig_n = sign(n)
-if verify(sig_n):
-    raise SystemExit("FAIL: k=n (zero modulo n) unexpectedly verified")
-print("PASS: k=n does not produce a valid signature")
-
-print("RESULT: deterministic P-256 reference boundary checks passed")
+print("PASS: assembly k=n+1 aliases k=1; both signatures verify")
+print("PASS: assembly k=n-1 produces a valid P-256 signature")
+print("PASS: assembly k=n (zero modulo n) does not produce a valid signature")
+print("RESULT: deterministic P-256 assembly nonce boundary checks passed")
