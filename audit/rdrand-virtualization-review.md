@@ -51,7 +51,7 @@ In QEMU's x86 TCG implementation, the RDRAND helper calls `qemu_guest_getrandom`
 
 Therefore the existing 10,240-handshake QEMU TCG nonce test validates the server's nonce-pool and signing logic when supplied with QEMU-provided randomness. It does **not** measure native host RDRAND, the production hypervisor's RDRAND path, or the production host CPU's RNG behavior.
 
-The separate `rdrand_host_probe.c` samples the GitHub Actions runner's exposed native RDRAND instruction. That runner is not the bounty host. It is an independent data point only.
+The separate `rdrand_host_probe.c` samples the GitHub Actions runner's exposed RDRAND instruction. The runner itself may be virtualized, so its underlying hardware/hypervisor path is not established. It is not the bounty host and is an independent data point only.
 
 ### 3.2 KVM / hardware virtualization
 
@@ -61,7 +61,7 @@ QEMU's `-cpu host` path exposes host CPU features, subject to KVM filtering. The
 
 QEMU and libvirt documentation warn that host-passthrough CPU models are not generally safe for migration across heterogeneous hosts. This is a CPU-ABI compatibility warning; it is not evidence of RDRAND state duplication or RNG failure.
 
-The production hypervisor, guest CPU model, RDRAND-exiting setting, migration policy and microcode are unknown. No claim about the live service's execution path is warranted.
+The production hypervisor, guest CPU model, RDRAND-exiting setting, migration policy and microcode are unknown. No claim about the live service's execution path is warranted. The CI workflow also installs QEMU from the runner's package repositories rather than pinning an exact QEMU build; the cited upstream helper describes the TCG design, while a future reproducibility improvement should record the installed QEMU version.
 
 ## 4. Full guest-memory snapshot / restore: conditional nonce-pool rollback
 
