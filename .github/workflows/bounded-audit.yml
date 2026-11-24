@@ -12,6 +12,7 @@ on:
       - audit/test_ecdsa_nonce_boundaries.py
       - audit/run_ct.sh
       - audit/test_clienthello_framing.py
+      - audit/test_tls_record_rejection.py
       - audit/qemu_nonce_uniqueness.py
       - audit/run_qemu_nonce.sh
       - audit/run_qemu_framing.sh
