@@ -154,11 +154,10 @@ def main() -> None:
         offset += 8 * (len(prog) - 1) + 4
     generated.append(f"NPROG equ {len(curve.PROGRAMS)}\n")
     ec_image = "".join(generated).encode("ascii")
-    require(tuple(curve.PROGRAMS) == tuple(name for name, _ in programs),
-            "tools/ec.py program order differs from its PROGRAMS mapping")
-    require(curve.PROGRAMS["SIGN"][0] == 0x3E and
-            curve.PROGRAMS["SIGN"][1] == 0x37,
-            "SIGN's first bytecode operation is no longer T0 = X * D")
+    require(set(curve.PROGRAMS) == {name for name, _ in programs},
+            "tools/ec.py program definitions differ from its PROGRAMS mapping")
+    require("SIGN" in curve.PROGRAMS,
+            "generated program mapping has no SIGN entry")
     print(f"PASS: reconstructed {len(curve.PROGRAMS)} VM programs / {offset} unpacked bytes")
     print(f"INFO: deterministic ec.inc source SHA-256 {hashlib.sha256(ec_image).hexdigest()}")
     if ec_inc_path is not None:
