@@ -244,7 +244,7 @@ def test_delayed_syn_cookie() -> None:
 
 
 
-def exchange_and_reset(sport: int, client_seq: int, server_seq: int, request: bytes = HTTP):
+def exchange_and_close(sport: int, client_seq: int, server_seq: int, request: bytes = HTTP):
     # Materialize the cookie-backed slot, send one HTTP request, then close it
     # with a sequence-valid FIN. Fall back to RST if the peer does not FIN back.
     sock.send(make_frame(sport, client_seq, server_seq, 0x10))
@@ -272,7 +272,7 @@ def exchange_and_reset(sport: int, client_seq: int, server_seq: int, request: by
             sock.send(make_frame(sport, client_ack, server_next, 0x10))
 
     if not response.startswith(b"HTTP/1."):
-        return bytes(response), False, client_ack
+        return bytes(response), False, client_ack, False
 
     # A client FIN advances C_NXT once and asks the server to close its side too.
     sock.send(make_frame(sport, client_ack, server_next, 0x11))
@@ -304,7 +304,7 @@ def exchange_and_reset(sport: int, client_seq: int, server_seq: int, request: by
         f"client_next=0x{client_after_request:08x}, fin_seen={fin_seen}, "
         f"reset_fallback={not fin_seen}"
     )
-    return bytes(response), True, client_ack
+    return bytes(response), True, client_ack, fin_seen
 
 
 def test_cookie_replay_after_teardown() -> None:
@@ -316,22 +316,24 @@ def test_cookie_replay_after_teardown() -> None:
 
     client_seq = (isn + 1) & 0xFFFFFFFF
     original_server_ack = (synack["seq"] + 1) & 0xFFFFFFFF
-    first_response, first_reset, first_peer_ack = exchange_and_reset(
+    first_response, first_teardown, first_peer_ack, first_fin = exchange_and_close(
         sport, client_seq, original_server_ack
     )
-    if not first_response.startswith(b"HTTP/1.") or not first_reset:
+    if not first_response.startswith(b"HTTP/1.") or not first_teardown or not first_fin:
         print(
             "OBSERVED: cookie replay after teardown: could not establish the "
             f"initial HTTP exchange and reset (response={len(first_response)} bytes)"
         )
         return
 
-    # The sequence-valid close should free the slot. Replay the exact ACK
-    # that completed the SYN cookie, then send a fresh request at the old sequence.
+    # Keep the exact cookie for 65 seconds after a completed FIN close, then
+    # replay it and send a fresh request at the old sequence.
     drain_deadline = time.monotonic() + 0.25
     while time.monotonic() < drain_deadline:
         receive(sport, timeout=min(0.05, drain_deadline - time.monotonic()))
-    second_response, second_reset, replay_peer_ack = exchange_and_reset(
+    replay_delay = 65
+    time.sleep(replay_delay)
+    second_response, second_teardown, replay_peer_ack, replay_fin = exchange_and_close(
         sport, client_seq, original_server_ack, REPLAY_HTTP
     )
     accepted = second_response.startswith(b"HTTP/1.")
@@ -341,11 +343,12 @@ def test_cookie_replay_after_teardown() -> None:
     print(
         "OBSERVED: cookie ACK replay after RST teardown: "
         f"first_http={first_response.startswith(b'HTTP/1.')}, "
-        f"first_reset_sent={first_reset}, replay_http={accepted}, "
+        f"first_fin_close={first_fin}, replay_delay_s={replay_delay}, replay_http={accepted}, "
         f"replay_ack_matches_new_request={distinct_request}, replay_peer_ack=0x{replay_peer_ack:08x}, "
         f"expected_replay_ack=0x{expected_replay_ack:08x}, first_peer_ack=0x{first_peer_ack:08x}, "
         f"replay_status={replay_status!r}, replay_response_bytes={len(second_response)}, "
-        f"replay_reset_sent={second_reset}, original_cookie_ack=0x{original_server_ack:08x}"
+        f"replay_fin_close={replay_fin}, replay_teardown_sent={second_teardown}, "
+        f"original_cookie_ack=0x{original_server_ack:08x}"
     )
 
 
