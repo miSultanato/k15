@@ -957,3 +957,28 @@ The probe checks the specific adjacent-repeat and period-four patterns relevant
 to the synthetic nonce-cycle hypothesis. This is a measurement of the runner's
 exposed RDRAND implementation only; it is not the production host CPU and
 cannot establish the behavior of Hetzner's hardware.
+
+
+## Upstream branch and bounty status check (2026-11-24)
+
+The upstream repository now has both `main` and `dev` at
+`cb9f76a5`; this is 18 commits ahead of the ClientHello validation fix
+`a2d8893`. The fix is therefore integrated into upstream main/dev. The
+bounty branch remains at the frozen target
+`ab93479ebc7c85274c722b16897148286d1cfca3`; our fork's `bounty` ref was
+also checked and remains at that exact commit. No changes were made to it.
+
+The owner's public bounty post still describes the challenge as live until
+18 February 2027, with the explicit rules not to cause denial of service and
+not to attack Hetzner or the owner's accounts:
+https://www.reddit.com/r/securityCTF/comments/1y1fjej/200_in_bitcoin_if_you_can_get_the_tls_key_out_of/
+
+That discussion contains independent local reports of approximately 10,200
+TLS handshakes, 4,096 nonce samples, statistical/lattice checks, timing sweeps,
+and a 256 MiB guest-RAM scan. The reported conclusions align with our
+independent results: no nonce reuse or exploitable bias found, no plaintext
+scalar in guest RAM, and no recovered key. The owner acknowledged the
+ClientHello framing issue but described the fragmentation shortcut as
+intentional and the framing discrepancy as outside the key-disclosure bounty.
+These are public participant reports, not proof that the prize remains
+unspent; we have not independently queried the Bitcoin address balance.
