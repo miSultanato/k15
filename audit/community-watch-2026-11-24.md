@@ -1335,7 +1335,7 @@ context and impact limits; coverage matrix finding 16 now points to it.
 Sources:
 - NIST FIPS 186-5, Appendix A.3:
   https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf
-- RFC 6979, §3.2:
+- RFC 6979, §2.4:
   https://datatracker.ietf.org/doc/rfc6979/
 
 Classification: low-severity cryptographic distribution/conformance gap.
