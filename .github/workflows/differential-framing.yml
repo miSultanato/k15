@@ -8,6 +8,7 @@ on:
       - main
     paths:
       - audit/test_clienthello_framing.py
+      - audit/test_malformed_clienthello_handshake.py
       - audit/test_tls_record_rejection.py
       - audit/patch_go_tls_clienthello.py
       - audit/malformed_clienthello_transcript.go
