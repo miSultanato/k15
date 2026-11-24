@@ -102,6 +102,13 @@ proofs of all hardware behavior or every possible SMP schedule. See
 
 | Evidence | Run |
 | --- | --- |
+| Short-site W^X: frozen executes synthetic site byte; first-fix/current reset | [45409649945](https://github.com/miSultanato/k15/actions/runs/45409649945) |
+| Authenticated all-zero TLSInnerPlaintext: frozen processes following request; fixed/current close | [45409977046](https://github.com/miSultanato/k15/actions/runs/45409977046) |
+| Delayed first SYN-cookie ACK after 65s: accepted on all three pinned images | [45410737525](https://github.com/miSultanato/k15/actions/runs/45410737525) |
+| ACK-window offsets +1, +63, +64, +65535, +65536: frozen accepts all; fixed/current reject all | [45412713955](https://github.com/miSultanato/k15/actions/runs/45412713955) |
+| Forced-wrap ACK-window: SND.NXT=0xFFFFFFC2; frozen accepts +65536 wrap, fixed/current reject | [45413051340](https://github.com/miSultanato/k15/actions/runs/45413051340) |
+| Peer MSS boundary: frozen sends 180-byte payload for MSS=100/179; fixed/current refuse 179..215 | [45413771856](https://github.com/miSultanato/k15/actions/runs/45413771856) |
+| Boot hardening binary checks: AP alignment, GDT bytes, E820 instruction and hostname SAN | [45412245837](https://github.com/miSultanato/k15/actions/runs/45412245837) |
 | Full bounded audit plus deterministic P-256 assembly nonce boundaries (`n-1`, `n`, `n+1`) | [45393554079](https://github.com/miSultanato/k15/actions/runs/45393554079) |
 | Frozen QEMU TLS: corrupted client Finished and bad AEAD tag both ignored before valid HTTP | [45394182511](https://github.com/miSultanato/k15/actions/runs/45394182511) |
 | Differential TLS record behavior: upstream framing-fix commit still processes valid HTTP after both malformed records | [45394628025](https://github.com/miSultanato/k15/actions/runs/45394628025) |
