@@ -8,6 +8,7 @@ on:
     paths:
       - audit/run_tap_hellofuzz.sh
       - audit/run_tap_rawtest.sh
+      - audit/test_ip_arp_validation.py
       - .github/workflows/parser-fuzz.yml
 
 permissions:
@@ -67,8 +68,11 @@ jobs:
             sudo unshare -n bash audit/run_tap_hellofuzz.sh ${{ matrix.directory }} "$seed" 20000
           done
 
-      - name: Fuzz malformed raw Ethernet, IPv4 and TCP frames
-        run: sudo unshare -n bash audit/run_tap_rawtest.sh ${{ matrix.directory }} 20261124
+      - name: Fuzz malformed raw Ethernet, IPv4 and TCP frames; test IPv4 and ARP validation
+        run: |
+          mode=observe
+          if [[ "${{ matrix.variant }}" == "frozen-bounty" ]]; then mode=expect; fi
+          sudo unshare -n bash audit/run_tap_rawtest.sh ${{ matrix.directory }} 20261124 "$mode"
 
       - name: Confirm no generated key material or images are uploaded
         run: |
