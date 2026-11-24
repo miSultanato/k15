@@ -138,7 +138,7 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | TCP RST sequence: exact ACK sequence resets the slot; offsets -1/+1 preserve it on all three revisions | [45484598190](https://github.com/miSultanato/k15/actions/runs/45484598190) |
 | Transcript-faithful inner-short and outer-short ClientHello: frozen completes TLS 1.3 and HTTP 200; both upstream revisions reject with fatal decode_error | [45460246415](https://github.com/miSultanato/k15/actions/runs/45460246415) |
 | HRR second ClientHello: two ClientHellos/two ServerHellos on all three; frozen sends 0 CCS, both upstream revisions send 1 | [45460246415](https://github.com/miSultanato/k15/actions/runs/45460246415) |
-| Public repository hygiene: current tree and all reachable Git history clean of complete private-key PEM blocks and generated build artifacts | [45462044881](https://github.com/miSultanato/k15/actions/runs/45462044881) |
+| Public repository hygiene: current tree and all reachable Git history clean of complete private-key PEM blocks and generated build artifacts | [45486861068](https://github.com/miSultanato/k15/actions/runs/45486861068) |
 | Repeat differential after correcting revision labels in the TLS rejection test | [45461137400](https://github.com/miSultanato/k15/actions/runs/45461137400) |
 | SYN-cookie replay after full FIN/FIN teardown, 65s delay, changed-port rejection and ACK-sequence proof on all three revisions | [45469926754](https://github.com/miSultanato/k15/actions/runs/45469926754) |
 | Short-site W^X: emitted layout and QEMU RET probe show executable SITE only on frozen bounty | [45439460997](https://github.com/miSultanato/k15/actions/runs/45439460997) |
