@@ -69,7 +69,7 @@ The audit also reproduces TLS record-validation, TCP ACK-window and MSS defects.
 3. Keep investigating whether the short-ARP stale-buffer disclosure can expose
    anything beyond synthetic network-buffer data. Do not attempt to access
    production memory.
-4. Reconcile remaining independent findings #1, #3–7, #11–12 and #17–20 with
+4. Reconcile remaining independent findings #1, #4, #6, #11–12 and #17–20 with
    exact deterministic tests where they materially affect security.
 
 Do not merge upstream development fixes into the frozen bounty branch. All
