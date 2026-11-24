@@ -147,16 +147,23 @@ state handling, but neither is by itself evidence of private-key disclosure.
 
 ## Test status and next steps
 
-No dynamic test is claimed by this note. The following are source-derived
-test plans, not reproduced findings:
+The deterministic ECDSA boundary test now runs against the frozen assembly
+signer in [GitHub Actions run 45393554079](https://github.com/miSultanato/k15/actions/runs/45393554079):
+`n+1` aliases `1` and both signatures verify; `n-1` verifies; `n` (zero
+modulo n) does not verify. The full bounded workflow passed. This confirms the
+assembly's effective-scalar behavior for those vectors; it does not establish
+practical key recovery or measure the production RDRAND distribution.
+
+The following remain source-derived test plans, not dynamically reproduced
+findings:
 
 1. Corrupted client Finished and bad AEAD tag followed by a valid application record.
 2. Corrupted IPv4 checksum with correct TCP checksum.
 3. ARP field-by-field malformed request matrix.
 4. ACK range and wraparound state matrix.
 5. SYN MSS threshold matrix and actual outbound segment sizes.
-6. ECDSA deterministic boundary vectors at `n-1`, `n`, and `n+1`; retain
-   the existing `2^256-1` and `2^256-2` reference self-test coverage.
+6. Extend nonce-distribution analysis only if a plausible attack model emerges;
+   the explicit `n-1`, `n`, and `n+1` assembly boundary vectors now pass.
 
 All tests remain offline against the frozen image in ephemeral QEMU. No
 production probes, load tests, or memory access are permitted.
