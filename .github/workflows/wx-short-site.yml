@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - audit/run_wx_short_site.sh
+      - audit/check_wx_layout.py
       - .github/workflows/wx-short-site.yml
 
 permissions:
