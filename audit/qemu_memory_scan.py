@@ -65,7 +65,7 @@ def main() -> None:
     monitor = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     monitor.connect(MONITOR)
     until_prompt(monitor)
-    command = f"pmemsave 0 0x{RAM_SIZE:x} {RAM_PATH}\n".encode("ascii")
+    command = f"pmemsave 0 {RAM_SIZE} {RAM_PATH}\n".encode("ascii")
     monitor.sendall(command)
     response = until_prompt(monitor, timeout=120)
     monitor.close()
