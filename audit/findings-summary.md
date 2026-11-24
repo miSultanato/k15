@@ -25,7 +25,7 @@ All dynamic testing is local, offline and synthetic-key only.
 | SMP slot races | RACE=1, RACE=2 and RACE=3 all pass on frozen image | [Race matrix](https://github.com/miSultanato/k15/actions/runs/45382612903) |
 | ECDSA nonces | 10,240 unique recovered nonces in one QEMU boot; 1,024 in a second boot; no fingerprint overlap | [Nonce audit](https://github.com/miSultanato/k15/actions/runs/45383575122) |
 | Guest memory | One 256 MiB guest-RAM snapshot after 1,024 handshakes: zero plaintext synthetic-scalar patterns, six expected Montgomery-form patterns | [Memory scan](https://github.com/miSultanato/k15/actions/runs/45384777117) |
-| ClientHello fuzz | 60,000 cases across three seeds passed on each revision | [Three-seed fuzz comparison](https://github.com/miSultanato/k15/actions/runs/45385013034) |
+| ClientHello/raw-frame fuzz | 60,000 ClientHellos plus 3,191 malformed Ethernet/IP/TCP frames passed on each revision | [Expanded parser fuzz](https://github.com/miSultanato/k15/actions/runs/45385140473) |
 
 ## Interpretation
 
