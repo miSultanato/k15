@@ -312,9 +312,16 @@ the VM's callers and all indirect address formation, including the table
 selection paths. The source audit does not inspect the production image,
 runtime register contents, or the hypervisor's memory.
 
-The new CI checker is intended to make the core invariants reproducible:
-audit/check_key_read_path.py runs against the pinned source and
-tools/ec.py. Its result is pending at the time this note is written.
+The CI checker now makes the core invariants reproducible. Run
+45371845295 completed successfully on 2026-11-24, using audit harness commit
+72aad28 and the frozen target commit ab93479. It passed the synthetic
+periodic-stream model, the RNG call-site guard, the private-scalar read-path
+guard (including table-selection bounds and the generator linkage), and the
+upstream make test suite. The ECDSA test output reports 70 signatures and
+70 nonces. The run does not test real RDRAND hardware or the live server.
+
+The earlier run 45371790632 also passed the expanded read-path audit and
+make test. The subsequent run verifies the final small checker revision.
 
 ## Revised priority
 
