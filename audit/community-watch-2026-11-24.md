@@ -982,3 +982,11 @@ ClientHello framing issue but described the fragmentation shortcut as
 intentional and the framing discrepancy as outside the key-disclosure bounty.
 These are public participant reports, not proof that the prize remains
 unspent; we have not independently queried the Bitcoin address balance.
+
+
+The upstream main/dev comparison also shows that the newer branch removed
+`bounty.proof` and the related public proof/ceremony/monitor scripts
+(`tools/bounty.py`, `tools/bounty_ceremony.sh`, `tools/monitor_bounty.py`,
+`tools/public-proof.py`, `tools/proof-public.json`). Those files remain
+available on the frozen bounty branch used for this audit. This is repository
+cleanup/history, not evidence that the bounty was paid or closed.
