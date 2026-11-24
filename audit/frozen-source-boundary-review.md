@@ -173,9 +173,15 @@ upstream framing-fix image:
   and protocol length 1 each received an ARP reply on both images.
 
 This confirms that those fields are not rejected by either tested revision.
-It does not demonstrate memory disclosure, memory corruption, or a useful
-remote attack. The test uses full-length ARP frames; the separate short-frame
-stale-buffer behavior described by the auditor is not yet reproduced here.
+The same run also executed a dedicated 24-byte short-ARP test. It primed the
+receive buffers with a synthetic marker, then sent a truncated ARP request;
+the frozen bounty image replied with the marker copied from stale receive
+buffer bytes. The upstream `a2d8893` image produced no marker reply. This is a
+reproduced same-link information disclosure using only synthetic test data;
+it is not evidence of private-key disclosure or an internet-reachable exploit.
+
+The IPv4 checksum and malformed full-length ARP field behavior remain present
+in the tested upstream image.
 
 ## Test status and next steps
 
@@ -203,9 +209,8 @@ application data or recover the server's private key. The remaining items are
 source-derived test plans, not dynamically reproduced findings:
 
 1. Exercise the dummy ChangeCipherSpec behavior on the HelloRetryRequest path.
-2. Reproduce the short-ARP-frame stale-buffer behavior with synthetic marker bytes.
-3. ACK range and wraparound state matrix.
-4. SYN MSS threshold matrix and actual outbound segment sizes.
+2. ACK range and wraparound state matrix.
+3. SYN MSS threshold matrix and actual outbound segment sizes.
 7. Extend nonce-distribution analysis only if a plausible attack model emerges;
    the explicit `n-1`, `n`, and `n+1` assembly boundary vectors now pass.
 
