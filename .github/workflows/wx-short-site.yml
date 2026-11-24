@@ -1,0 +1,63 @@
+name: k15 short-site W^X differential
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - audit/run_wx_short_site.sh
+      - .github/workflows/wx-short-site.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k15-wx-short-site
+  cancel-in-progress: false
+
+jobs:
+  wx:
+    name: Short-site executable-page probe — ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: frozen-bounty
+            directory: bounty
+            ref: ab93479ebc7c85274c722b16897148286d1cfca3
+          - variant: first-upstream-fix
+            directory: fixed
+            ref: a2d8893261b2be15b44c86d6f4483d65820e943a
+          - variant: current-upstream
+            directory: current
+            ref: cb9f76a5a100c418bfcaeddcd4f137d30ab489d2
+    steps:
+      - name: Check out audit harness
+        uses: actions/checkout@v4
+
+      - name: Check out exact source revision
+        uses: actions/checkout@v4
+        with:
+          repository: FileSherlock/k15
+          ref: ${{ matrix.ref }}
+          path: ${{ matrix.directory }}
+          persist-credentials: false
+
+      - name: Verify source pin
+        working-directory: ${{ matrix.directory }}
+        run: test "$(git rev-parse HEAD)" = "${{ matrix.ref }}"
+
+      - name: Install local QEMU build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends nasm qemu-system-x86 gcc libssl-dev curl
+          python3 -m pip install --disable-pip-version-check cryptography
+
+      - name: Build one-file site and observe W^X behavior
+        run: bash audit/run_wx_short_site.sh ${{ matrix.directory }} ${{ matrix.variant }}
+
+      - name: Confirm no artifacts are uploaded
+        run: echo "Local VM images and synthetic site remain ephemeral; no artifacts are uploaded."
