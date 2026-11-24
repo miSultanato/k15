@@ -1261,3 +1261,19 @@ Keep these three properties separate:
 - Fatal connection teardown after a bad tag: not implemented/observed.
 - Verification of the client's Finished transcript: absent in the frozen
   image and independently exercised by the local handshake test.
+
+
+## Public DLEQ proof regression passed (2026-11-24)
+
+The expanded bounded-audit run
+https://github.com/miSultanato/k15/actions/runs/45471871754 completed
+successfully. The new `test_public_proof.py` exercised synthetic scalars
+through both `flip=0` and `flip=1`, verified that both curve public keys
+bind to the same scalar, and rejected a corrupted proof and a mismatched
+certificate public key in both cases. No key or proof artifact was written.
+
+This supports the bounded source review of the public proof; it is not a
+formal zero-knowledge proof or a cryptanalytic reduction. The only
+intentionally exposed predicate remains the `flip` bit, which is zero in
+the committed proof because `--gen` constrains the generated scalar below
+`2^255`.
