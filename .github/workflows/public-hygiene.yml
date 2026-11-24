@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "audit/check_public_hygiene.py"
+      - "audit/test_public_hygiene.py"
       - ".github/workflows/public-hygiene.yml"
       - "cert/**"
       - "build/**"
@@ -43,5 +44,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Test the hygiene guard with synthetic markers
+        run: python3 audit/test_public_hygiene.py
       - name: Check tracked files for generated secrets and artifacts
         run: python3 audit/check_public_hygiene.py
