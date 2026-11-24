@@ -180,7 +180,7 @@ def test_bad_application_tag() -> None:
                 "FAIL: valid same-sequence app record after bad tag was not processed; "
                 f"received={response[:80]!r}"
             )
-        print(("PASS" if accepted else "OBSERVED") + ": " +
+        print(("PASS" if mode == "expect" and accepted else "OBSERVED") + ": " +
               ("server ignored the bad AEAD tag and processed" if accepted else
                "server did not process") + " the valid same-sequence record")
     finally:
