@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Synthetic demonstration of the RDRAND repetition hypothesis.
+"""Synthetic model of the k15 RDRAND health-check / nonce-batching hypothesis.
 
-This tests the software predicate and ECDSA algebra only. It does not query
-RDRAND, contact 15kb.org, or demonstrate that the target hardware is faulty.
+The model covers the software boundary only: rand checks adjacent 64-bit
+outputs, while stock consumes four outputs for each 256-bit nonce. It does
+not query RDRAND, contact 15kb.org, or show that any real CPU is faulty.
 """
 from __future__ import annotations
 
+from math import gcd
+
 P = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF
 A = P - 3
-B = 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B
 N = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551
 G = (
     0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296,
@@ -49,32 +51,56 @@ def signature(d, k, z):
     return r, s
 
 
+def nonce_from_words(words):
+    """Match four qword stores interpreted as one 256-bit little-endian value."""
+    raw = b"".join(word.to_bytes(8, "little") for word in words)
+    return int.from_bytes(raw, "little")
+
+
+def check_periodic_stream(period):
+    """A period-p stream repeats a four-qword nonce after p/gcd(p,4) batches."""
+    assert len(period) > 1
+    assert len(set(period)) == len(period)
+    assert period[0] != 0
+    assert period[-1] != period[0]  # no equal value across the period boundary
+
+    batch_period = len(period) // gcd(len(period), 4)
+    stream = [period[i % len(period)] for i in range(4 * (batch_period + 1))]
+
+    # Model rand's per-processor RLAST check, including its zero initial value.
+    previous = 0
+    for word in stream:
+        assert word != previous, "periodic stream unexpectedly trips adjacent check"
+        previous = word
+
+    first = nonce_from_words(stream[0:4])
+    repeated = nonce_from_words(stream[4 * batch_period:4 * batch_period + 4])
+    assert first == repeated
+    return batch_period
+
+
 def main():
-    # Four distinct 64-bit words, repeated as a four-word cycle.
+    # Explore periods 2..8 and 16. Every period is deliberately composed of
+    # distinct words, so the adjacent-equality check accepts every transition.
+    periods = (2, 3, 4, 5, 6, 7, 8, 16)
+    for size in periods:
+        values = tuple(0x1020304050607000 + i * 0x0101010101010101
+                       for i in range(size))
+        batches = check_periodic_stream(values)
+        print(f"PASS: period {size} evades adjacent check; a nonce repeats after {batches} batches")
+
+    # The four-word case gives an immediately repeated nonce, suitable for the
+    # synthetic ECDSA key-recovery demonstration below.
     words = (
         0x0123456789ABCDEF,
         0x1029384756ABCDEF,
         0xFEDCBA9876543210,
         0xA5A5A5A55A5A5A5A,
     )
-    stream = words * 2
+    k1 = nonce_from_words(words)
+    k2 = nonce_from_words(words)
+    assert 0 < k1 < N and k1 == k2
 
-    # Model rand's adjacent-word equality check, including its initial zero.
-    previous = 0
-    for word in stream:
-        assert word != previous, "synthetic stream unexpectedly trips adjacent check"
-        previous = word
-
-    # stock consumes four consecutive qwords per 256-bit nonce.
-    def nonce_at(offset):
-        raw = b"".join(w.to_bytes(8, "little") for w in stream[offset:offset + 4])
-        return int.from_bytes(raw, "little")
-
-    k1, k2 = nonce_at(0), nonce_at(4)
-    assert k1 == k2
-    assert 0 < k1 < N
-
-    # Synthetic private key and two distinct message digests.
     d = 0x123456789ABCDEF123456789ABCDEF123456789ABCDEF123456789ABCDEF
     z1 = 0x111122223333444455556666777788889999AAAABBBBCCCCDDDDEEEEFFFF0000
     z2 = 0x9999888877776666555544443333222211110000AAAABBBBCCCCDDDDEEEEFFFF
@@ -89,10 +115,8 @@ def main():
     assert recovered_k == k1
     assert recovered_d == d
 
-    print("PASS: adjacent 64-bit equality check accepts the four-word cycle")
-    print("PASS: two consecutive four-word batches produce the same 256-bit nonce")
     print("PASS: synthetic ECDSA signatures recover the synthetic nonce and private key")
-    print("LIMIT: this is an algebra/software-model demonstration, not evidence of a live RDRAND failure")
+    print("LIMIT: this is a software/algebra model, not evidence of a live RDRAND failure")
 
 
 if __name__ == "__main__":
