@@ -89,10 +89,10 @@ user namespaces.
   to expose the stale eight-byte suffix and both upstream images to reject it.
   See `arp-short-frame-impact.md` for the exact data flow and limits.
 - `syn-cookie-replay-observation.md`: records the replayable cookie-ACK behavior after orderly FIN close, distinguishes it from the bounty-only findings, and documents the limits of the threat-model evidence.
-- `test_tcp_ack_mss.py`: sends a data-bearing segment with an out-of-window ACK,
-  tests peer-MSS boundaries, delays a first SYN-cookie ACK, then replays the same
-  cookie after FIN/FIN teardown. The replay probe waits 65 seconds after teardown
-  and compares the server ACK with the new request's end sequence.
+- `test_tcp_ack_mss.py`: asserts bounty acceptance versus upstream rejection of
+  out-of-window ACKs, checks peer-MSS safety boundaries, delays a first SYN-cookie
+  ACK, then observes cookie replay after teardown. The forced-wrap runner uses
+  the same expect/reject assertions with SND.NXT near 2^32.
 - `check_current_rand_path.py`: checks the refactored current-main RDRAND-to-nonce path.
 - `check_boot_hardening.py`: compares four source-level boot/build hardening changes between the frozen bounty, first upstream fix and pinned current main.
 - `check_public_hygiene.py` and `test_public_hygiene.py`: narrow guardrail for this public fork; scans the tracked tree and all reachable Git history, rejecting generated secret directories/files, complete PEM private-key blocks, disk images, binaries and NASM listings. Synthetic PEM/path tests cover detection and false-positive behavior. It is not a general-purpose secret scanner.
@@ -138,9 +138,9 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | Authenticated all-zero TLSInnerPlaintext lengths 1/2/16/255/300: frozen processes following request; fixed/current close | [45414676678](https://github.com/miSultanato/k15/actions/runs/45414676678) |
 | Go TLS normal-path CCS: frozen sends none; fixed/current send one after ServerHello | [45417214217](https://github.com/miSultanato/k15/actions/runs/45417214217) |
 | Delayed first SYN-cookie ACK after 65s: accepted on all three pinned images | [45410737525](https://github.com/miSultanato/k15/actions/runs/45410737525) |
-| ACK-window offsets +1, +63, +64, +65535, +65536: frozen accepts all; fixed/current reject all | [45412713955](https://github.com/miSultanato/k15/actions/runs/45412713955) |
-| Forced-wrap ACK-window: SND.NXT=0xFFFFFFC2; frozen accepts +65536 wrap, fixed/current reject | [45413051340](https://github.com/miSultanato/k15/actions/runs/45413051340) |
-| Peer MSS boundary: frozen sends 180-byte payload for MSS=100/179; fixed/current refuse 179..215 | [45413771856](https://github.com/miSultanato/k15/actions/runs/45413771856) |
+| ACK-window offsets +1, +63, +64, +65535, +65536: frozen accepts all; fixed/current reject all | [45468109924](https://github.com/miSultanato/k15/actions/runs/45412713955) |
+| Forced-wrap ACK-window: SND.NXT=0xFFFFFFC2; frozen accepts +65536 wrap, fixed/current reject | [45468109924](https://github.com/miSultanato/k15/actions/runs/45413051340) |
+| Peer MSS boundary: frozen sends 180-byte payload for MSS=100/179; fixed/current refuse 179..215 | [45468109924](https://github.com/miSultanato/k15/actions/runs/45413771856) |
 | Boot hardening binary checks: AP alignment, GDT bytes, E820 instruction and hostname SAN | [45412245837](https://github.com/miSultanato/k15/actions/runs/45412245837) |
 | Full bounded audit plus deterministic P-256 assembly nonce boundaries (`n-1`, `n`, `n+1`) | [45393554079](https://github.com/miSultanato/k15/actions/runs/45393554079) |
 | Frozen QEMU TLS: corrupted client Finished and bad AEAD tag both ignored before valid HTTP | [45394182511](https://github.com/miSultanato/k15/actions/runs/45394182511) |
@@ -156,8 +156,8 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | Three-way parser fuzz: bounty, first fix and current main | [45401525691](https://github.com/miSultanato/k15/actions/runs/45401525691) |
 | TAP IPv4 checksum and ARP field matrix on bounty and upstream | [45396434723](https://github.com/miSultanato/k15/actions/runs/45396434723) |
 | Cross-sender unicast short-ARP differential: bounty discloses victim MAC/IP suffix; upstream rejects | [45466831548](https://github.com/miSultanato/k15/actions/runs/45466831548) |
-| TCP ACK-window and peer-MSS differential | [45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
-| Focused IPv4/ARP/TCP boundary workflow (checksums, short ARP, ACK, MSS) | [45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
+| TCP ACK-window, forced-wrap and peer-MSS regression assertions | [45468109924](https://github.com/miSultanato/k15/actions/runs/45397630737) |
+| Focused IPv4/ARP/TCP boundary workflow (checksums, unicast short ARP, ACK, MSS) | [45397630737](https://github.com/miSultanato/k15/actions/runs/45397630737) |
 | Cleartext port-80 method control (not the audited HTTPS parser) | [45400915976](https://github.com/miSultanato/k15/actions/runs/45400915976) |
 | 60,000 ClientHello cases plus TAP raw-frame fuzz and deterministic IP/ARP probes | [45396434783](https://github.com/miSultanato/k15/actions/runs/45396434783) |
 | Differential framing: five malformed cases accepted by bounty, rejected by fix | [45381737629](https://github.com/miSultanato/k15/actions/runs/45381737629) |
