@@ -1,0 +1,57 @@
+name: k15 cross-processor slot race audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/race-audit.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k15-race-audit-${{ matrix.race }}
+  cancel-in-progress: false
+
+jobs:
+  race:
+    name: Frozen bounty slot race RACE=${{ matrix.race }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        race: ["1", "2", "3"]
+    steps:
+      - name: Check out the audit harness
+        uses: actions/checkout@v4
+
+      - name: Check out the exact frozen bounty source
+        uses: actions/checkout@v4
+        with:
+          repository: FileSherlock/k15
+          ref: ab93479ebc7c85274c722b16897148286d1cfca3
+          path: target
+          persist-credentials: false
+
+      - name: Record source revision
+        run: |
+          git -C target rev-parse HEAD
+          test "$(git -C target rev-parse HEAD)" = "ab93479ebc7c85274c722b16897148286d1cfca3"
+
+      - name: Install local VM and network-namespace dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends nasm qemu-system-x86 iproute2 gcc libssl-dev curl
+          python3 -m pip install --disable-pip-version-check cryptography
+
+      - name: Check rootless network namespace support
+        run: unshare -Urn true
+
+      - name: Reproduce cross-processor slot handover race
+        working-directory: target
+        env:
+          SMP: "2"
+        run: bash tools/racetest.sh "${{ matrix.race }}"
