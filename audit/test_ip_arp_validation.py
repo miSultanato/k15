@@ -23,7 +23,7 @@ if mode not in {"expect", "observe"}:
 
 target = Path(sys.argv[1]).resolve()
 sys.path.insert(0, str(target / "tools"))
-from hellofuzz import alive, real  # noqa: E402
+import tlsclient  # noqa: E402
 
 TAP = os.environ.get("TAP", "k2t")
 GUEST_IP = socket.inet_aton("10.0.2.15")
@@ -139,11 +139,35 @@ def test_arp_fields() -> bool:
     return all(observed)
 
 
+def guest_alive() -> bool:
+    pid = os.environ.get("QEMU_PID")
+    return not pid or os.path.exists("/proc/%s" % pid)
+
+
+def real_client() -> bool:
+    sock = socket.create_connection(
+        ("10.0.2.15", 443), timeout=10, source_address=("10.0.2.33", 0)
+    )
+    tls = tlsclient.context().wrap_socket(sock, server_hostname=tlsclient.NAME)
+    try:
+        request = b"GET / HTTP/1.1\\r\\nHost: " + tlsclient.NAME.encode() + b"\\r\\n\\r\\n"
+        tls.sendall(request)
+        response = bytearray()
+        while b"\\r\\n\\r\\n" not in response:
+            chunk = tls.recv(65536)
+            if not chunk:
+                break
+            response.extend(chunk)
+        return response.startswith(b"HTTP/1.1 200")
+    finally:
+        tls.close()
+
+
 if __name__ == "__main__":
     try:
         test_ipv4_checksum()
         test_arp_fields()
-        if not alive() or not real():
+        if not guest_alive() or not real_client():
             raise SystemExit("FAIL: guest did not remain healthy after protocol probes")
         print(f"RESULT: IPv4/ARP validation probes completed in mode={mode}; guest healthy")
     finally:
