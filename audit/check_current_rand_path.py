@@ -47,8 +47,17 @@ def main() -> None:
     stock = section(source, "stock:  mov ebx", ".all:")
     require(re.search(r"push 4\s+pop rcx\s+call rand", stock) is not None,
             "stock no longer consumes four qwords per nonce")
+    stock_calls = re.findall(r"(?m)^\s*call\s+rand\b", stock)
+    require(len(stock_calls) == 1,
+            f"expected one rand call inside stock, found {len(stock_calls)}")
     calls = re.findall(r"(?m)^\s*call\s+rand\b", source)
-    require(len(calls) == 1, f"expected one nonce-stock rand call, found {len(calls)}")
+    require(len(calls) == 4,
+            f"expected four direct rand call sites (boot, two TLS draws, stock), found {len(calls)}")
+    boot = re.search(
+        r"(?m)^\s*mov edi, HKS\b.*\n\s*push 22\s*\n\s*pop rcx\s*\n\s*call rand\b",
+        source,
+    )
+    require(boot is not None, "boot-time 22-qword HKS draw changed")
 
     # The current implementation checks only each qword against the immediately
     # preceding qword. It does not compare complete four-qword nonce tuples.
@@ -58,6 +67,7 @@ def main() -> None:
             "nonce stock no longer writes through POOLK/POOLFILL")
     print("PASS: current rand retries RDRAND failure and rejects adjacent repeated qwords")
     print("PASS: RLAST is processor-local BSS state at NV + 208")
+    print("PASS: boot, both TLS draws and stock call rand at the expected four sites")
     print("PASS: stock obtains four qwords per nonce in a 64-entry pool")
     print("LIMIT: adjacent-qword guard does not prove four-qword nonce uniqueness")
     print("LIMIT: static source check; no RDRAND hardware behavior is tested")
