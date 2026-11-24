@@ -61,7 +61,7 @@ def main() -> None:
 
     # The only select path is through comb. Its callers use fixed entry widths:
     # 96 bytes for Edwards25519 and 64 bytes for P-256, both far below R_D at +448.
-    require(len(re.findall(r"(?m)^\s*call select\b", asm)) == 1,
+    require(asm.count("call select") == 1,
             "select has an unexpected additional caller")
     xdh = section(asm, "xdh:    pushad", "; sign:")
     stock = section(asm, "stock:  mov ebx", ".all:")
