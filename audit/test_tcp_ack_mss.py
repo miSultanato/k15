@@ -416,8 +416,8 @@ def test_invalid_ack_request_injection() -> None:
     client_next = (isn + 1) & 0xFFFFFFFF
     server_next = (synack["seq"] + 1) & 0xFFFFFFFF
     poison = (
-        b"GET /__ack_probe_missing__ HTTP/1.1\\r\\n"
-        b"Host: k15\\r\\nConnection: close\\r\\n\\r\\n"
+        b"GET /__ack_probe_missing__ HTTP/1.1\r\n"
+        b"Host: k15\r\nConnection: close\r\n\r\n"
     )
 
     # Materialize the connection, inject a complete missing-path request with
@@ -439,7 +439,7 @@ def test_invalid_ack_request_injection() -> None:
         if b"HTTP/1." in response:
             break
 
-    status = bytes(response).split(b"\\r\\n", 1)[0]
+    status = bytes(response).split(b"\r\n", 1)[0]
     expected_status = b"HTTP/1.1 404" if EXPECT_ACCEPT else b"HTTP/1.1 200"
     observed = status.startswith(expected_status)
     report(
