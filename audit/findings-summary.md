@@ -37,6 +37,10 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 | E820 BIOS signature | Frozen boot sector accepts a successful INT 15h response with wrong EAX signature | Rejects wrong signature | Same as first fix | [synthetic 16-bit BIOS differential](https://github.com/miSultanato/k15/actions/runs/45437038597) |
 | Boot/build hardening | `apcount` is misaligned; GDT Accessed bytes are `0x9A/0x92`; E820 signature check and Makefile hostname guard are absent; runner hostname leaks into generated certificate SAN | Alignment and Accessed bits corrected; SMAP signature and `NAME` guard present; hostname excluded from certificate SAN | Same as first fix | [source, build, certificate and emitted-image differential](https://github.com/miSultanato/k15/actions/runs/45437038597) |
 
+## Follow-up reviews (2026-11-25)
+
+- `tcp-ack-injection-impact.md` records the exact frozen-source fall-through at `.odd -> .ak`, the synthetic in-window payload test, and the attacker-model boundary. It explicitly does not claim off-path injection: the current TAP test knows the tuple and sequence number. The frozen ACK-window defect is reproducible; the two tested upstream revisions reject the same invalid-ACK matrix.
+
 ## Follow-up reviews (2026-11-24)
 
 - `tcp-sequence-window-review.md` records the current-upstream modular
