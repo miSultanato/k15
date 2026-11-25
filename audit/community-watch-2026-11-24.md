@@ -1432,3 +1432,28 @@ This is strong regression evidence for the frozen signer under QEMU TCG's
 guest-random path and for one runner's exposed RDRAND instruction. It does not
 measure the production CPU, production hypervisor, KVM passthrough, or full
 guest-RAM snapshot/restore behavior.
+
+
+## ECDSA nonce-pool rollback source trace (2026-11-25)
+
+The new `audit/nonce-pool-rollback-review.md` traces the frozen signer's
+actual state consumption. `POOLR`, `POOLK`, `POOLN` and `POOLFILL` are
+ordinary per-processor guest-BSS memory. `sign` decrements `POOLN), then
+copies the selected `POOLR` and `POOLK` entries into its curve/signing
+scratch state. A full guest-RAM snapshot therefore copies pending precomputed
+nonce material and its counter; restoring/forking the same state can make two
+branches select the same pending entry.
+
+This confirms the source-level precondition for a conditional ECDSA nonce
+reuse scenario. It does not establish that the production service is hosted
+in a VM with live RAM snapshot/clone behavior, or that two branches expose
+signatures from the same restored entry.
+
+The prior `qemu_memory_scan.py` run 45384777117 is only a guest-RAM scan for
+the synthetic private scalar's plaintext/Montgomery encodings. It does not
+inspect `POOLN`, `POOLR`, `POOLK`, restore a VM, or test nonce reuse.
+The new review sets out a staged synthetic-only full-VM-state fork/restore
+test; it is not yet implemented or run.
+
+Classification: conditional infrastructure risk; not a confirmed bounty
+vulnerability. No production traffic, snapshot, migration or load test.
