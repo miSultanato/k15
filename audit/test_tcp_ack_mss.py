@@ -417,8 +417,8 @@ def test_invalid_ack_request_injection() -> None:
     client_next = (isn + 1) & 0xFFFFFFFF
     server_next = (synack["seq"] + 1) & 0xFFFFFFFF
     poison = (
-        b"GET /__ack_probe_missing__ HTTP/1.1\\r\\n"
-        b"Host: k15\\r\\nConnection: close\\r\\n\\r\\n"
+        b"GET /__ack_probe_missing__ HTTP/1.1\r\n"
+        b"Host: k15\r\nConnection: close\r\n\r\n"
     )
 
     # Both requests use the same client sequence. If the bad-ACK segment is
