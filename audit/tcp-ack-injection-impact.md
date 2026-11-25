@@ -23,15 +23,25 @@ a case where the arithmetic wraps at 2^32. Both tested upstream revisions
 reject these packets without returning HTTP payload.
 
 Evidence:
-- [latest three-way ACK/MSS, ARP and forced-wrap run 45553389873](https://github.com/miSultanato/k15/actions/runs/45553389873)
-- [prior three-way ACK/MSS matrix, run 45553218069](https://github.com/miSultanato/k15/actions/runs/45553218069)
+- [latest three-way protocol, ACK/MSS, partial-payload and forced-wrap run 45559938127](https://github.com/miSultanato/k15/actions/runs/45559938127)
+- [sequence-aware full-request differential, run 45553389873](https://github.com/miSultanato/k15/actions/runs/45553389873)
 - [earlier assertive matrix, run 45468109924](https://github.com/miSultanato/k15/actions/runs/45468109924)
 - The sequence-aware request-consumption test sends a 69-byte missing-path
   request with an invalid ACK, then a 48-byte normal request at the same TCP
   sequence. Frozen response ACK `0x6789ac13` identifies the 69-byte request;
   both upstream response ACKs `0x6789abfe` identify the 48-byte request.
   This confirms that the invalid-ACK payload is consumed first only by the
-  frozen image. The result also holds in the forced-wrap build.
+  frozen image.
+- A second probe sends only a 42-byte incomplete HTTP prefix with an invalid
+  ACK, then retransmits a complete 48-byte request at the original sequence.
+  The frozen image immediately ACKs `0x789abd09` (42 bytes consumed), while
+  both upstream images ACK `0x789abcdf` (no receive-state advance). After the
+  retransmission, all three ACK `0x789abd0f` and return an HTTP response. In
+  the frozen image the first 42 retransmitted bytes are therefore treated as
+  old and discarded; only the final six bytes are appended to the injected
+  prefix. This is a reproducible TCP stream-desynchronization effect, not
+  proof of an off-path attacker.
+- Both probes also pass in the forced 32-bit sequence-wrap build.
 - Test implementation: `audit/test_tcp_ack_mss.py`, especially
   `fetch_after_handshake`, `test_bad_ack`, `test_ack_boundary_matrix` and
   `test_invalid_ack_request_injection`.
@@ -44,7 +54,11 @@ Evidence:
   ACK identifies which payload length advanced receive state: the frozen
   image consumes the invalid-ACK payload; both tested upstream revisions
   reject it and consume the following valid-ACK payload instead.
-- The result is reproduced in the ordinary sequence range and in a forced
+- An incomplete invalid-ACK prefix advances the frozen receive sequence by
+  42 bytes before any complete HTTP request exists. The two upstream revisions
+  leave the sequence unchanged. A later same-sequence retransmission is
+  trimmed differently by the frozen image, confirming stream desynchronization.
+- Both effects are reproduced in the ordinary sequence range and in a forced
   32-bit sequence-wrap build.
 - The request is accepted because its TCP sequence number is valid; the test
   does not bypass the four-tuple or sequence-number checks.
@@ -83,10 +97,10 @@ fixes in the tested revisions reject the same invalid-ACK matrix.
 
 ## Next bounded validation
 
-The next useful test is now the incomplete-payload case: send only a prefix
-of an invalid-ACK request, then retransmit the complete legitimate request at
-the original sequence and record the server ACK and HTTP result. This will
-show whether the invalid segment advances receive state even before a full
-HTTP request is available. Keep it in isolated QEMU/TAP guests with synthetic
-tuples; do not attempt a blind packet-injection campaign against any public
-host.
+The remaining high-value question is the HTTPS consequence: repeat the same
+sequence-controlled experiment with a syntactically valid but unauthenticated
+TLS record prefix, then retransmit the original authenticated record. Observe
+whether TCP sequence state advances while TLS rejects the record, and whether
+the legitimate connection can recover. Keep this strictly in isolated QEMU/TAP
+guests with synthetic keys and tuples. It must not be described as TLS
+record-forgery or an off-path exploit.
