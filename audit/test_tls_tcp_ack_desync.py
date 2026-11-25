@@ -22,8 +22,10 @@ if len(sys.argv) != 3:
     raise SystemExit("usage: test_tls_tcp_ack_desync.py TARGET [expect|reject]")
 
 mode = sys.argv[2]
+if mode == "observe":
+    mode = "reject"
 if mode not in {"expect", "reject"}:
-    raise SystemExit("mode must be expect or reject")
+    raise SystemExit("mode must be expect, reject or observe")
 EXPECT_DESYNC = mode == "expect"
 
 target = Path(sys.argv[1]).resolve()
