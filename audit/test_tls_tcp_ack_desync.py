@@ -168,6 +168,15 @@ class RawTcp:
             self.send_segment(self.client_next, self.server_next, 0x10)
         return item
 
+    def drain(self, quiet: float = 0.10):
+        """Discard queued ACK-only packets before measuring a new response."""
+        deadline = time.monotonic() + quiet
+        while time.monotonic() < deadline:
+            item = self._next_packet(max(0.01, deadline - time.monotonic()))
+            if item is None:
+                break
+            self._consume(item)
+
     def wait_ack(self, timeout: float):
         deadline = time.monotonic() + timeout
         last = None
@@ -235,6 +244,7 @@ def main():
             raise RuntimeError(f"unexpected application record: {len(app_record)} bytes")
 
         original_seq = raw.client_next
+        raw.drain()
         prefix = bytearray(app_record[:16])
         prefix[-1] ^= 0x80  # authenticated ciphertext prefix is now invalid
         raw.send_segment(
