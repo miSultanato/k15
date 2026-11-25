@@ -39,7 +39,7 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 ## Follow-up reviews (2026-11-25)
 
-- `tcp-ack-injection-impact.md` records the exact frozen-source fall-through at `.odd -> .ak`, the synthetic in-window payload test, and the attacker-model boundary. It explicitly does not claim off-path injection: the current TAP test knows the tuple and sequence number. The frozen ACK-window defect is reproducible; the two tested upstream revisions reject the same invalid-ACK matrix.
+- `tcp-ack-injection-impact.md` records the exact frozen-source `.odd -> .ak` ACK-window defect and attacker-model boundary. The bounded TAP matrix still reproduces HTTP responses for invalid ACKs on frozen and rejection on both tested upstream revisions. A follow-up request-preemption experiment was inconclusive (the synthetic site returned HTTP 200 for the combined exchange) and has been removed from the acceptance suite; no request-smuggling or ordering claim is made. The test does not demonstrate off-path injection.
 
 ## Follow-up reviews (2026-11-24)
 
