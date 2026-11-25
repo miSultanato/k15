@@ -13,6 +13,8 @@ on:
       - audit/test_tcp_rst_sequence.py
       - audit/run_tap_ip_arp.sh
       - audit/run_tap_arp_smp.sh
+      - audit/test_tls_tcp_ack_desync.py
+      - audit/run_tap_tls_ack_desync.sh
       - audit/run_tap_tcp_wrap.sh
       - .github/workflows/ip-arp-boundaries.yml
 
@@ -72,6 +74,9 @@ jobs:
 
       - name: Run deterministic IPv4 and ARP probes over TAP
         run: sudo unshare -n bash audit/run_tap_ip_arp.sh ${{ matrix.directory }} ${{ matrix.mode }}
+
+      - name: Probe TLS record desynchronization from invalid TCP ACK
+        run: sudo unshare -n bash audit/run_tap_tls_ack_desync.sh ${{ matrix.directory }} ${{ matrix.mode }}
 
       - name: Run short-ARP stale-buffer probe with two processors
         run: sudo unshare -n env SMP=2 bash audit/run_tap_arp_smp.sh ${{ matrix.directory }} ${{ matrix.mode }}
