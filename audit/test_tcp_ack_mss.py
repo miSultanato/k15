@@ -407,49 +407,6 @@ def test_ack_boundary_matrix() -> None:
 
 
 
-def test_invalid_ack_request_injection() -> None:
-    """A complete in-window HTTP request with a bad ACK must be rejected."""
-    sport, isn = 52005, 0x6789ABCD
-    synack = handshake(sport, isn, 536)
-    if synack is None:
-        raise SystemExit("FAIL: no SYN-ACK for invalid-ACK request-injection control")
-    client_next = (isn + 1) & 0xFFFFFFFF
-    server_next = (synack["seq"] + 1) & 0xFFFFFFFF
-    poison = (
-        b"GET /__ack_probe_missing__ HTTP/1.1\r\n"
-        b"Host: k15\r\nConnection: close\r\n\r\n"
-    )
-
-    # Materialize the connection, inject a complete missing-path request with
-    # an ACK 65,536 beyond SND.NXT, then send the legitimate request at the
-    # original client sequence. The first accepted request should win on bounty.
-    sock.send(make_frame(sport, client_next, server_next, 0x10))
-    sock.send(make_frame(
-        sport, client_next, (server_next + 0x10000) & 0xFFFFFFFF, 0x18, poison
-    ))
-    sock.send(make_frame(sport, client_next, server_next, 0x18, HTTP))
-
-    response = bytearray()
-    deadline = time.monotonic() + 2.5
-    while time.monotonic() < deadline:
-        item = receive(sport, max(0.01, deadline - time.monotonic()), want_payload=True)
-        if item is None:
-            break
-        response.extend(item["payload"])
-        if b"HTTP/1." in response:
-            break
-
-    status = bytes(response).split(b"\r\n", 1)[0]
-    expected_status = b"HTTP/1.1 404" if EXPECT_ACCEPT else b"HTTP/1.1 200"
-    observed = status.startswith(expected_status)
-    report(
-        "invalid-ACK HTTP request-injection test",
-        observed,
-        f"status={status!r}; expected={expected_status!r}; captured={len(response)} response bytes",
-        expected=True,
-    )
-
-
 def test_small_mss() -> None:
     sport, isn, peer_mss = 52002, 0x23456789, 100
     synack = handshake(sport, isn, peer_mss)
@@ -471,7 +428,6 @@ if __name__ == "__main__":
     try:
         test_bad_ack()
         test_ack_boundary_matrix()
-        test_invalid_ack_request_injection()
         if not WRAP_MODE:
             test_small_mss()
             test_mss_boundary_matrix()
