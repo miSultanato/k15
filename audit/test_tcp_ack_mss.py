@@ -406,6 +406,46 @@ def test_ack_boundary_matrix() -> None:
 
 
 
+
+def test_invalid_ack_stream_poisoning() -> None:
+    """An in-window byte with a bad ACK must not alter the HTTP byte stream."""
+    sport, isn = 52005, 0x6789ABCD
+    synack = handshake(sport, isn, 536)
+    if synack is None:
+        raise SystemExit("FAIL: no SYN-ACK for invalid-ACK stream-poisoning control")
+    client_next = (isn + 1) & 0xFFFFFFFF
+    server_next = (synack["seq"] + 1) & 0xFFFFFFFF
+
+    # Materialize the connection with a valid ACK, then inject one byte at the
+    # correct client sequence but with an ACK 65,536 beyond server SND.NXT.
+    sock.send(make_frame(sport, client_next, server_next, 0x10))
+    sock.send(make_frame(sport, client_next, (server_next + 0x10000) & 0xFFFFFFFF, 0x18, b"X"))
+    # Retransmit the legitimate request from its original sequence. A server
+    # that consumed X has advanced C_NXT and will see only the suffix "ET ...".
+    sock.send(make_frame(sport, client_next, server_next, 0x18, HTTP))
+
+    response = bytearray()
+    deadline = time.monotonic() + 2.5
+    while time.monotonic() < deadline:
+        item = receive(sport, max(0.01, deadline - time.monotonic()), want_payload=True)
+        if item is None:
+            break
+        response.extend(item["payload"])
+        if b"HTTP/1." in response:
+            break
+
+    status = bytes(response).split(b"\\r\\n", 1)[0]
+    expected_status = b"HTTP/1.1 405" if EXPECT_ACCEPT else b"HTTP/1.1 200"
+    observed = status.startswith(expected_status)
+    report(
+        "invalid-ACK stream-poisoning test",
+        observed,
+        f"status={status!r}; expected={expected_status!r}; captured={len(response)} response bytes",
+        expected=True,
+    )
+
+
+
 def test_small_mss() -> None:
     sport, isn, peer_mss = 52002, 0x23456789, 100
     synack = handshake(sport, isn, peer_mss)
@@ -427,6 +467,7 @@ if __name__ == "__main__":
     try:
         test_bad_ack()
         test_ack_boundary_matrix()
+        test_invalid_ack_stream_poisoning()
         if not WRAP_MODE:
             test_small_mss()
             test_mss_boundary_matrix()
