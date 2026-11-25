@@ -7,10 +7,11 @@ ab93479ebc7c85274c722b16897148286d1cfca3.
 
 ## Differential reproduction
 
-The three-way local TAP run
-https://github.com/miSultanato/k15/actions/runs/45466831548
+The latest three-way local TAP run
+https://github.com/miSultanato/k15/actions/runs/45553389873
 completed successfully against the frozen bounty, first upstream fix and
-current upstream main.
+current upstream main. It re-ran the 2,048-frame unicast primer and confirmed
+the same eight-byte disclosure only in the frozen image.
 
 The test uses two distinct synthetic identities and a unicast primer:
 
