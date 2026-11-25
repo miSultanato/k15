@@ -80,11 +80,12 @@ user namespaces.
   Finished, then corrupts an application AEAD tag before replaying the valid
   same-sequence record; checks whether the local QEMU guest still processes app data.
 - `test_tls_tcp_ack_desync.py`: uses an OpenSSL TLS 1.3 MemoryBIO client over a
-  synthetic raw TCP/TAP connection. It sends a corrupted partial TLS record
-  with an out-of-window ACK, then retransmits the authenticated record at the
-  original TCP sequence. The differential checks whether TCP consumed the
-  prefix before TLS authentication; results must be taken from the linked
-  workflow run, not inferred from the test design.
+  synthetic raw TCP/TAP connection. It sends the client Finished record,
+  then a corrupted 16-byte application-record prefix with an out-of-window
+  ACK, and retransmits the authenticated record at the original TCP sequence.
+  The differential checks whether TCP consumed the prefix before TLS
+  authentication; results must be taken from the linked workflow run, not
+  inferred from the test design.
 - `test_dummy_ccs.py`: compares the normal ServerHello record sequence and
   elicits HelloRetryRequest. `test_hrr_second_clienthello.py` drives an OpenSSL client through a
   Go TLS 1.3 client through the second ClientHello and asserts the expected
