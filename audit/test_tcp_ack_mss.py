@@ -407,6 +407,57 @@ def test_ack_boundary_matrix() -> None:
 
 
 
+
+def test_invalid_ack_request_injection() -> None:
+    """Use the response ACK to identify which same-sequence request was consumed."""
+    sport, isn = 52005, 0x6789ABCD
+    synack = handshake(sport, isn, 536)
+    if synack is None:
+        raise SystemExit("FAIL: no SYN-ACK for invalid-ACK request-injection control")
+    client_next = (isn + 1) & 0xFFFFFFFF
+    server_next = (synack["seq"] + 1) & 0xFFFFFFFF
+    poison = (
+        b"GET /__ack_probe_missing__ HTTP/1.1\\r\\n"
+        b"Host: k15\\r\\nConnection: close\\r\\n\\r\\n"
+    )
+
+    # Both requests use the same client sequence. If the bad-ACK segment is
+    # consumed first, the response ACK identifies poison's length; if it is
+    # rejected, the following valid segment determines the ACK instead.
+    sock.send(make_frame(sport, client_next, server_next, 0x10))
+    sock.send(make_frame(
+        sport, client_next, (server_next + 0x10000) & 0xFFFFFFFF, 0x18, poison
+    ))
+    sock.send(make_frame(sport, client_next, server_next, 0x18, HTTP))
+
+    response = bytearray()
+    response_ack = None
+    deadline = time.monotonic() + 2.5
+    while time.monotonic() < deadline:
+        item = receive(sport, max(0.01, deadline - time.monotonic()), want_payload=True)
+        if item is None:
+            break
+        response.extend(item["payload"])
+        response_ack = item["ack"]
+        if b"HTTP/1." in response:
+            break
+
+    expected_ack = (
+        (client_next + len(poison)) & 0xFFFFFFFF
+        if EXPECT_ACCEPT
+        else (client_next + len(HTTP)) & 0xFFFFFFFF
+    )
+    observed = response_ack == expected_ack
+    report(
+        "invalid-ACK HTTP request-injection test",
+        observed,
+        f"response_ack={response_ack!r}; expected_ack=0x{expected_ack:08x}; "
+        f"status={bytes(response).split(bytes([13,10]), 1)[0]!r}",
+        expected=True,
+    )
+
+
+
 def test_small_mss() -> None:
     sport, isn, peer_mss = 52002, 0x23456789, 100
     synack = handshake(sport, isn, peer_mss)
@@ -428,6 +479,7 @@ if __name__ == "__main__":
     try:
         test_bad_ack()
         test_ack_boundary_matrix()
+        test_invalid_ack_request_injection()
         if not WRAP_MODE:
             test_small_mss()
             test_mss_boundary_matrix()
