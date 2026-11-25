@@ -57,6 +57,7 @@ user namespaces.
   scalar in both byte orders. It does not inspect CPU registers, host memory,
   or transient states.
 - `rdrand-virtualization-review.md`: distinguishes native Intel shared-DRNG behavior, QEMU TCG's host-random helper, KVM's optional RDRAND interception, and the conditional risk of restoring a full guest-RAM snapshot containing pending nonce-pool entries. It does not claim the production host is snapshotted.
+- `nonce-pool-rollback-review.md`: traces the exact `POOLR`/`POOLK` entries and `POOLN` counter consumed by `sign`, explains why a full guest-RAM fork can duplicate a pending nonce, and distinguishes this from the existing synthetic-scalar RAM scan. Full VM-state fork/restore remains untested.
 - `qemu_nonce_uniqueness.py`: captures local TLS 1.3 handshakes, decrypts the
   synthetic server's handshake flight using the client's temporary key log,
   verifies each CertificateVerify with the synthetic certificate key, and
