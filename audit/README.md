@@ -94,6 +94,7 @@ user namespaces.
   over the TLS listener, exercising the decrypted HTTPS request parser.
 - `test_ip_arp_validation.py`: sends synthetic IPv4 SYNs with valid/invalid
   header checksums and ARP requests with malformed hardware/protocol fields over TAP.
+- `tls-client-finished-review.md`: confirms three-way acceptance of application data before client Finished in run 45482705312, with AEAD/attack-scope limits.
 - `tcp-sequence-fin-boundary-matrix-v0.1.md`: proposed exact client-sequence edge and FIN/ACK matrix; design only, NOT-RUN.
 - `clienthello-truncation-record-prefix-matrix-v0.1.md`: additional inner-length and outer-record truncation offsets with transcript-faithful next-record alignment; design only, NOT-RUN.
 - `syn-cookie-reboot-review.md`: records the three-way QEMU guest-reset replay result in [run 45486557359](https://github.com/miSultanato/k15/actions/runs/45486557359); all pinned revisions reject the old ACK and accept a fresh one. The run is synthetic QEMU on an ephemeral hosted runner, not production traffic.
