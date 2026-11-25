@@ -94,6 +94,7 @@ user namespaces.
   over the TLS listener, exercising the decrypted HTTPS request parser.
 - `test_ip_arp_validation.py`: sends synthetic IPv4 SYNs with valid/invalid
   header checksums and ARP requests with malformed hardware/protocol fields over TAP.
+- `syn-cookie-reboot-review.md`: records the three-way QEMU guest-reset replay result in [run 45486557359](https://github.com/miSultanato/k15/actions/runs/45486557359); all pinned revisions reject the old ACK and accept a fresh one. The run is synthetic QEMU on an ephemeral hosted runner, not production traffic.
 - `test_arp_short_frame.py`: discovers the guest MAC, primes RX buffers with
   2,048 valid unicast ARP requests from a synthetic victim, then sends a 24-byte
   request from a different sender. The regression requires the frozen bounty
