@@ -17,8 +17,11 @@ fix and current upstream main:
 - The guest remains healthy and a normal TLS request succeeds after these
   probes.
 
-The three-way run is
-https://github.com/miSultanato/k15/actions/runs/45468109924.
+The latest three-way run is
+https://github.com/miSultanato/k15/actions/runs/45553389873. It reconfirmed
+that invalid IPv4 header checksums and malformed full-length ARP metadata
+are accepted by all three images, with no additional security consequence
+observed.
 
 These are observed input-validation choices shared by all three revisions;
 they are not differential bounty-only findings.
