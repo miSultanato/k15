@@ -12,6 +12,7 @@ on:
       - audit/test_tcp_ack_mss.py
       - audit/test_tcp_rst_sequence.py
       - audit/run_tap_ip_arp.sh
+      - audit/run_tap_arp_smp.sh
       - audit/run_tap_tcp_wrap.sh
       - .github/workflows/ip-arp-boundaries.yml
 
