@@ -49,11 +49,14 @@ only the first application-data record over the established TCP socket. The
 client still derives its application traffic keys locally from the completed
 server flight. The test requires an HTTP response in `expect` mode.
 
-The differential workflow already invokes this test script for the frozen
-bounty and both upstream revisions. The push-triggered run for this addition
-has not yet been retrieved; until then, the omitted-Finished runtime result is
-pending. The static code path and earlier corrupted-Finished runtime result
-are separate evidence and must not be conflated.
+The differential workflow invokes this test script for the frozen bounty and
+both upstream revisions. The push-triggered [run 45482705312](https://github.com/miSultanato/k15/actions/runs/45482705312)
+completed successfully (job 138759780549). Its logs show:
+
+- frozen bounty, expect mode: omitted Finished → HTTP response; corrupted Finished → HTTP response; bad AEAD record ignored and valid same-sequence record processed;
+- first upstream fix and current upstream, observe mode: omitted Finished and corrupted Finished both followed by HTTP responses; bad AEAD record ignored and valid same-sequence record processed.
+
+Thus the omission control is no longer pending. The run uses synthetic QEMU images on an ephemeral GitHub-hosted runner; it is not a local NEO run and does not contact production.
 
 ## Interpretation
 
@@ -68,9 +71,11 @@ credentials. No production service or credential is involved.
 ## Runtime result and limits
 
 The omission control confirms that the server accepts a valid application
-record before client Finished on all three revisions. This is a protocol
-state/handshake-confirmation weakness shared by the tested versions. The
-application record is still AEAD-authenticated under the client application
-traffic key; the result does not imply an attacker without the shared secret
-can inject data. No client-certificate policy, client identity, or
-authorization boundary was tested.
+record before client Finished on all three revisions. The same run also
+confirms that a corrupted Finished is not a gate before application processing,
+while a bad application AEAD record itself is ignored and a valid same-sequence
+record is processed. This is a protocol state/handshake-confirmation weakness
+shared by the tested versions. The application record remains AEAD-authenticated
+under the client application traffic key; the result does not imply an attacker
+without the shared secret can inject data. No client-certificate policy, client
+identity, or authorization boundary was tested.
