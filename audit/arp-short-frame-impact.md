@@ -100,9 +100,11 @@ every preceding Ethernet frame.
   Layer-2 segment.
 - The prior buffer contents must satisfy the offset-38 dword check; a full
   unicast ARP request for the server is one demonstrated example.
-- The test uses SMP=1 MEM=256; it does not establish queue/processor
-  selection behavior or disclosure reliability on a multi-processor
-  production host.
+- The test reproduces with both SMP=1 MEM=256 and SMP=2 MEM=256. The two-CPU
+  run confirms the issue is not restricted to a single-processor guest, but
+  does not identify which CPU handled each frame, prove arbitrary cross-CPU
+  buffer access, quantify race reliability under load, or establish behavior
+  on a multi-processor production host.
 - The demonstrated disclosure is eight stale metadata bytes. It is not a
   private-key, TLS traffic-key, arbitrary-memory, or Internet-reachable
   disclosure.
