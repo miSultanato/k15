@@ -39,7 +39,7 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 ## Follow-up reviews (2026-11-25)
 
-- `tcp-ack-injection-impact.md` records the frozen-source `.odd -> .ak` ACK-window defect and attacker-model boundary. Run [45553389873](https://github.com/miSultanato/k15/actions/runs/45553389873) confirms the sequence-aware request test: with two HTTP requests at the same client sequence, frozen response ACK `0x6789ac13` identifies consumption of the 69-byte invalid-ACK request; both upstream response ACKs `0x6789abfe` identify consumption of the 48-byte valid-ACK request instead. The differential also passes in the forced-wrap build. This is not an off-path injection or request-smuggling demonstration.
+- `tcp-ack-injection-impact.md` records the frozen-source `.odd -> .ak` ACK-window defect and attacker-model boundary. Run [45559938127](https://github.com/miSultanato/k15/actions/runs/45559938127) confirms two sequence-aware tests. With different HTTP requests at the same sequence, frozen response ACK `0x6789ac13` identifies consumption of the 69-byte invalid-ACK request; both upstream response ACKs `0x6789abfe` identify consumption of the 48-byte valid-ACK request instead. With an incomplete 42-byte prefix, the frozen image immediately ACKs `0x789abd09`, while both upstream images leave the receive sequence at `0x789abcdf`; retransmitting the full request then causes the frozen image to trim the overlapping prefix and accept only its six-byte suffix. Both tests pass in the forced-wrap build. This demonstrates TCP stream desynchronization under a synthetic established connection, not an off-path exploit or request smuggling.
 
 ## Follow-up reviews (2026-11-24)
 
