@@ -88,16 +88,16 @@ certificate, and uploads no artifacts.
 
 ## Status and interpretation
 
-The workflow has been added to the public audit fork. Its runtime result is
-pending at the time of this document; no success is claimed yet.
+**Dynamic QEMU result confirmed:** GitHub Actions run [45486557359](https://github.com/miSultanato/k15/actions/runs/45486557359) completed successfully on 2026-11-24. All three matrix jobs passed:
 
-If it passes, it will establish that the tested QEMU boot/reset path rotates
-the SYN-cookie secret sufficiently to invalidate the captured cookie, while
-a newly issued cookie works. It will not establish that a reboot is a practical
-anti-replay defense for a continuously running service, nor that captured
-ACK replay is exploitable off-path. The existing same-boot 65-second replay
-observation remains separate and is unchanged.
+| Revision | Job ID | Pre-reset cookie | First post-reset cookie | Result |
+|---|---:|---:|---:|---|
+| Frozen bounty `ab93479ebc7c85274c722b16897148286d1cfca3` | 138773405033 | `0x082d0d81` | `0x04061781` | Old ACK rejected; fresh ACK accepted; HTTP processed |
+| First upstream fix `a2d8893261b2be15b44c86d6f4483d65820e943a` | 138773404702 | `0xe88b5d41` | `0xefa82541` | Old ACK rejected; fresh ACK accepted; HTTP processed |
+| Current upstream snapshot `cb9f76a5a100c418bfcaeddcd4f137d30ab489d2` | 138773405221 | `0xc6831cc1` | `0x3c7dba41` | Old ACK rejected; fresh ACK accepted; HTTP processed |
 
-If it fails, inspect the exact failed stage before drawing a security
-conclusion: a missing post-reset SYN-ACK, a cookie collision, old-cookie
-acceptance, and fresh-cookie rejection are different outcomes.
+The logs confirm that QEMU acknowledged `system_reset`, each first post-reset cookie differed from its pre-reset value, the pre-reset ACK produced no HTTP response, and the fresh ACK completed the synthetic request. All three jobs used the same fixed synthetic tuple/client ISN. No generated certificates, private keys, VM images or nonce captures were uploaded.
+
+**Execution environment:** `ubuntu-latest` resolved to a GitHub-hosted Ubuntu 26.04 runner; the workflow installed QEMU 10.2.1 and ran the guest in an isolated network namespace/private TAP. This is QEMU-based synthetic evidence, not a local NEO run. It contacts no production endpoint. If acceptance policy requires a locally hosted QEMU run specifically, that remains a separate local confirmation.
+
+**Conclusion:** the tested QEMU boot/reset path regenerates the SYN-cookie key sufficiently to invalidate the captured pre-reset cookie, while a newly issued cookie works, on all three pinned revisions. This is not a confirmed bounty vulnerability or a clock-based expiry. It does not establish off-path forgery, cross-tuple replay, application-authentication bypass, production reachability, or that reboot is a practical anti-replay defense for a continuously running service. The same-boot 65-second replay observation remains separate and unchanged.
