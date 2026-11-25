@@ -23,17 +23,29 @@ a case where the arithmetic wraps at 2^32. Both tested upstream revisions
 reject these packets without returning HTTP payload.
 
 Evidence:
-- [assertive three-way ACK/MSS matrix, run 45468109924](https://github.com/miSultanato/k15/actions/runs/45468109924)
-- [forced-wrap matrix, run 45413051340](https://github.com/miSultanato/k15/actions/runs/45413051340)
+- [latest three-way ACK/MSS, ARP and forced-wrap run 45553389873](https://github.com/miSultanato/k15/actions/runs/45553389873)
+- [prior three-way ACK/MSS matrix, run 45553218069](https://github.com/miSultanato/k15/actions/runs/45553218069)
+- [earlier assertive matrix, run 45468109924](https://github.com/miSultanato/k15/actions/runs/45468109924)
+- The sequence-aware request-consumption test sends a 69-byte missing-path
+  request with an invalid ACK, then a 48-byte normal request at the same TCP
+  sequence. Frozen response ACK `0x6789ac13` identifies the 69-byte request;
+  both upstream response ACKs `0x6789abfe` identify the 48-byte request.
+  This confirms that the invalid-ACK payload is consumed first only by the
+  frozen image. The result also holds in the forced-wrap build.
 - Test implementation: `audit/test_tcp_ack_mss.py`, especially
-  `fetch_after_handshake`, `test_bad_ack` and `test_ack_boundary_matrix`.
+  `fetch_after_handshake`, `test_bad_ack`, `test_ack_boundary_matrix` and
+  `test_invalid_ack_request_injection`.
 
 ## What the test proves
 
 - A synthetically established connection can carry application data despite
   an ACK outside the server's acceptable sent-data range.
-- The behavior is present in the frozen bounty image and absent in the two
-  tested upstream revisions.
+- With two different HTTP payloads at the same client sequence, the response
+  ACK identifies which payload length advanced receive state: the frozen
+  image consumes the invalid-ACK payload; both tested upstream revisions
+  reject it and consume the following valid-ACK payload instead.
+- The result is reproduced in the ordinary sequence range and in a forced
+  32-bit sequence-wrap build.
 - The request is accepted because its TCP sequence number is valid; the test
   does not bypass the four-tuple or sequence-number checks.
 
@@ -71,8 +83,10 @@ fixes in the tested revisions reject the same invalid-ACK matrix.
 
 ## Next bounded validation
 
-If further work is justified, use only isolated QEMU/TAP guests and synthetic
-tuples to test whether a single invalid-ACK data segment advances receive
-state when its payload is incomplete, followed by a legitimate retransmission.
-Record the server ACK and the eventual HTTP result. Do not attempt a blind
-packet-injection campaign against any public host.
+The next useful test is now the incomplete-payload case: send only a prefix
+of an invalid-ACK request, then retransmit the complete legitimate request at
+the original sequence and record the server ACK and HTTP result. This will
+show whether the invalid segment advances receive state even before a full
+HTTP request is available. Keep it in isolated QEMU/TAP guests with synthetic
+tuples; do not attempt a blind packet-injection campaign against any public
+host.
