@@ -434,7 +434,7 @@ def test_invalid_ack_stream_poisoning() -> None:
         if b"HTTP/1." in response:
             break
 
-    status = bytes(response).split(b"\\r\\n", 1)[0]
+    status = bytes(response).split(b"\r\n", 1)[0]
     expected_status = b"HTTP/1.1 405" if EXPECT_ACCEPT else b"HTTP/1.1 200"
     observed = status.startswith(expected_status)
     report(
