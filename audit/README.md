@@ -83,9 +83,11 @@ user namespaces.
   synthetic raw TCP/TAP connection. It sends the client Finished record,
   then a corrupted 16-byte application-record prefix with an out-of-window
   ACK, and retransmits the authenticated record at the original TCP sequence.
-  The differential checks whether TCP consumed the prefix before TLS
-  authentication; results must be taken from the linked workflow run, not
-  inferred from the test design.
+  [Three-way run 45574294391](https://github.com/miSultanato/k15/actions/runs/45574294391)
+  confirms that the frozen image consumes the prefix and drops the HTTP
+  request, while both upstream images reject the prefix and process the full
+  TLS record. This is TCP/TLS record desynchronization and availability impact,
+  not an AEAD bypass; see `tcp-tls-record-desync.md`.
 - `test_dummy_ccs.py`: compares the normal ServerHello record sequence and
   elicits HelloRetryRequest. `test_hrr_second_clienthello.py` drives an OpenSSL client through a
   Go TLS 1.3 client through the second ClientHello and asserts the expected
@@ -107,7 +109,7 @@ user namespaces.
   See `arp-short-frame-impact.md` for the exact data flow and limits.
 - `ipv4-arp-validation-review.md`: explains why invalid IPv4 header checksums and malformed full-length ARP metadata still receive replies on all three revisions, and separates that behavior from the short-frame disclosure.
 - `public-cross-curve-proof-review.md` and `test_public_proof.py`: review the public DLEQ proof’s serialized fields and intentional `flip` bit, then test both synthetic proof paths, tamper rejection and key-binding checks.
-- `cookie-time-component-review.md` and `syn-cookie-replay-observation.md`: document the source-level no-clock cookie construction, 26-bit keyed-check width, 65-second delayed/replay tests, changed-port rejection, upstream issue #1 finding 14, and conservative threat-model limits. `syn-cookie-reboot-review.md` documents the boot-time HKS/RDRAND path and the new QEMU reset/replay differential; runtime result is pending.
+- `cookie-time-component-review.md` and `syn-cookie-replay-observation.md`: document the source-level no-clock cookie construction, 26-bit keyed-check width, 65-second delayed/replay tests, changed-port rejection, upstream issue #1 finding 14, and conservative threat-model limits. `syn-cookie-reboot-review.md` documents the boot-time HKS/RDRAND path and the completed QEMU reset/replay differential.
 - `test_syn_cookie_reboot.py` and `run_tap_syn_cookie_reboot.sh`: capture a synthetic SYN cookie, issue QEMU monitor `system_reset` while keeping the TAP interface and tuple, then replay the old ACK and verify a fresh post-reset cookie still works. This is a local reboot/key-rotation regression probe; it uploads no artifacts.
 - `tcp-sequence-window-review.md`: records the exact modular client-sequence admission interval, ACK advancement rules, existing forced-wrap evidence, and remaining FIN/RST edge-coverage gaps. It does not promote untested combinations to findings.
 - `test_tcp_ack_mss.py`: asserts bounty acceptance versus upstream rejection of
