@@ -146,3 +146,27 @@ TLS key or scalar recovery has been demonstrated.
 Do not merge upstream development fixes into the frozen bounty branch. All
 dynamic tests remain local, offline and synthetic-key only; no request is sent
 to `15kb.org`.
+
+
+## RDRAND / nonce-pool rollback follow-up (2026-11-25)
+
+- `rdrand-virtualization-review.md` separates native Intel shared-DRNG
+  behavior, QEMU TCG guest randomness, KVM's configurable RDRAND interception,
+  and the conditional effect of restoring full guest RAM.
+- `nonce-pool-rollback-review.md` traces the exact frozen signer path:
+  `sign` decrements `POOLN`, then loads the selected `POOLR` and
+  `POOLK` entries from per-processor BSS. A full guest-memory snapshot/clone
+  copies pending nonce material and its counters. Two branches consuming the
+  same restored entry on different transcript hashes would meet the standard
+  ECDSA nonce-reuse condition.
+- This is a confirmed source-level precondition, not a confirmed production
+  exposure. No evidence shows the bounty host is snapshotted/cloned or that
+  two branches can expose signatures from the same restored entry.
+- Existing run [45384777117](https://github.com/miSultanato/k15/actions/runs/45384777117)
+  scans a QEMU RAM dump for the synthetic private scalar. It does not inspect
+  nonce-pool counters/entries or perform a full VM-state restore. It must not
+  be cited as a nonce-pool rollback test.
+- Next validation remains a synthetic-only full VM-state fork/restore after
+  pool preparation, between signatures, followed by distinct local
+  CertificateVerify transcripts and synthetic-key nonce-reuse verification.
+  No production traffic or infrastructure access is authorized or required.
