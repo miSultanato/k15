@@ -148,6 +148,10 @@ or nonce values. It should emit only aggregate pass/fail results and clean up
 all temporary files. A failure to create/restore a full VM state is a harness
 failure, not evidence that the risk is impossible.
 
+## Detailed fork/restore plan
+
+The implementation details and pass/fail conditions are now specified in [vmstate-nonce-pool-fork-test-plan-v0.1.md](vmstate-nonce-pool-fork-test-plan-v0.1.md). It uses two destinations restored from the same full-state migration stream, a single-vCPU first pass, and the existing synthetic CertificateVerify nonce-fingerprint harness. It remains NOT-RUN.
+
 ## Classification
 
 **Confirmed:** pending ECDSA nonce material, pool counters and private-key
