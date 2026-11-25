@@ -474,16 +474,14 @@ def test_invalid_ack_partial_payload() -> None:
         sport, client_next, (server_next + 0x10000) & 0xFFFFFFFF, 0x18, prefix
     ))
 
-    # Give the guest a short bounded interval to acknowledge the prefix before
-    # retransmitting a complete, valid-ACK request at the original sequence.
-    observed_acks = []
+    # Capture any immediate ACK of the incomplete prefix, then retransmit a
+    # complete request at the original sequence and observe the final response.
     first = receive(sport, 0.20)
-    if first is not None:
-        observed_acks.append(first["ack"])
+    first_ack = first["ack"] if first is not None else None
     sock.send(make_frame(sport, client_next, server_next, 0x18, HTTP))
 
     response = bytearray()
-    response_ack = observed_acks[-1] if observed_acks else None
+    response_ack = first_ack
     deadline = time.monotonic() + 2.0
     while time.monotonic() < deadline:
         item = receive(sport, max(0.01, deadline - time.monotonic()))
@@ -495,20 +493,18 @@ def test_invalid_ack_partial_payload() -> None:
         if b"HTTP/1." in response:
             break
 
-    expected_ack = (
-        (client_next + len(prefix)) & 0xFFFFFFFF
-        if EXPECT_ACCEPT
-        else (client_next + len(HTTP)) & 0xFFFFFFFF
-    )
-    expected_http = not EXPECT_ACCEPT
+    expected_prefix_ack = (client_next + len(prefix)) & 0xFFFFFFFF
+    expected_final_ack = (client_next + len(HTTP)) & 0xFFFFFFFF
+    prefix_was_acked = first_ack == expected_prefix_ack
     report(
         "partial invalid-ACK receive-state test",
-        response_ack == expected_ack and response.startswith(b"HTTP/1.") == expected_http,
-        f"response_ack={response_ack!r}; expected_ack=0x{expected_ack:08x}; "
-        f"http_response={response.startswith(b'HTTP/1.')}; "
-        f"expected_http_response={expected_http}",
+        prefix_was_acked == EXPECT_ACCEPT
+        and response_ack == expected_final_ack
+        and response.startswith(b"HTTP/1."),
+        f"first_ack={first_ack!r}; prefix_ack=0x{expected_prefix_ack:08x}; "
+        f"final_ack={response_ack!r}; expected_final_ack=0x{expected_final_ack:08x}; "
+        f"http_response={response.startswith(b'HTTP/1.')}",
     )
-
 
 
 def test_small_mss() -> None:
