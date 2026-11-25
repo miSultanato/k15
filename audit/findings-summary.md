@@ -39,7 +39,7 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 
 ## Follow-up reviews (2026-11-25)
 
-- `tcp-ack-injection-impact.md` records the exact frozen-source `.odd -> .ak` ACK-window defect and attacker-model boundary. The bounded TAP matrix still reproduces HTTP responses for invalid ACKs on frozen and rejection on both tested upstream revisions. The status-code-based request-order probe was invalid because both synthetic paths can return HTTP 200; it has been replaced by a sequence-aware test that distinguishes consumed request lengths using the server's TCP ACK. That differential result is pending. No request-smuggling or off-path-injection claim is made.
+- `tcp-ack-injection-impact.md` records the frozen-source `.odd -> .ak` ACK-window defect and attacker-model boundary. Run [45553389873](https://github.com/miSultanato/k15/actions/runs/45553389873) confirms the sequence-aware request test: with two HTTP requests at the same client sequence, frozen response ACK `0x6789ac13` identifies consumption of the 69-byte invalid-ACK request; both upstream response ACKs `0x6789abfe` identify consumption of the 48-byte valid-ACK request instead. The differential also passes in the forced-wrap build. This is not an off-path injection or request-smuggling demonstration.
 
 ## Follow-up reviews (2026-11-24)
 
