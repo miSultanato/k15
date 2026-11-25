@@ -458,6 +458,59 @@ def test_invalid_ack_request_injection() -> None:
 
 
 
+
+def test_invalid_ack_partial_payload() -> None:
+    """Check whether an incomplete request prefix advances TCP receive state."""
+    sport, isn = 52006, 0x789ABCDE
+    synack = handshake(sport, isn, 536)
+    if synack is None:
+        raise SystemExit("FAIL: no SYN-ACK for partial invalid-ACK probe")
+    client_next = (isn + 1) & 0xFFFFFFFF
+    server_next = (synack["seq"] + 1) & 0xFFFFFFFF
+    prefix = b"GET /__ack_partial__ HTTP/1.1\r\nHost: k15\r\n"
+
+    sock.send(make_frame(sport, client_next, server_next, 0x10))
+    sock.send(make_frame(
+        sport, client_next, (server_next + 0x10000) & 0xFFFFFFFF, 0x18, prefix
+    ))
+
+    # Give the guest a short bounded interval to acknowledge the prefix before
+    # retransmitting a complete, valid-ACK request at the original sequence.
+    observed_acks = []
+    first = receive(sport, 0.20)
+    if first is not None:
+        observed_acks.append(first["ack"])
+    sock.send(make_frame(sport, client_next, server_next, 0x18, HTTP))
+
+    response = bytearray()
+    response_ack = observed_acks[-1] if observed_acks else None
+    deadline = time.monotonic() + 2.0
+    while time.monotonic() < deadline:
+        item = receive(sport, max(0.01, deadline - time.monotonic()))
+        if item is None:
+            break
+        response_ack = item["ack"]
+        if item["payload"]:
+            response.extend(item["payload"])
+        if b"HTTP/1." in response:
+            break
+
+    expected_ack = (
+        (client_next + len(prefix)) & 0xFFFFFFFF
+        if EXPECT_ACCEPT
+        else (client_next + len(HTTP)) & 0xFFFFFFFF
+    )
+    expected_http = not EXPECT_ACCEPT
+    report(
+        "partial invalid-ACK receive-state test",
+        response_ack == expected_ack and response.startswith(b"HTTP/1.") == expected_http,
+        f"response_ack={response_ack!r}; expected_ack=0x{expected_ack:08x}; "
+        f"http_response={response.startswith(b'HTTP/1.')}; "
+        f"expected_http_response={expected_http}",
+    )
+
+
+
 def test_small_mss() -> None:
     sport, isn, peer_mss = 52002, 0x23456789, 100
     synack = handshake(sport, isn, peer_mss)
@@ -480,6 +533,7 @@ if __name__ == "__main__":
         test_bad_ack()
         test_ack_boundary_matrix()
         test_invalid_ack_request_injection()
+        test_invalid_ack_partial_payload()
         if not WRAP_MODE:
             test_small_mss()
             test_mss_boundary_matrix()
