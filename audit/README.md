@@ -99,10 +99,12 @@ user namespaces.
 - `test_syn_cookie_reboot.py` and `run_tap_syn_cookie_reboot.sh`: capture a synthetic SYN cookie, issue QEMU monitor `system_reset` while keeping the TAP interface and tuple, then replay the old ACK and verify a fresh post-reset cookie still works. This is a local reboot/key-rotation regression probe; it uploads no artifacts.
 - `tcp-sequence-window-review.md`: records the exact modular client-sequence admission interval, ACK advancement rules, existing forced-wrap evidence, and remaining FIN/RST edge-coverage gaps. It does not promote untested combinations to findings.
 - `test_tcp_ack_mss.py`: asserts bounty acceptance versus upstream rejection of
-  out-of-window ACKs, checks peer-MSS safety boundaries, delays a first SYN-cookie
-  ACK, rejects replay under a changed source port, then observes same-tuple
-  cookie replay after FIN/FIN close. The forced-wrap runner uses the same
-  expect/reject assertions with SND.NXT near 2^32.
+  out-of-window ACKs, checks peer-MSS boundaries, delayed SYN-cookie ACK and
+  tuple-bound replay. It also compares two HTTP payloads at the same sequence
+  to identify invalid-ACK data consumption, and sends an incomplete 42-byte
+  invalid-ACK prefix before a same-sequence retransmission. The frozen image
+  ACKs the prefix and trims the retransmission; both upstream images reject the
+  prefix. Both differential probes are repeated by the forced-wrap runner.
 - `check_current_rand_path.py`: checks the refactored current-main RDRAND-to-nonce path.
 - `check_boot_hardening.py`: compares four source-level boot/build hardening changes between the frozen bounty, first upstream fix and pinned current main.
 - `check_public_hygiene.py` and `test_public_hygiene.py`: narrow guardrail for this public fork; scans the tracked tree and all reachable Git history, rejecting generated secret directories/files, complete PEM private-key blocks, disk images, binaries and NASM listings. Synthetic PEM/path tests cover detection and false-positive behavior. It is not a general-purpose secret scanner.
@@ -152,7 +154,7 @@ proofs of all hardware behavior or every possible SMP schedule. See
 | Authenticated all-zero TLSInnerPlaintext lengths 1/2/16/255/300: frozen processes following request; fixed/current close | [45414676678](https://github.com/miSultanato/k15/actions/runs/45414676678) |
 | Go TLS normal-path CCS: frozen sends none; fixed/current send one after ServerHello | [45417214217](https://github.com/miSultanato/k15/actions/runs/45417214217) |
 | Delayed first SYN-cookie ACK after 65s: accepted on all three pinned images | [45410737525](https://github.com/miSultanato/k15/actions/runs/45410737525) |
-| ACK-window offsets +1, +63, +64, +65535, +65536: frozen accepts all; fixed/current reject all | [45468109924](https://github.com/miSultanato/k15/actions/runs/45468109924) |
+| ACK-window offsets and sequence-aware invalid-ACK payload/partial-prefix probes: frozen accepts; fixed/current reject; same result under forced wrap | [45559938127](https://github.com/miSultanato/k15/actions/runs/45559938127) |
 | Forced-wrap ACK-window: SND.NXT=0xFFFFFFC2; frozen accepts +65536 wrap, fixed/current reject | [45468109924](https://github.com/miSultanato/k15/actions/runs/45413051340) |
 | Peer MSS boundary: frozen sends 180-byte payload for MSS=100/179; fixed/current refuse 179..215 | [45468109924](https://github.com/miSultanato/k15/actions/runs/45413771856) |
 | Boot hardening binary checks: AP alignment, GDT bytes, E820 instruction and hostname SAN | [45412245837](https://github.com/miSultanato/k15/actions/runs/45412245837) |
