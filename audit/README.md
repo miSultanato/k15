@@ -29,7 +29,7 @@ revision offered by the k15 bounty.
 | `memory-scan.yml` | Local synthetic-key CertificateVerify capture and one guest-RAM snapshot scan |
 | `wx-short-site.yml` | Three-way QEMU differential: execute a synthetic `RET` byte at the end of a one-file site to detect executable site pages |
 | `wx-pte-probe.yml` | Three-way local QEMU probe: stop each guest after it installs its page tables, walk the live PML4/PDPT/PD/PT via QMP, and inspect the synthetic SITE byte PTE for NX/read-only bits |
-| `ip-arp-boundaries.yml` | Deterministic IPv4/ARP checks, short-ARP stale-buffer probe, TCP ACK/MSS boundaries, delayed SYN-cookie ACK and forced 32-bit sequence-wrap probes |
+| `ip-arp-boundaries.yml` | Deterministic IPv4/ARP checks, short-ARP stale-buffer probe at SMP=1 and SMP=2, TCP ACK/MSS and partial-payload boundaries, raw-TCP TLS record desynchronization probe, delayed SYN-cookie ACK and forced 32-bit sequence-wrap probes |
 | `syn-cookie-reboot.yml` | Captures a SYN-cookie ACK, resets the local QEMU guest without changing the TAP tuple, then checks stale-cookie rejection and fresh-cookie acceptance across all three pinned revisions |
 | `boot-hardening-differential.yml` | Source/emitted-image comparison of AP counter alignment and GDT Accessed bits, synthetic BIOS E820 signature emulation, and Makefile NAME checks |
 | `public-hygiene.yml` | Scans the current tree and all reachable Git history for complete PEM private-key blocks, generated certificate/build directories, private-key files, disk images, binaries and assembler listings |
@@ -79,6 +79,12 @@ user namespaces.
 - `test_tls_record_rejection.py`: separately omits or corrupts the client's
   Finished, then corrupts an application AEAD tag before replaying the valid
   same-sequence record; checks whether the local QEMU guest still processes app data.
+- `test_tls_tcp_ack_desync.py`: uses an OpenSSL TLS 1.3 MemoryBIO client over a
+  synthetic raw TCP/TAP connection. It sends a corrupted partial TLS record
+  with an out-of-window ACK, then retransmits the authenticated record at the
+  original TCP sequence. The differential checks whether TCP consumed the
+  prefix before TLS authentication; results must be taken from the linked
+  workflow run, not inferred from the test design.
 - `test_dummy_ccs.py`: compares the normal ServerHello record sequence and
   elicits HelloRetryRequest. `test_hrr_second_clienthello.py` drives an OpenSSL client through a
   Go TLS 1.3 client through the second ClientHello and asserts the expected
