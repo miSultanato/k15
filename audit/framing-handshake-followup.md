@@ -152,6 +152,10 @@ the earlier uncertainty about whether the second ClientHello was actually
 sent; the normal-path and HRR-path CCS difference is now independently
 reproduced.
 
+## Additional coverage plan
+
+The next untested offsets and next-record prefix alignments are specified in [clienthello-truncation-record-prefix-matrix-v0.1.md](clienthello-truncation-record-prefix-matrix-v0.1.md). The matrix is NOT-RUN; the existing inner-short/outer-short and HRR results remain the only dynamic evidence cited above.
+
 ## Safety
 
 - Frozen target remains `ab93479ebc7c85274c722b16897148286d1cfca3`.
