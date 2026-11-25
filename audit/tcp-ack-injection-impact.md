@@ -54,6 +54,10 @@ Evidence:
   ACK identifies which payload length advanced receive state: the frozen
   image consumes the invalid-ACK payload; both tested upstream revisions
   reject it and consume the following valid-ACK payload instead.
+- A partial invalid-ACK payload advances the frozen receive sequence through
+  its 42-byte prefix before the complete legitimate retransmission arrives;
+  the two upstream revisions do not acknowledge that prefix and accept the
+  full request from the original sequence.
 - An incomplete invalid-ACK prefix advances the frozen receive sequence by
   42 bytes before any complete HTTP request exists. The two upstream revisions
   leave the sequence unchanged. A later same-sequence retransmission is
