@@ -2,9 +2,13 @@
 # Run the raw-TCP TLS ACK-desynchronization probe against one local QEMU image.
 set -euo pipefail
 
-target=${1:?target directory required}
-mode=${2:?mode required: expect or observe}
-repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+if [[ $# -lt 2 ]]; then
+  echo "usage: $0 TARGET expect|observe" >&2
+  exit 2
+fi
+target="$1"
+mode="$2"
+repo_root=$(cd "$(dirname "$0")" && pwd)
 target=$(cd "$target" && pwd)
 
 cd "$target"
