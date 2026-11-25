@@ -72,6 +72,9 @@ jobs:
       - name: Run deterministic IPv4 and ARP probes over TAP
         run: sudo unshare -n bash audit/run_tap_ip_arp.sh ${{ matrix.directory }} ${{ matrix.mode }}
 
+      - name: Run short-ARP stale-buffer probe with two processors
+        run: sudo unshare -n env SMP=2 bash audit/run_tap_arp_smp.sh ${{ matrix.directory }} ${{ matrix.mode }}
+
       - name: Build a forced-wrap TCP sequence image
         working-directory: ${{ matrix.directory }}
         run: make B=build-wrap ISNTOP=0xFFFFFFC0 ISNBITS=26 all
