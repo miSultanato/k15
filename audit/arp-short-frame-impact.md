@@ -8,10 +8,12 @@ ab93479ebc7c85274c722b16897148286d1cfca3.
 ## Differential reproduction
 
 The latest three-way local TAP run
-https://github.com/miSultanato/k15/actions/runs/45553389873
+https://github.com/miSultanato/k15/actions/runs/45561139141
 completed successfully against the frozen bounty, first upstream fix and
-current upstream main. It re-ran the 2,048-frame unicast primer and confirmed
-the same eight-byte disclosure only in the frozen image.
+current upstream main. It re-ran the 2,048-frame unicast primer with both
+`SMP=1` and `SMP=2`. The eight-byte disclosure reproduces on the frozen image
+in both configurations and is absent from both upstream images in both
+configurations.
 
 The test uses two distinct synthetic identities and a unicast primer:
 
@@ -119,6 +121,7 @@ unicast differential confirms the guard's observed effect.
 ## Safe follow-up
 
 The cross-sender unicast regression is implemented in
-audit/test_arp_short_frame.py and enforced by the three-way TAP workflow.
+audit/test_arp_short_frame.py and enforced by the three-way TAP workflow for
+both single- and two-processor guests.
 Keep future tests local, synthetic and bounded. Do not attempt to access
 production memory or send probes to 15kb.org.
