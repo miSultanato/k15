@@ -99,13 +99,15 @@ conditional blind-injection relevance. The dynamic test proves the
 acceptance rule, not the feasibility of an off-path attack. The upstream
 fixes in the tested revisions reject the same invalid-ACK matrix.
 
-## Next bounded validation
+## Bounded HTTPS consequence
 
-The remaining high-value question is the HTTPS consequence. An initial
-purpose-built probe, `test_tls_tcp_ack_desync.py`, now drives TLS 1.3 over a
-synthetic raw-TCP/TAP connection, sends a corrupted 16-byte record prefix with
-an invalid ACK, and retransmits the authenticated record at the original TCP
-sequence. Its three-way differential is pending; until it passes, no TLS
-stream-desynchronization consequence is claimed. Keep this strictly in
-isolated QEMU/TAP guests with synthetic keys and tuples. It must not be
-described as TLS record forgery or an off-path exploit.
+The HTTPS consequence is now reproduced by
+`test_tls_tcp_ack_desync.py` in
+[three-way run 45574294391](https://github.com/miSultanato/k15/actions/runs/45574294391).
+The frozen image ACKs through the invalid 16-byte prefix and does not process
+the retransmitted TLS request; both upstream revisions retain the original
+sequence and return HTTP. This establishes record-level desynchronization /
+availability impact only. It does not demonstrate AEAD forgery, traffic-key
+recovery, authenticated request injection, or off-path feasibility. Full
+method and limitations: `tcp-tls-record-desync.md`. All validation is
+confined to isolated QEMU/TAP guests with synthetic keys and tuples.
