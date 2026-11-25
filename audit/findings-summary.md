@@ -1,6 +1,6 @@
 # k15 bounty audit — executive status
 
-**Updated:** 2026-11-24  
+**Updated:** 2026-11-25  
 **Target:** `FileSherlock/k15` bounty source, frozen at
 `ab93479ebc7c85274c722b16897148286d1cfca3`  
 **Audit harness:** public fork `miSultanato/k15`, branch `main`
@@ -24,9 +24,9 @@ The audit also reproduces authenticated TLSInnerPlaintext validation failure, TL
 | AEAD tag failure | Bad tag ignored; original valid same-sequence record processed | Same behavior | Same behavior | [first fix](https://github.com/miSultanato/k15/actions/runs/45394628025), [current main](https://github.com/miSultanato/k15/actions/runs/45401470623) |
 | Dummy ChangeCipherSpec | Missing after normal ServerHello with 32-byte session ID | Sent after ServerHello | Sent after ServerHello | [normal path](https://github.com/miSultanato/k15/actions/runs/45417214217), [HRR path](https://github.com/miSultanato/k15/actions/runs/45436733972) |
 | HRR / second ClientHello | Completes HRR -> second ClientHello -> final ServerHello; sends 0 server CCS records | Same handshake; sends 1 server CCS record | Same as first fix | [OpenSSL wire-capture differential](https://github.com/miSultanato/k15/actions/runs/45436733972) |
-| Short ARP stale buffer | 24-byte unicast ARP request returns prior synthetic victim MAC/IP suffix to a different sender | Rejects stale-buffer reply | Rejects stale-buffer reply | [three-way unicast differential](https://github.com/miSultanato/k15/actions/runs/45466831548) |
-| IPv4 checksum / malformed ARP fields | Invalid IPv4-checksum SYN and malformed ARP fields still receive replies | Same behavior | Same behavior | [first fix](https://github.com/miSultanato/k15/actions/runs/45396434723), [current main](https://github.com/miSultanato/k15/actions/runs/45401501930) |
-| TCP ACK-window | ACK offsets +1, +63, +64, +65535 and +65536 beyond `SND.NXT` all still get HTTP responses; same when `SND.NXT=0xFFFFFFC2` and +65536 wraps to `0x0000FFC2` | No HTTP payload for all offsets, including forced wrap | Same as first fix | [assertive three-way TAP and forced-wrap matrix](https://github.com/miSultanato/k15/actions/runs/45468109924), [forced-wrap matrix](https://github.com/miSultanato/k15/actions/runs/45413051340) |
+| Short ARP stale buffer | 24-byte unicast ARP request returns prior synthetic victim MAC/IP suffix to a different sender | Rejects stale-buffer reply | Rejects stale-buffer reply | [latest three-way unicast differential](https://github.com/miSultanato/k15/actions/runs/45553389873) |
+| IPv4 checksum / malformed ARP fields | Invalid IPv4-checksum SYN and malformed ARP fields still receive replies | Same behavior | Same behavior | [latest three-way confirmation](https://github.com/miSultanato/k15/actions/runs/45553389873) |
+| TCP ACK-window and invalid-ACK payload consumption | ACK offsets +1, +63, +64, +65535 and +65536 beyond `SND.NXT` still get HTTP responses; a sequence-aware test confirms the invalid-ACK HTTP request is consumed first | Rejects invalid-ACK payload and consumes the following valid-ACK request | Same as first fix | [latest three-way differential and forced-wrap test](https://github.com/miSultanato/k15/actions/runs/45553389873) |
 | Peer MSS boundaries | Accepts MSS 0, 1, 100, 179, 180, 181, 215 and 216; sends 180-byte payloads (exceeds every peer MSS below 180) | No SYN-ACK for 0..215; accepts 216 and sends 180 | Same as first fix | [assertive peer-MSS regression matrix](https://github.com/miSultanato/k15/actions/runs/45468109924) |
 | SYN cookie time component | Delayed first ACK after 65s is accepted and following HTTP request processed | Same | Same | [three-way TAP test](https://github.com/miSultanato/k15/actions/runs/45410737525) |
 | SYN-cookie ACK replay after FIN/FIN close | Replayed cookie ACK recreates a connection after 65s and a different-length HTTP request is processed; changed-source-port replay is rejected | Same observed behavior | Same observed behavior | [three-way 65s replay differential](https://github.com/miSultanato/k15/actions/runs/45443936657); [tuple-binding control](https://github.com/miSultanato/k15/actions/runs/45469926754) |
