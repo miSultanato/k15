@@ -47,7 +47,7 @@ Para cada caso, crear una conexión cookie-backed independiente, registrar C_NXT
 |---|---:|---|---|---|
 | SQ-01 | -65,537 | 1 byte | ACK | Fuera por abajo: ACK actual; no payload/state update |
 | SQ-02 | -65,536 | 1 byte totalmente antiguo | ACK | Límite inferior incluido; los bytes antiguos no avanzan C_NXT |
-| SQ-03 | -65,536 | payload que termina exactamente en C_NXT | ACK | Recortar prefijo antiguo; solo el byte nuevo puede avanzar |
+| SQ-03 | -65,536 | payload que se extiende un byte más allá de C_NXT (65537 bytes) | ACK | Recortar 65.536 bytes antiguos; el byte en C_NXT puede avanzar |
 | SQ-04 | -1 | 1 byte antiguo | ACK | No avanzar C_NXT ni entregar byte duplicado |
 | SQ-05 | -1 | 1 byte antiguo | FIN+ACK | El FIN queda en C_NXT; comprobar que se consume exactamente una vez |
 | SQ-06 | 0 | 1 byte | ACK | In-order: byte procesado y C_NXT avanza uno |
@@ -75,7 +75,7 @@ La matriz actual ya demuestra el defecto de ACK adelantado con payload in-order.
 - ACK antiguo = C_ACK−1 y duplicate = C_ACK;
 - cada uno con un payload corto, y FIN+ACK donde la secuencia sea válida.
 
-**Expected:** un ACK fuera de [C_ACK, SND.NXT] no debe avanzar C_ACK ni habilitar payload/FIN en upstream actual. Un ACK válido puede ser duplicate/old sin avanzar C_ACK. Separar esto del criterio de SEG.SEQ.
+**Expected:** ACK = SND.NXT+1 (adelantado) no debe avanzar C_ACK ni habilitar payload/FIN en upstream actual. ACK = C_ACK−1 (ligeramente antiguo) no avanza C_ACK, pero puede acompañar payload en secuencia/reordenado dentro del umbral de 2^19; no clasificarlo como ACK adelantado. ACK = C_ACK es duplicate y tampoco avanza C_ACK, aunque el payload in-order puede ser procesado. ACK = SND.NXT y SND.NXT−1 permanecen dentro del rango de ACK pendiente. Separar el ACK antiguo del ACK demasiado adelantado y del criterio SEG.SEQ.
 
 ## 7. RST controls
 
